@@ -23,11 +23,11 @@ Just run as a script:
 $ python proxy2.py
 ```
 
-Above command runs the proxy on tcp/8080.
+Above command runs the proxy on tcp/3128.
 To use another port, specify the port number as the first argument.
 
 ```
-$ python proxy2.py 5000
+$ python proxy2.py 8080
 ```
 
 
