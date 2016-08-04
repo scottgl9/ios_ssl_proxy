@@ -128,7 +128,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
 
         req_body_modified = self.request_handler(req, req_body)
-        if req_body_modified is not None:
+        if req_body_modified is False:
+            self.send_error(403)
+            return
+        elif req_body_modified is not None:
             req_body = req_body_modified
             req.headers['Content-length'] = str(len(req_body))
 
@@ -164,7 +167,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         res_body_plain = self.decode_content_body(res_body, content_encoding)
 
         res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
-        if res_body_modified is not None:
+        if res_body_modified is False:
+            self.send_error(403)
+            return
+        elif res_body_modified is not None:
             res_body_plain = res_body_modified
             res_body = self.encode_content_body(res_body_plain, content_encoding)
             res.headers['Content-Length'] = str(len(res_body))
