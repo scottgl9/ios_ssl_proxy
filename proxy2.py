@@ -196,6 +196,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         hop_by_hop = ('connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade')
         for k in hop_by_hop:
             del headers[k]
+
+        # accept only supported encodings
+        if 'Accept-Encoding' in headers:
+            ae = headers['Accept-Encoding']
+            filtered_encodings = [x for x in re.split(r',\s*', ae) if x in ('identity', 'gzip', 'x-gzip', 'deflate')]
+            headers['Accept-Encoding'] = ', '.join(filtered_encodings)
+
         return headers
 
     def encode_content_body(self, text, encoding):
