@@ -140,7 +140,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         assert scheme in ('http', 'https')
         if netloc:
             req.headers['Host'] = netloc
-        req_headers = self.filter_headers(req.headers)
+        setattr(req, 'headers', self.filter_headers(req.headers))
 
         try:
             origin = (scheme, netloc)
@@ -150,7 +150,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 else:
                     self.tls.conns[origin] = httplib.HTTPConnection(netloc, timeout=self.timeout)
             conn = self.tls.conns[origin]
-            conn.request(self.command, path, req_body, dict(req_headers))
+            conn.request(self.command, path, req_body, dict(req.headers))
             res = conn.getresponse()
             res_body = res.read()
         except Exception as e:
@@ -175,10 +175,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             res_body = self.encode_content_body(res_body_plain, content_encoding)
             res.headers['Content-Length'] = str(len(res_body))
 
-        res_headers = self.filter_headers(res.headers)
+        setattr(res, 'headers', self.filter_headers(res.headers))
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
-        for line in res_headers.headers:
+        for line in res.headers.headers:
             self.wfile.write(line)
         self.end_headers()
         self.wfile.write(res_body)
