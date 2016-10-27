@@ -152,16 +152,26 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             conn = self.tls.conns[origin]
             conn.request(self.command, path, req_body, dict(req.headers))
             res = conn.getresponse()
+
+            version_table = {10: 'HTTP/1.0', 11: 'HTTP/1.1'}
+            setattr(res, 'headers', res.msg)
+            setattr(res, 'response_version', version_table[res.version])
+
+            # support streaming
+            if not 'Content-Length' in res.headers and 'no-store' in res.headers.get('Cache-Control'):
+                self.response_handler(req, req_body, res, '')
+                setattr(res, 'headers', self.filter_headers(res.headers))
+                self.relay_streaming(res)
+                with self.lock:
+                    self.save_handler(req, req_body, res, '')
+                return
+
             res_body = res.read()
         except Exception as e:
             if origin in self.tls.conns:
                 del self.tls.conns[origin]
             self.send_error(502)
             return
-
-        version_table = {10: 'HTTP/1.0', 11: 'HTTP/1.1'}
-        setattr(res, 'headers', res.msg)
-        setattr(res, 'response_version', version_table[res.version])
 
         content_encoding = res.headers.get('Content-Encoding', 'identity')
         res_body_plain = self.decode_content_body(res_body, content_encoding)
@@ -186,6 +196,22 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         with self.lock:
             self.save_handler(req, req_body, res, res_body_plain)
+
+    def relay_streaming(self, res):
+        self.wfile.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
+        for line in res.headers.headers:
+            self.wfile.write(line)
+        self.end_headers()
+        try:
+            while True:
+                chunk = res.read(8192)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+            self.wfile.flush()
+        except socket.error:
+            # connection closed by client
+            pass
 
     do_HEAD = do_GET
     do_POST = do_GET
