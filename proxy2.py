@@ -82,10 +82,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
         conntype = self.headers.get('Proxy-Connection', '')
-        if conntype.lower() == 'close':
-            self.close_connection = 1
-        elif (conntype.lower() == 'keep-alive' and self.protocol_version >= "HTTP/1.1"):
+        if self.protocol_version == "HTTP/1.1" and conntype.lower() != 'close':
             self.close_connection = 0
+        else:
+            self.close_connection = 1
 
     def connect_relay(self):
         address = self.path.split(':', 1)
