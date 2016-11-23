@@ -42,6 +42,45 @@ def intercept_this_host(hostname):
     if hostname == "gsp10-ssl.apple.com": return False
     return True
 
+def rewrite_headers(headers):
+    if 'User-Agent' in headers:
+        user_agent = headers['User-Agent']
+        print("User-Agent: " + user_agent)
+
+    if 'Host' in headers and headers['Host'] == "setup.icloud.com" and 'X-MMe-Client-Info' in headers:
+        client_info = headers['X-MMe-Client-Info']
+        print("X-MMe-Client-Info: " + client_info)
+
+    if 'x-mme-client-info' in headers:
+        client_info = headers['x-mme-client-info']
+        print("x-mme-client-info: " + client_info)
+
+    if 'X-Client-UDID' in headers:
+        client_udid = headers['X-Client-UDID']
+        print("X-Client-UDID" + client_udid)
+
+    if 'X-Mme-Device-Id' in headers:
+        client_udid = headers['X-Mme-Device-Id']
+        print("X-Mme-Device-Id" + client_udid)
+
+    if 'Device-UDID' in headers:
+        client_udid = headers['Device-UDID']
+        print("Device-UDID" + client_udid)
+
+    if 'X-Apple-Client-Info' in headers:
+        client_info = headers['X-Apple-Client-Info']
+        print("X-Apple-Client-Info" + client_info)
+
+    if 'x-apple-translated-wo-url' in headers:
+        apple_url = headers['x-apple-translated-wo-url']
+        print("x-apple-translated-wo-url" + apple_url)
+
+    if 'x-apple-orig-url' in headers:
+        apple_url = headers['x-apple-orig-url']
+        print("x-apple-orig-url" + apple_url)
+
+    return headers
+
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
     cacert = 'ca.crt'
@@ -230,8 +269,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         for k in hop_by_hop:
             del headers[k]
 
-		# can probably modify headers here:
-		
+        # can probably modify headers here:
+        headers = rewrite_headers(headers)
 		
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
