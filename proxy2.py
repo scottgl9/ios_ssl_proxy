@@ -20,11 +20,12 @@ from HTMLParser import HTMLParser
 
 
 def with_color(c, s):
-    return "\x1b[%dm%s\x1b[0m" % (c, s)
-
+    return s
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
-    address_family = socket.AF_INET6
+	# lets use IPv4 instead of IPv6
+    #address_family = socket.AF_INET6
+    address_family = socket.AF_INET
     daemon_threads = True
 
     def handle_error(self, request, client_address):
@@ -35,6 +36,11 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         else:
             return HTTPServer.handle_error(self, request, client_address)
 
+def intercept_this_host(hostname):
+    if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+    if hostname == "gsa.apple.com": return False
+    if hostname == "gsp10-ssl.apple.com": return False
+    return True
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -58,7 +64,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.log_message(format, *args)
 
     def do_CONNECT(self):
-        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir):
+        hostname = self.path.split(':')[0]
+        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and intercept_this_host(hostname):
             self.connect_intercept()
         else:
             self.connect_relay()
@@ -170,7 +177,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             if origin in self.tls.conns:
                 del self.tls.conns[origin]
-            self.send_error(502)
+            #self.send_error(502)
             return
 
         content_encoding = res.headers.get('Content-Encoding', 'identity')
@@ -223,6 +230,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         for k in hop_by_hop:
             del headers[k]
 
+		# can probably modify headers here:
+		
+		
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
             ae = headers['Accept-Encoding']
@@ -273,6 +283,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def print_info(self, req, req_body, res, res_body):
+        if "apple.com" not in self.path and "icloud.com" not in self.path:
+            return
+
         def parse_qsl(s):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
 
