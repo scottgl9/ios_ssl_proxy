@@ -12,6 +12,7 @@ import zlib
 import time
 import json
 import re
+import plistlib
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
@@ -23,7 +24,7 @@ def with_color(c, s):
     return s
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
-	# lets use IPv4 instead of IPv6
+    # lets use IPv4 instead of IPv6
     #address_family = socket.AF_INET6
     address_family = socket.AF_INET
     daemon_threads = True
@@ -36,50 +37,61 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         else:
             return HTTPServer.handle_error(self, request, client_address)
 
-def intercept_this_host(hostname):
-    if "apple.com" not in hostname and "icloud.com" not in hostname: return False
-    if hostname == "gsa.apple.com": return False
-    if hostname == "gsp10-ssl.apple.com": return False
-    return True
 
-def rewrite_headers(headers):
-    if 'User-Agent' in headers:
-        user_agent = headers['User-Agent']
-        print("User-Agent: " + user_agent)
+class ProxyRewrite:
+    @staticmethod
+    def load_device_info(sn):
+        device = plistlib.readPlist("devices/%s.xml" % sn)
+        print(device)
+        return device
 
-    if 'Host' in headers and headers['Host'] == "setup.icloud.com" and 'X-MMe-Client-Info' in headers:
-        client_info = headers['X-MMe-Client-Info']
-        print("X-MMe-Client-Info: " + client_info)
+    @staticmethod
+    def intercept_this_host(hostname):
+        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        if hostname == "gsa.apple.com": return False
+        if hostname == "gsp10-ssl.apple.com": return False
+        return True
 
-    if 'x-mme-client-info' in headers:
-        client_info = headers['x-mme-client-info']
-        print("x-mme-client-info: " + client_info)
+    @staticmethod
+    def rewrite_headers(headers):
+        if 'User-Agent' in headers:
+            user_agent = headers['User-Agent']
+            print("User-Agent: " + user_agent)
 
-    if 'X-Client-UDID' in headers:
-        client_udid = headers['X-Client-UDID']
-        print("X-Client-UDID" + client_udid)
+        if 'Host' in headers and headers['Host'] == "setup.icloud.com" and 'X-MMe-Client-Info' in headers:
+            client_info = headers['X-MMe-Client-Info']
+            print("X-MMe-Client-Info: " + client_info)
 
-    if 'X-Mme-Device-Id' in headers:
-        client_udid = headers['X-Mme-Device-Id']
-        print("X-Mme-Device-Id" + client_udid)
+        if 'x-mme-client-info' in headers:
+            client_info = headers['x-mme-client-info']
+            print("x-mme-client-info: " + client_info)
 
-    if 'Device-UDID' in headers:
-        client_udid = headers['Device-UDID']
-        print("Device-UDID" + client_udid)
+        if 'X-Client-UDID' in headers:
+            client_udid = headers['X-Client-UDID']
+            print("X-Client-UDID" + client_udid)
 
-    if 'X-Apple-Client-Info' in headers:
-        client_info = headers['X-Apple-Client-Info']
-        print("X-Apple-Client-Info" + client_info)
+        if 'X-Mme-Device-Id' in headers:
+            client_udid = headers['X-Mme-Device-Id']
+            print("X-Mme-Device-Id" + client_udid)
 
-    if 'x-apple-translated-wo-url' in headers:
-        apple_url = headers['x-apple-translated-wo-url']
-        print("x-apple-translated-wo-url" + apple_url)
+        if 'Device-UDID' in headers:
+            client_udid = headers['Device-UDID']
+            print("Device-UDID" + client_udid)
 
-    if 'x-apple-orig-url' in headers:
-        apple_url = headers['x-apple-orig-url']
-        print("x-apple-orig-url" + apple_url)
+        if 'X-Apple-Client-Info' in headers:
+            client_info = headers['X-Apple-Client-Info']
+            print("X-Apple-Client-Info" + client_info)
 
-    return headers
+        if 'x-apple-translated-wo-url' in headers:
+            apple_url = headers['x-apple-translated-wo-url']
+            print("x-apple-translated-wo-url" + apple_url)
+
+        if 'x-apple-orig-url' in headers:
+            apple_url = headers['x-apple-orig-url']
+            print("x-apple-orig-url" + apple_url)
+
+        return headers
+
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -104,7 +116,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
-        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and intercept_this_host(hostname):
+        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
             self.connect_relay()
@@ -270,7 +282,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             del headers[k]
 
         # can probably modify headers here:
-        headers = rewrite_headers(headers)
+        headers = ProxyRewrite.rewrite_headers(headers)
 		
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
