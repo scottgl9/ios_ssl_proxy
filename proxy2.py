@@ -1,3 +1,4 @@
+#!/usr/bin/python2.7
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -38,11 +39,13 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
             return HTTPServer.handle_error(self, request, client_address)
 
 
+dev1info = {}
+dev2info = {}
+
 class ProxyRewrite:
     @staticmethod
     def load_device_info(sn):
         device = plistlib.readPlist("devices/%s.xml" % sn)
-        print(device)
         return device
 
     @staticmethod
@@ -53,34 +56,48 @@ class ProxyRewrite:
         return True
 
     @staticmethod
+    def replace_header_field(headers, field, attrib):
+        oldval = headers[field]
+        headers[field] = dev2info[attrib]
+        print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+
+    @staticmethod
+    def rewrite_header_field(headers, field, attrib):
+        oldval = headers[field]
+        headers[field] = headers[field].replace(dev1info[attrib], dev2info[attrib])
+        print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+
+
+    @staticmethod
     def rewrite_headers(headers):
         if 'User-Agent' in headers:
-            user_agent = headers['User-Agent']
-            print("User-Agent: " + user_agent)
+            headers = rewrite_header_field(headers, "User-Agent", "BuildVersion")
+            headers = rewrite_header_field(headers, "User-Agent", "ProductType")
+            headers = rewrite_header_field(headers, "User-Agent", "ProductVersion")
 
-        if 'Host' in headers and headers['Host'] == "setup.icloud.com" and 'X-MMe-Client-Info' in headers:
-            client_info = headers['X-MMe-Client-Info']
-            print("X-MMe-Client-Info: " + client_info)
+        if 'X-MMe-Client-Info' in headers:
+            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "BuildVersion")
+            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "ProductType")
+            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "ProductVersion")
 
         if 'x-mme-client-info' in headers:
-            client_info = headers['x-mme-client-info']
-            print("x-mme-client-info: " + client_info)
+            headers = rewrite_header_field(headers, "x-mme-client-info", "BuildVersion")
+            headers = rewrite_header_field(headers, "x-mme-client-info", "ProductType")
+            headers = rewrite_header_field(headers, "x-mme-client-info", "ProductVersion")
 
         if 'X-Client-UDID' in headers:
-            client_udid = headers['X-Client-UDID']
-            print("X-Client-UDID" + client_udid)
+            headers = replace_header_field(headers, "X-Client-UDID", "UniqueDeviceID")
 
         if 'X-Mme-Device-Id' in headers:
-            client_udid = headers['X-Mme-Device-Id']
-            print("X-Mme-Device-Id" + client_udid)
+            headers = replace_header_field(headers, "X-Client-UDID", "UniqueDeviceID")
 
         if 'Device-UDID' in headers:
-            client_udid = headers['Device-UDID']
-            print("Device-UDID" + client_udid)
+            headers = replace_header_field(headers, "Device-UDID", "UniqueDeviceID")
 
         if 'X-Apple-Client-Info' in headers:
-            client_info = headers['X-Apple-Client-Info']
-            print("X-Apple-Client-Info" + client_info)
+            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "BuildVersion")
+            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "ProductType")
+            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "ProductVersion")
 
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
@@ -274,6 +291,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     do_HEAD = do_GET
     do_POST = do_GET
     do_OPTIONS = do_GET
+    do_REPORT = do_GET
+    do_PROPFIND = do_GET
 
     def filter_headers(self, headers):
         # http://tools.ietf.org/html/rfc2616#section-13.5.1
@@ -427,10 +446,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[1:]:
+    if sys.argv[3:]:
         port = int(sys.argv[1])
+        device1 = sys.argv[2]
+        device2 = sys.argv[3]
+
     else:
-        port = 8080
+        print("Usage: %s <port> <device1> <device2>" % sys.argv[0])
+        return 0
+
+
+    print("Proxy set to rewrite device %s with device %s" % (device1, device2))
+    dev1info = ProxyRewrite.load_device_info(device1)
+    dev2info = ProxyRewrite.load_device_info(device2)
     server_address = ('', port)
 
     HandlerClass.protocol_version = protocol
