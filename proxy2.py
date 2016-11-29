@@ -39,10 +39,10 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
             return HTTPServer.handle_error(self, request, client_address)
 
 
-dev1info = {}
-dev2info = {}
-
 class ProxyRewrite:
+    dev1info = dict()
+    dev2info = dict()
+
     @staticmethod
     def load_device_info(sn):
         device = plistlib.readPlist("devices/%s.xml" % sn)
@@ -57,47 +57,54 @@ class ProxyRewrite:
 
     @staticmethod
     def replace_header_field(headers, field, attrib):
+        if field not in headers: return headers
         oldval = headers[field]
-        headers[field] = dev2info[attrib]
-        print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+	print(dev2info[attrib])
+        headers[field] = ProxyRewrite.dev2info[attrib]
+        if headers[field] != oldval:
+            print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+        return headers
 
     @staticmethod
     def rewrite_header_field(headers, field, attrib):
+        if field not in headers: return headers
         oldval = headers[field]
-        headers[field] = headers[field].replace(dev1info[attrib], dev2info[attrib])
-        print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+        headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+        if headers[field] != oldval:
+            print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+        return headers
 
 
     @staticmethod
     def rewrite_headers(headers):
         if 'User-Agent' in headers:
-            headers = rewrite_header_field(headers, "User-Agent", "BuildVersion")
-            headers = rewrite_header_field(headers, "User-Agent", "ProductType")
-            headers = rewrite_header_field(headers, "User-Agent", "ProductVersion")
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'ProductType')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'ProductVersion')
 
         if 'X-MMe-Client-Info' in headers:
-            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "BuildVersion")
-            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "ProductType")
-            headers = rewrite_header_field(headers, "X-MMe-Client-Info", "ProductVersion")
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'ProductType')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'ProductVersion')
 
         if 'x-mme-client-info' in headers:
-            headers = rewrite_header_field(headers, "x-mme-client-info", "BuildVersion")
-            headers = rewrite_header_field(headers, "x-mme-client-info", "ProductType")
-            headers = rewrite_header_field(headers, "x-mme-client-info", "ProductVersion")
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'ProductType')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'ProductVersion')
 
         if 'X-Client-UDID' in headers:
-            headers = replace_header_field(headers, "X-Client-UDID", "UniqueDeviceID")
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
 
         if 'X-Mme-Device-Id' in headers:
-            headers = replace_header_field(headers, "X-Client-UDID", "UniqueDeviceID")
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
 
         if 'Device-UDID' in headers:
-            headers = replace_header_field(headers, "Device-UDID", "UniqueDeviceID")
+            headers = ProxyRewrite.replace_header_field(headers, 'Device-UDID', 'UniqueDeviceID')
 
         if 'X-Apple-Client-Info' in headers:
-            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "BuildVersion")
-            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "ProductType")
-            headers = rewrite_header_field(headers, "X-Apple-Client-Info", "ProductVersion")
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'ProductType')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'ProductVersion')
 
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
@@ -106,9 +113,7 @@ class ProxyRewrite:
         if 'x-apple-orig-url' in headers:
             apple_url = headers['x-apple-orig-url']
             print("x-apple-orig-url" + apple_url)
-
         return headers
-
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -192,7 +197,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_cacert()
             return
 
-        req = self
+	req = self
+
+	# handle special case where we need to fix the URL to reflect device 2's udid
+        if 'Host' in req.headers and req.headers['Host'] == 'p59-fmf.icloud.com':
+		old_path = self.path
+		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+		print("%s -> %s", old_path, self.path)
+
         content_length = int(req.headers.get('Content-Length', 0))
         req_body = self.rfile.read(content_length) if content_length else None
 
@@ -301,7 +313,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             del headers[k]
 
         # can probably modify headers here:
-        headers = ProxyRewrite.rewrite_headers(headers)
+        #headers = ProxyRewrite.rewrite_headers(headers)
 		
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
@@ -457,9 +469,11 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
 
     print("Proxy set to rewrite device %s with device %s" % (device1, device2))
-    dev1info = ProxyRewrite.load_device_info(device1)
-    dev2info = ProxyRewrite.load_device_info(device2)
+    ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
+    ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
     server_address = ('', port)
+
+    print(ProxyRewrite.dev2info['BuildVersion'])
 
     HandlerClass.protocol_version = protocol
     httpd = ServerClass(server_address, HandlerClass)
