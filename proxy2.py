@@ -56,6 +56,16 @@ class ProxyRewrite:
         return True
 
     @staticmethod
+    def rewrite_body(body, attribs):
+        oldbody = body
+        attriblist = attribs.split(',')
+        for attrib in attriblist:
+            body = body.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+            if body != oldbody:
+                print("Replacing body %s -> %s" % (oldbody, body))
+        return headers
+
+    @staticmethod
     def replace_header_field(headers, field, attrib):
         if field not in headers: return headers
         oldval = headers[field]
@@ -66,31 +76,45 @@ class ProxyRewrite:
         return headers
 
     @staticmethod
-    def rewrite_header_field(headers, field, attrib):
+    def rewrite_header_field(headers, field, attribs):
         if field not in headers: return headers
         oldval = headers[field]
-        headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
-        if headers[field] != oldval:
-            print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+        attriblist = attribs.split(',')
+        for attrib in attriblist:
+            headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+            if headers[field] != oldval:
+                print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+        return headers
+
+    @staticmethod
+    def b64_rewrite_header_field(headers, field, attribs):
+        if field not in headers: return headers
+        val = base64.b64decode(headers[field])
+        oldval = val
+
+        attriblist = attribs.split(',')
+        for attrib in attriblist:
+            val = val.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+            if headers[field] != oldval:
+                print("Replacing field %s: %s -> %s" % (field, oldval, val))
+
+        headers[field] = base64.b64encode(val)
         return headers
 
 
     @staticmethod
-    def rewrite_headers(headers):
+    def rewrite_headers(headers, path):
+        if 'X-Mme-Nas-Qualify' in headers and path == '/setup/account/registerDevice':
+            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'DeviceColor,EnclosureColor,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID')
+
         if 'User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'ProductType')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,ProductType,ProductVersion')
 
         if 'X-MMe-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'ProductType')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion')
 
         if 'x-mme-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'ProductType')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductType,ProductVersion')
 
         if 'X-Client-UDID' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
@@ -102,9 +126,7 @@ class ProxyRewrite:
             headers = ProxyRewrite.replace_header_field(headers, 'Device-UDID', 'UniqueDeviceID')
 
         if 'X-Apple-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'ProductType')
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion,ProductType,ProductVersion')
 
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
@@ -200,7 +222,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 	req = self
 
 	# handle special case where we need to fix the URL to reflect device 2's udid
-        if 'Host' in req.headers and req.headers['Host'] == 'p59-fmf.icloud.com':
+        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
 		old_path = self.path
 		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
 		print("%s -> %s", old_path, self.path)
@@ -213,6 +235,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 req.path = "https://%s%s" % (req.headers['Host'], req.path)
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
+
+        # should be able to safely modify body here:
+        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
+            body = ProxyRewrite.body_rewrite(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
 
         req_body_modified = self.request_handler(req, req_body)
         if req_body_modified is False:
@@ -313,7 +339,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             del headers[k]
 
         # can probably modify headers here:
-        #headers = ProxyRewrite.rewrite_headers(headers)
+        headers = ProxyRewrite.rewrite_headers(headers, self.path)
 		
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
