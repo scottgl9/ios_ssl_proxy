@@ -14,6 +14,7 @@ import time
 import json
 import re
 import plistlib
+import base64
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
@@ -52,7 +53,12 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         if hostname == "gsa.apple.com": return False
+        if hostname == "gsas.apple.com": return False
+        if hostname == "gspe1-ssl.ls.apple.com:": return False
         if hostname == "gsp10-ssl.apple.com": return False
+        if hostname == "init.itunes.apple.com": return False
+        if hostname == "profile.ess.apple.com": return False
+        if hostname == "xp.apple.com": return False
         return True
 
     @staticmethod
@@ -63,16 +69,16 @@ class ProxyRewrite:
             body = body.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
             if body != oldbody:
                 print("Replacing body %s -> %s" % (oldbody, body))
-        return headers
+        return body
 
     @staticmethod
     def replace_header_field(headers, field, attrib):
         if field not in headers: return headers
         oldval = headers[field]
-	print(dev2info[attrib])
+	print(ProxyRewrite.dev2info[attrib])
         headers[field] = ProxyRewrite.dev2info[attrib]
         if headers[field] != oldval:
-            print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+            print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
 
     @staticmethod
@@ -83,28 +89,27 @@ class ProxyRewrite:
         for attrib in attriblist:
             headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
             if headers[field] != oldval:
-                print("Replacing field %s: %s -> %s" % (field, oldval, headers[field]))
+                print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
 
     @staticmethod
     def b64_rewrite_header_field(headers, field, attribs):
         if field not in headers: return headers
-        val = base64.b64decode(headers[field])
+        val = bytearray(base64.b64decode(headers[field]))
         oldval = val
 
         attriblist = attribs.split(',')
         for attrib in attriblist:
-            val = val.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+            val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
-                print("Replacing field %s: %s -> %s" % (field, oldval, val))
+                print("%s: Replacing %s: %s -> %s" % (headers["Host"], attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
 
         headers[field] = base64.b64encode(val)
         return headers
 
-
     @staticmethod
     def rewrite_headers(headers, path):
-        if 'X-Mme-Nas-Qualify' in headers and path == '/setup/account/registerDevice':
+        if 'X-Mme-Nas-Qualify' in headers:
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'DeviceColor,EnclosureColor,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID')
 
         if 'User-Agent' in headers:
@@ -160,7 +165,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
-        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
+        print(self.path)
+        if ProxyRewrite.intercept_this_host(hostname) == False:
+            self.connect_relay()
+        elif os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
             self.connect_relay()
@@ -209,6 +217,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             for r in rlist:
                 other = conns[1] if r is conns[0] else conns[0]
                 data = r.recv(8192)
+                while data:
+                    data = r.recv(8192)
+
                 if not data:
                     self.close_connection = 1
                     break
@@ -222,10 +233,24 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 	req = self
 
 	# handle special case where we need to fix the URL to reflect device 2's udid
-        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
+        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com' or req.headers['Host'] == 'p15-fmf.icloud.com'):
 		old_path = self.path
 		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-		print("%s -> %s", old_path, self.path)
+		print("%s -> %s" % (old_path, self.path))
+	elif 'Host' in req.headers and (req.headers['Host'] == 'p59-fmfmobile.icloud.com' or req.headers['Host'] == 'p51-fmfmobile.icloud.com' or req.headers['Host'] == 'p15-fmfmobile.icloud.com'):
+                old_path = self.path
+                self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                print("%s -> %s" % (old_path, self.path))
+	elif 'Host' in req.headers and (req.headers['Host'] == 'p59-mobilebackup.icloud.com' or req.headers['Host'] == 'p51-mobilebackup.icloud.com' or req.headers['Host'] == 'p15-mobilebackup.icloud.com'):
+		old_path = self.path
+		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+		print("%s -> %s" % (old_path, self.path))
+	elif 'Host' in req.headers and (req.headers['Host'] == 'gspe35-ssl.ls.apple.com'):
+		old_path = self.path
+		self.path = self.path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
+		self.path = self.path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
+		self.path = self.path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
+		print("%s -> %s" % (old_path, self.path))
 
         content_length = int(req.headers.get('Content-Length', 0))
         req_body = self.rfile.read(content_length) if content_length else None
@@ -235,10 +260,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 req.path = "https://%s%s" % (req.headers['Host'], req.path)
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
-
-        # should be able to safely modify body here:
-        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
-            body = ProxyRewrite.body_rewrite(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
 
         req_body_modified = self.request_handler(req, req_body)
         if req_body_modified is False:
@@ -283,7 +304,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             if origin in self.tls.conns:
                 del self.tls.conns[origin]
-            #self.send_error(502)
+                #self.send_error(502)
             return
 
         content_encoding = res.headers.get('Content-Encoding', 'identity')
@@ -340,7 +361,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         # can probably modify headers here:
         headers = ProxyRewrite.rewrite_headers(headers, self.path)
-		
+
         # accept only supported encodings
         if 'Accept-Encoding' in headers:
             ae = headers['Accept-Encoding']
@@ -474,6 +495,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print with_color(32, "==== RESPONSE BODY ====\n%s\n" % res_body_text)
 
     def request_handler(self, req, req_body):
+        # should be able to safely modify body here:
+        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
+            old_body = req_body
+            req_body = ProxyRewrite.rewrite_body(req_body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
         pass
 
     def response_handler(self, req, req_body, res, res_body):
@@ -501,12 +526,17 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     print(ProxyRewrite.dev2info['BuildVersion'])
 
-    HandlerClass.protocol_version = protocol
-    httpd = ServerClass(server_address, HandlerClass)
+    try:
+        HandlerClass.protocol_version = protocol
+        httpd = ServerClass(server_address, HandlerClass)
 
-    sa = httpd.socket.getsockname()
-    print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
-    httpd.serve_forever()
+        sa = httpd.socket.getsockname()
+        print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
+        httpd.serve_forever()
+
+    except KeyboardInterrupt:
+        print '^C received, shutting down proxy'
+        httpd.socket.close()
 
 
 if __name__ == '__main__':
