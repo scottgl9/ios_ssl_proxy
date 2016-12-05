@@ -142,6 +142,29 @@ class ProxyRewrite:
             print("x-apple-orig-url" + apple_url)
         return headers
 
+    @staticmethod
+    def rewrite_path(headers, path):
+        if 'Host' in headers and (headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
+                old_path = path
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                print("%s -> %s" % (old_path, path))
+        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
+                old_path = path
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                print("%s -> %s" % (old_path, path))
+        elif 'Host' in headers and (headers['Host'] == 'p59-mobilebackup.icloud.com' or headers['Host'] == 'p51-mobilebackup.icloud.com' or headers['Host'] == 'p15-mobilebackup.icloud.com'):
+                old_path = path
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                print("%s -> %s" % (old_path, path))
+        elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com'):
+                old_path = path
+                path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
+                path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
+                path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
+                print("%s -> %s" % (old_path, path))
+        return path
+
+
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
     cacert = 'ca.crt'
@@ -230,27 +253,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_cacert()
             return
 
-	req = self
-
-	# handle special case where we need to fix the URL to reflect device 2's udid
-        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com' or req.headers['Host'] == 'p15-fmf.icloud.com'):
-		old_path = self.path
-		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-		print("%s -> %s" % (old_path, self.path))
-	elif 'Host' in req.headers and (req.headers['Host'] == 'p59-fmfmobile.icloud.com' or req.headers['Host'] == 'p51-fmfmobile.icloud.com' or req.headers['Host'] == 'p15-fmfmobile.icloud.com'):
-                old_path = self.path
-                self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("%s -> %s" % (old_path, self.path))
-	elif 'Host' in req.headers and (req.headers['Host'] == 'p59-mobilebackup.icloud.com' or req.headers['Host'] == 'p51-mobilebackup.icloud.com' or req.headers['Host'] == 'p15-mobilebackup.icloud.com'):
-		old_path = self.path
-		self.path = self.path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-		print("%s -> %s" % (old_path, self.path))
-	elif 'Host' in req.headers and (req.headers['Host'] == 'gspe35-ssl.ls.apple.com'):
-		old_path = self.path
-		self.path = self.path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
-		self.path = self.path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
-		self.path = self.path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
-		print("%s -> %s" % (old_path, self.path))
+        # rewrite URL path if needed
+        self.path = ProxyRewrite.rewrite_path(self.headers, self.path)
+        req = self
 
         content_length = int(req.headers.get('Content-Length', 0))
         req_body = self.rfile.read(content_length) if content_length else None
