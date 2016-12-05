@@ -20,7 +20,10 @@ from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from subprocess import Popen, PIPE
 from HTMLParser import HTMLParser
+from OpenSSL import crypto
 
+TYPE_RSA = crypto.TYPE_RSA
+TYPE_DSA = crypto.TYPE_DSA
 
 def with_color(c, s):
     return s
@@ -156,7 +159,7 @@ class ProxyRewrite:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("%s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com'):
+        elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com' or headers['Host'] == 'gspe1-ssl.ls.apple.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
