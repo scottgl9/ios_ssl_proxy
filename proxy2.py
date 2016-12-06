@@ -18,7 +18,7 @@ import base64
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
-from subprocess import Popen, PIPE
+#from subprocess import Popen, PIPE
 from HTMLParser import HTMLParser
 from OpenSSL import crypto
 
@@ -116,7 +116,7 @@ class ProxyRewrite:
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'DeviceColor,EnclosureColor,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID')
 
         if 'User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,ProductType,ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
 
         if 'X-MMe-Client-Info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion')
@@ -175,6 +175,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     certdir = 'certs/'
     timeout = 5
     lock = threading.Lock()
+    certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open("cert.key", 'rt').read())
+    issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open("ca.crt", 'rt').read())
+    issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open("ca.key", 'rt').read())
 
     def __init__(self, *args, **kwargs):
         self.tls = threading.local()
@@ -205,10 +208,26 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         with self.lock:
             if not os.path.isfile(certpath):
-                epoch = "%d" % (time.time() * 1000)
-                p1 = Popen(["openssl", "req", "-new", "-key", self.certkey, "-subj", "/CN=%s" % hostname], stdout=PIPE)
-                p2 = Popen(["openssl", "x509", "-req", "-days", "3650", "-CA", self.cacert, "-CAkey", self.cakey, "-set_serial", epoch, "-out", certpath], stdin=p1.stdout, stderr=PIPE)
-                p2.communicate()
+                #epoch = "%d" % (time.time() * 1000)
+                #p1 = Popen(["openssl", "req", "-new", "-key", self.certkey, "-subj", "/CN=%s" % hostname], stdout=PIPE)
+                #p2 = Popen(["openssl", "x509", "-req", "-days", "3650", "-CA", self.cacert, "-CAkey", self.cakey, "-set_serial", epoch, "-out", certpath], stdin=p1.stdout, stderr=PIPE)
+                #p2.communicate()
+                req = crypto.X509Req()
+                req.get_subject().CN = hostname
+                req.set_pubkey(self.certKey)
+                req.sign(self.certKey, "sha1")
+                epoch = int(time.time() * 1000)
+                cert = crypto.X509()
+                cert.set_serial_number(epoch)
+                cert.gmtime_adj_notBefore(0)
+                cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
+                cert.set_issuer(self.issuerCert.get_subject())
+                cert.set_subject(req.get_subject())
+                cert.set_pubkey(req.get_pubkey())
+                cert.sign(self.issuerKey, "sha256")
+                with open(certpath, "w") as cert_file:
+                    cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
