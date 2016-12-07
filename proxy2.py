@@ -65,13 +65,20 @@ class ProxyRewrite:
         return True
 
     @staticmethod
-    def rewrite_body(body, attribs):
+    def rewrite_body_attribs(body, attribs):
         oldbody = body
         attriblist = attribs.split(',')
         for attrib in attriblist:
             body = body.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
             if body != oldbody:
                 print("Replacing body %s -> %s" % (oldbody, body))
+        return body
+
+    @staticmethod
+    def rewrite_body(body, headers):
+        if 'Host' in headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com'):
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
         return body
 
     @staticmethod
@@ -175,13 +182,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     certdir = 'certs/'
     timeout = 5
     lock = threading.Lock()
-    certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open("cert.key", 'rt').read())
-    issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open("ca.crt", 'rt').read())
-    issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open("ca.key", 'rt').read())
+    certKey=None
+    issuerCert=None
+    issuerKey=None
 
     def __init__(self, *args, **kwargs):
         self.tls = threading.local()
         self.tls.conns = {}
+
+        self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
+        self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
+        self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
 
         BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
@@ -262,9 +273,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             for r in rlist:
                 other = conns[1] if r is conns[0] else conns[0]
                 data = r.recv(8192)
-                while data:
-                    data = r.recv(8192)
-
                 if not data:
                     self.close_connection = 1
                     break
@@ -523,9 +531,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def request_handler(self, req, req_body):
         # should be able to safely modify body here:
-        if 'Host' in req.headers and (req.headers['Host'] == 'p59-fmf.icloud.com' or req.headers['Host'] == 'p51-fmf.icloud.com'):
-            old_body = req_body
-            req_body = ProxyRewrite.rewrite_body(req_body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
+        req_body = ProxyRewrite.rewrite_body(req_body, req.headers)
         pass
 
     def response_handler(self, req, req_body, res, res_body):
