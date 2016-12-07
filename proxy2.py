@@ -18,12 +18,13 @@ import base64
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
-#from subprocess import Popen, PIPE
 from HTMLParser import HTMLParser
 from OpenSSL import crypto
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
+
+# Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, MKCOL, MOVE, REPORT, PROPFIND, PROPPATCH, ORDERPATCH
 
 def with_color(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
@@ -222,10 +223,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         with self.lock:
             if not os.path.isfile(certpath):
-                #epoch = "%d" % (time.time() * 1000)
-                #p1 = Popen(["openssl", "req", "-new", "-key", self.certkey, "-subj", "/CN=%s" % hostname], stdout=PIPE)
-                #p2 = Popen(["openssl", "x509", "-req", "-days", "3650", "-CA", self.cacert, "-CAkey", self.cakey, "-set_serial", epoch, "-out", certpath], stdin=p1.stdout, stderr=PIPE)
-                #p2.communicate()
                 req = crypto.X509Req()
                 req.get_subject().CN = hostname
                 req.set_pubkey(self.certKey)
@@ -386,9 +383,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     do_HEAD = do_GET
     do_POST = do_GET
 
+    # handle all weird http requests used by apple servers
+    do_PUT = do_GET
+    do_DELETE = do_GET
     do_OPTIONS = do_GET
+    do_MKCOL = do_GET
+    do_MOVE = do_GET
     do_REPORT = do_GET
     do_PROPFIND = do_GET
+    do_PROPPATCH = do_GET
+    do_ORDERPATCH = do_GET
 
     def filter_headers(self, headers):
         # http://tools.ietf.org/html/rfc2616#section-13.5.1
