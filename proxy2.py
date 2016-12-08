@@ -20,11 +20,21 @@ from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from HTMLParser import HTMLParser
 from OpenSSL import crypto
+import fcntl
+import struct
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
 
 # Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, MKCOL, MOVE, REPORT, PROPFIND, PROPPATCH, ORDERPATCH
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
 
 def with_color(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
@@ -367,6 +377,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def relay_streaming(self, res):
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
         for line in res.headers.headers:
+            print(line)
             self.wfile.write(line)
         self.end_headers()
         try:
@@ -562,7 +573,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     print("Proxy set to rewrite device %s with device %s" % (device1, device2))
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
     ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
-    server_address = ('', port)
+    server_address = (get_ip_address('wlp61s0'), port)
 
     try:
         HandlerClass.protocol_version = protocol
