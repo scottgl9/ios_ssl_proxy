@@ -68,13 +68,15 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         if hostname == "gsa.apple.com": return False
-        if hostname == "albert.apple.com": return False
         if hostname == "gsas.apple.com": return False
-        if hostname == "gspe1-ssl.ls.apple.com:": return False
-        if hostname == "gsp10-ssl.apple.com": return False
-        if hostname == "init.itunes.apple.com": return False
-        if hostname == "profile.ess.apple.com": return False
-        if hostname == "xp.apple.com": return False
+        #if hostname == "gspe1-ssl.ls.apple.com:": return False
+        #if hostname == "gsp10-ssl.apple.com": return False
+        #if hostname == "init.itunes.apple.com": return False
+        #if hostname == "profile.ess.apple.com": return False
+        #if hostname == "xp.apple.com": return False
+        #if hostname == "itunes.apple.com": return False
+        #if hostname == "p15-ckdatabase.icloud.com": return False
+        if hostname == "p58-escrowproxy.icloud.com": return False
         return True
 
     @staticmethod
@@ -100,7 +102,8 @@ class ProxyRewrite:
         if field not in headers: return headers
         oldval = headers[field]
 	print(ProxyRewrite.dev2info[attrib])
-        headers[field] = ProxyRewrite.dev2info[attrib]
+        if ProxyRewrite.dev1info[attrib] in headers[field]:
+            headers[field] = ProxyRewrite.dev2info[attrib]
         if headers[field] != oldval:
             print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
@@ -253,7 +256,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
 
-        self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, suppress_ragged_eofs=True)
+        try:
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, suppress_ragged_eofs=True)
+        except ssl.SSLEOFError as e:
+            print("SSLEOFError occurred on "+self.path)
+
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
@@ -294,7 +301,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
 
         req = self
-
         content_length = int(req.headers.get('Content-Length', 0))
         req_body = self.rfile.read(content_length) if content_length else None
 
@@ -377,7 +383,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def relay_streaming(self, res):
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
         for line in res.headers.headers:
-            print(line)
             self.wfile.write(line)
         self.end_headers()
         try:
@@ -461,9 +466,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def print_info(self, req, req_body, res, res_body):
-        if "apple.com" not in self.path and "icloud.com" not in self.path:
-            return
-
         def parse_qsl(s):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
 
@@ -573,7 +575,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     print("Proxy set to rewrite device %s with device %s" % (device1, device2))
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
     ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
-    server_address = (get_ip_address('wlp61s0'), port)
+    server_address = (get_ip_address('wlo1'), port)
 
     try:
         HandlerClass.protocol_version = protocol
