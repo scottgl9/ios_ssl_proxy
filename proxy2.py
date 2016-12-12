@@ -84,6 +84,10 @@ class ProxyRewrite:
         oldbody = body
         attriblist = attribs.split(',')
         for attrib in attriblist:
+        # skip if attribute not in dev1info or dev2info
+            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
+                return body
+
             body = body.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
             if body != oldbody:
                 print("Replacing body %s -> %s" % (oldbody, body))
@@ -91,7 +95,12 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_body(body, headers):
-        if 'Host' in headers and (headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
+        if body == None: return None
+        if 'Host' in headers and (headers['Host'] == 'setup.icloud.com' or headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
+            return body
+        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID')
             return body
@@ -100,6 +109,10 @@ class ProxyRewrite:
     @staticmethod
     def replace_header_field(headers, field, attrib):
         if field not in headers: return headers
+
+        # skip if attribute not in dev1info or dev2info
+        if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
+            return headers
         oldval = headers[field]
 	print(ProxyRewrite.dev2info[attrib])
         if ProxyRewrite.dev1info[attrib] in headers[field]:
@@ -127,6 +140,10 @@ class ProxyRewrite:
 
         attriblist = attribs.split(',')
         for attrib in attriblist:
+            # skip if attribute not in dev1info or dev2info
+            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
+                return headers
+
             val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
                 print("%s: Replacing %s: %s -> %s" % (headers["Host"], attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
@@ -175,7 +192,7 @@ class ProxyRewrite:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("%s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
+        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p29-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("%s -> %s" % (old_path, path))
@@ -220,6 +237,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         self.log_message(format, *args)
 
+    # hack to handle so that we can ignore certain hostnames
+    def handle(self):
+        SO_ORIGINAL_DST = 80
+	dst = self.request.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
+	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
+	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
+	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
+	print('Client %s -> %s:443' % (peername, dst_ip))
+        """Handle multiple requests if necessary."""
+        self.close_connection = 1
+        self.handle_one_request()
+        while not self.close_connection:
+            self.handle_one_request()
+
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
         print(self.path)
@@ -257,9 +288,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, suppress_ragged_eofs=True)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=False) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
             print("SSLEOFError occurred on "+self.path)
+            self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
@@ -575,11 +607,14 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     print("Proxy set to rewrite device %s with device %s" % (device1, device2))
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
     ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
+    #server_address = (get_ip_address('wlp61s0'), port)
     server_address = (get_ip_address('wlo1'), port)
 
     try:
         HandlerClass.protocol_version = protocol
         httpd = ServerClass(server_address, HandlerClass)
+        httpd.allow_reuse_address = True
+        httpd.request_queue_size = 256
 
         sa = httpd.socket.getsockname()
         print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
