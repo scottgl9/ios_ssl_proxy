@@ -80,6 +80,18 @@ class ProxyRewrite:
         return True
 
     @staticmethod
+    def rewrite_body_this_host(hostname):
+        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        if hostname == 'setup.icloud.com': return True
+        if hostname == 'p59-fmf.icloud.com': return True
+        if hostname == 'p51-fmf.icloud.com': return True
+        if hostname == 'p15-fmf.icloud.com': return True
+        if hostname == 'p59-fmfmobile.icloud.com': return True
+        if hostname == 'p51-fmfmobile.icloud.com': return True
+        if hostname == 'p15-fmfmobile.icloud.com': return True
+        return False
+
+    @staticmethod
     def rewrite_body_attribs(body, attribs):
         oldbody = body
         attriblist = attribs.split(',')
@@ -89,8 +101,8 @@ class ProxyRewrite:
                 return body
 
             body = body.replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
-            if body != oldbody:
-                print("Replacing body %s -> %s" % (oldbody, body))
+            if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
+                print("Replacing body value %s -> %s" % (ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib]))
         return body
 
     @staticmethod
@@ -388,17 +400,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 #self.send_error(502)
             return
 
-        content_encoding = res.headers.get('Content-Encoding', 'identity')
-        res_body_plain = self.decode_content_body(res_body, content_encoding)
+        if 'Host' in req.headers and ProxyRewrite.rewrite_body_this_host(req.headers['Host']):
+            content_encoding = res.headers.get('Content-Encoding', 'identity')
+            res_body_plain = self.decode_content_body(res_body, content_encoding)
 
-        res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
-        if res_body_modified is False:
-            self.send_error(403)
-            return
-        elif res_body_modified is not None:
-            res_body_plain = res_body_modified
-            res_body = self.encode_content_body(res_body_plain, content_encoding)
-            res.headers['Content-Length'] = str(len(res_body))
+            res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
+            if res_body_modified is False:
+                self.send_error(403)
+                return
+            elif res_body_modified is not None:
+                res_body_plain = res_body_modified
+                res_body = self.encode_content_body(res_body_plain, content_encoding)
+                res.headers['Content-Length'] = str(len(res_body))
 
         setattr(res, 'headers', self.filter_headers(res.headers))
 
