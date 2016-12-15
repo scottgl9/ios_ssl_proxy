@@ -412,6 +412,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 res_body_plain = res_body_modified
                 res_body = self.encode_content_body(res_body_plain, content_encoding)
                 res.headers['Content-Length'] = str(len(res_body))
+        else:
+            res_body_plain = res_body
 
         setattr(res, 'headers', self.filter_headers(res.headers))
 
@@ -591,6 +593,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print with_color(32, "==== RESPONSE BODY ====\n%s\n" % res_body_text)
 
     def request_handler(self, req, req_body):
+        if ProxyRewrite.dev1info == None or ProxyRewrite.dev2info == None:
+            return
+
         # should be able to safely modify body here:
         req_body_modified = ProxyRewrite.rewrite_body(req_body, req.headers)
         # can probably modify headers here:
@@ -616,10 +621,14 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         print("Usage: %s <port> <device1> <device2>" % sys.argv[0])
         return 0
 
+    if device1 != 'none' and device2 != 'none':
+        print("Proxy set to rewrite device %s with device %s" % (device1, device2))
+        ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
+        ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
+    else:
+        ProxyRewrite.dev1info = None
+        ProxyRewrite.dev2info = None
 
-    print("Proxy set to rewrite device %s with device %s" % (device1, device2))
-    ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
-    ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
     #server_address = (get_ip_address('wlp61s0'), port)
     server_address = (get_ip_address('wlo1'), port)
 
