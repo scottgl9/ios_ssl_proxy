@@ -58,6 +58,7 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 class ProxyRewrite:
     dev1info = dict()
     dev2info = dict()
+    logger = None
 
     @staticmethod
     def load_device_info(sn):
@@ -608,6 +609,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def save_handler(self, req, req_body, res, res_body):
+        ProxyRewrite.logger.write(str(req.headers))
+        ProxyRewrite.logger.write(str(req_body))
+        ProxyRewrite.logger.write(str(res.headers))
+        ProxyRewrite.logger.write(str(res_body))
         self.print_info(req, req_body, res, res_body)
 
 
@@ -629,6 +634,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
+    ProxyRewrite.logger = open("output.log", "wb")
     #server_address = (get_ip_address('wlp61s0'), port)
     server_address = (get_ip_address('wlo1'), port)
 
@@ -644,6 +650,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     except KeyboardInterrupt:
         print '^C received, shutting down proxy'
+        ProxyRewrite.logger.close()
         httpd.socket.close()
 
 
