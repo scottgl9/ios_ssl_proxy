@@ -68,8 +68,8 @@ class ProxyRewrite:
     @staticmethod
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
-        if hostname == "gsa.apple.com": return False
-        if hostname == "gsas.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
+        #if hostname == "gsas.apple.com": return False
         #if hostname == "gspe1-ssl.ls.apple.com:": return False
         #if hostname == "gsp10-ssl.apple.com": return False
         #if hostname == "init.itunes.apple.com": return False
@@ -77,7 +77,7 @@ class ProxyRewrite:
         #if hostname == "xp.apple.com": return False
         #if hostname == "itunes.apple.com": return False
         #if hostname == "p15-ckdatabase.icloud.com": return False
-        if hostname == "p58-escrowproxy.icloud.com": return False
+        #if hostname == "p58-escrowproxy.icloud.com": return False
         return True
 
     @staticmethod
@@ -173,10 +173,10 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
 
         if 'X-MMe-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion,HardwareModel')
 
         if 'x-mme-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductType,ProductVersion')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductType,ProductVersion,HardwareModel')
 
         if 'X-Client-UDID' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
@@ -197,6 +197,10 @@ class ProxyRewrite:
         if 'x-apple-orig-url' in headers:
             apple_url = headers['x-apple-orig-url']
             print("x-apple-orig-url" + apple_url)
+
+        if 'X-Apple-MBS-Lock' in headers:
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-MBS-Lock', 'UniqueDeviceID,UniqueDeviceID')
+
         return headers
 
     @staticmethod
@@ -204,21 +208,21 @@ class ProxyRewrite:
         if 'Host' in headers and (headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("%s -> %s" % (old_path, path))
+                print("replace path %s -> %s" % (old_path, path))
         elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p29-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("%s -> %s" % (old_path, path))
+                print("replace path %s -> %s" % (old_path, path))
         elif 'Host' in headers and (headers['Host'] == 'p59-mobilebackup.icloud.com' or headers['Host'] == 'p51-mobilebackup.icloud.com' or headers['Host'] == 'p15-mobilebackup.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("%s -> %s" % (old_path, path))
+                print("replace path %s -> %s" % (old_path, path))
         elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com' or headers['Host'] == 'gspe1-ssl.ls.apple.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
-                print("%s -> %s" % (old_path, path))
+                print("replace path %s -> %s" % (old_path, path))
         return path
 
 
@@ -355,6 +359,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
 
+        # rewrite URL path if needed
+        req.path = ProxyRewrite.rewrite_path(req.headers, req.path)
+
         req_body_modified = self.request_handler(req, req_body)
         if req_body_modified is False:
             self.send_error(403)
@@ -401,7 +408,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 #self.send_error(502)
             return
 
-        if 'Host' in req.headers and ProxyRewrite.rewrite_body_this_host(req.headers['Host']):
+        if 'Host' in req.headers: # and ProxyRewrite.rewrite_body_this_host(req.headers['Host']):
             content_encoding = res.headers.get('Content-Encoding', 'identity')
             res_body_plain = self.decode_content_body(res_body, content_encoding)
 
@@ -460,7 +467,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def filter_headers(self, headers):
         # http://tools.ietf.org/html/rfc2616#section-13.5.1
-        hop_by_hop = ('connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade')
+        hop_by_hop = ('connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'Proxy-Connection')
         for k in hop_by_hop:
             del headers[k]
 

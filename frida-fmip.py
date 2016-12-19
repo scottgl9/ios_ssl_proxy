@@ -65,6 +65,7 @@ Interceptor.attach(f6, {
 """)
 def on_message(message, data):
 	pname = message['payload']
+	print(pname)
 	fo3.write(pname+"\n")
 	if (pname == "CCCryptorGCMEncrypt"):
 		fo.write(data)
