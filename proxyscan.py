@@ -57,7 +57,6 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 class ProxyRewrite:
     dev1info = dict()
-    dev2info = dict()
     logger = None
 
     @staticmethod
@@ -77,9 +76,9 @@ class ProxyRewrite:
         #if hostname == "profile.ess.apple.com": return False
         #if hostname == "xp.apple.com": return False
         #if hostname == "itunes.apple.com": return False
-        #if hostname == "p15-ckdatabase.icloud.com": return False
-        if hostname == "p57-escrowproxy.icloud.com": return False
-        if hostname == "p57-ckdatabase.icloud.com": return False
+        if hostname == "p59-fmfmobile.icloud.com": return False
+        if hostname == "p59-escrowproxy.icloud.com": return False
+        if hostname == "p59-ckdatabase.icloud.com": return False
         return True
 
     @staticmethod
@@ -97,180 +96,23 @@ class ProxyRewrite:
         if hostname == 'p15-fmfmobile.icloud.com': return True
         return False
 
+
     @staticmethod
-    def rewrite_body_attribs(body, attribs):
-        oldbody = body
+    def scan_headers_attribs(headers, attribs):
         attriblist = attribs.split(',')
         for attrib in attriblist:
-        # skip if attribute not in dev1info or dev2info
-            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-                return body
-
-            body = body.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
-            if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
-                print("Replacing body value %s -> %s" % (str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
-        return body
+            for (key, value) in headers.items():
+                if str(ProxyRewrite.dev1info[attrib]) in value:
+                    print("%s: %s" % (key, value))
 
     @staticmethod
-    def rewrite_body(body, headers):
-        if body == None: return None
-        if 'Host' in headers and headers['Host'] == 'xp.icloud.com':
-            old_body = body
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,HardwareModel')
-            return body
-        if 'Host' in headers and (headers['Host'] == 'setup.icloud.com' or headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p57-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
-            old_body = body
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier')
-            return body
-        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p57-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
-            old_body = body
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier')
-            return body
-        return None
-
-    @staticmethod
-    def replace_header_field(headers, field, attrib):
-        if field not in headers: return headers
-
-        # skip if attribute not in dev1info or dev2info
-        if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-            return headers
-        oldval = headers[field]
-	print(ProxyRewrite.dev2info[attrib])
-        if ProxyRewrite.dev1info[attrib] in headers[field]:
-            headers[field] = ProxyRewrite.dev2info[attrib]
-        if headers[field] != oldval:
-            print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
-        return headers
-
-    @staticmethod
-    def rewrite_header_field(headers, field, attribs):
-        if field not in headers: return headers
-        oldval = headers[field]
+    def scan_body_attribs(body, attribs):
+        if body == None: return
         attriblist = attribs.split(',')
         for attrib in attriblist:
-            headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
-            if headers[field] != oldval:
-                print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
-        return headers
-
-    @staticmethod
-    def b64_rewrite_header_field(headers, field, attribs):
-        if field not in headers: return headers
-        val = bytearray(base64.b64decode(headers[field]))
-        oldval = val
-
-        attriblist = attribs.split(',')
-        for attrib in attriblist:
-            # skip if attribute not in dev1info or dev2info
-            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-                return headers
-
-            val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
-            if headers[field] != oldval:
-                print("%s: Replacing %s: %s -> %s" % (headers["Host"], attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
-
-        headers[field] = base64.b64encode(val)
-        return headers
-
-    @staticmethod
-    def rewrite_headers(headers, path):
-        if 'X-Mme-Nas-Qualify' in headers:
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'DeviceColor,EnclosureColor,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID')
-
-        if 'x-mme-nas-qualify' in headers:
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'DeviceColor,EnclosureColor,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID')
-
-        if 'User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
-
-        if 'user-agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
-
-        if 'X-MMe-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion,HardwareModel')
-
-        if 'x-mme-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductType,ProductVersion,HardwareModel')
-
-        if 'X-Client-UDID' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
-
-        if 'x-client-udid' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'x-client-udid', 'UniqueDeviceID')
-
-        if 'X-Mme-Device-Id' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Mme-Device-Id', 'UniqueDeviceID')
-
-        if 'x-mme-device-id' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Mme-Device-Id', 'UniqueDeviceID')
-
-        if 'Device-UDID' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'Device-UDID', 'UniqueDeviceID')
-
-        if 'device-udid' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'device-udid', 'UniqueDeviceID')
-
-        if 'X-AppleID-Device-Udid' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-AppleID-Device-Udid', 'UniqueDeviceID')
-
-        if 'x-appleid-device-udid' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-AppleID-Device-Udid', 'UniqueDeviceID')
-
-
-        if 'X-Apple-I-SRL-NO' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-I-SRL-NO', 'SerialNumber')
-
-        if 'x-apple-i-srl-no' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'x-apple-i-srl-no', 'SerialNumber')
-
-        if 'X-Apple-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion,ProductType,ProductVersion')
-
-        if 'x-apple-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductType,ProductVersion')
-
-        if 'x-apple-translated-wo-url' in headers:
-            apple_url = headers['x-apple-translated-wo-url']
-            print("x-apple-translated-wo-url" + apple_url)
-
-        if 'x-apple-orig-url' in headers:
-            apple_url = headers['x-apple-orig-url']
-            print("x-apple-orig-url" + apple_url)
-
-        if 'X-Apple-MBS-Lock' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-MBS-Lock', 'UniqueDeviceID,UniqueDeviceID')
-
-        if 'x-apple-mbs-lock' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
-
-        return headers
-
-    @staticmethod
-    def rewrite_path(headers, path):
-        if 'Host' in headers and (headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p57-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
-                old_path = path
-                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p57-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p29-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
-                old_path = path
-                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-mobilebackup.icloud.com' or headers['Host'] == 'p57-mobilebackup.icloud.com' or ['Host'] == 'p51-mobilebackup.icloud.com' or headers['Host'] == 'p15-mobilebackup.icloud.com'):
-                old_path = path
-                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-quota.icloud.com' or headers['Host'] == 'p57-quota.icloud.com' or ['Host'] == 'p51-quota.icloud.com' or headers['Host'] == 'p15-quota.icloud.com'):
-                old_path = path
-                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com' or headers['Host'] == 'gspe1-ssl.ls.apple.com'):
-                old_path = path
-                path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
-                path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
-                path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
-                print("replace path %s -> %s" % (old_path, path))
-        return path
+            if str(ProxyRewrite.dev1info[attrib]) in body:
+                print(str(body))
+                return
 
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
@@ -308,7 +150,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
 	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
 	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-	print('Client %s -> %s:443' % (peername, dst_ip))
         """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
@@ -405,9 +246,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 req.path = "https://%s%s" % (req.headers['Host'], req.path)
             else:
                 req.path = "http://%s%s" % (req.headers['Host'], req.path)
-
-        # rewrite URL path if needed
-        req.path = ProxyRewrite.rewrite_path(req.headers, req.path)
 
         req_body_modified = self.request_handler(req, req_body)
         if req_body_modified is False:
@@ -648,45 +486,41 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print with_color(32, "==== RESPONSE BODY ====\n%s\n" % res_body_text)
 
     def request_handler(self, req, req_body):
-        if ProxyRewrite.dev1info == None or ProxyRewrite.dev2info == None:
+        if ProxyRewrite.dev1info == None:
             return
 
-        # should be able to safely modify body here:
-        req_body_modified = ProxyRewrite.rewrite_body(req_body, req.headers)
-        # can probably modify headers here:
-        req.headers = ProxyRewrite.rewrite_headers(req.headers, req.path)
-        # rewrite URL path if needed
-        req.path = ProxyRewrite.rewrite_path(req.headers, req.path)
-        if (req_body_modified != None): return req_body_modified
+        ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
 
     def response_handler(self, req, req_body, res, res_body):
         pass
 
     def save_handler(self, req, req_body, res, res_body):
-        ProxyRewrite.logger.write(str(req.headers))
-        ProxyRewrite.logger.write(str(req_body))
-        ProxyRewrite.logger.write(str(res.headers))
-        ProxyRewrite.logger.write(str(res_body))
-        self.print_info(req, req_body, res, res_body)
+        def parse_qsl(s):
+            return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
+
+        req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
+
+        print with_color(33, req_header_text)
+
+        #ProxyRewrite.logger.write(str(req.headers))
+        #ProxyRewrite.logger.write(str(req_body))
+        #ProxyRewrite.logger.write(str(res.headers))
+        #ProxyRewrite.logger.write(str(res_body))
+        #self.print_info(req, req_body, res, res_body)
 
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[3:]:
+    if sys.argv[2:]:
         port = int(sys.argv[1])
         device1 = sys.argv[2]
-        device2 = sys.argv[3]
 
     else:
-        print("Usage: %s <port> <device1> <device2>" % sys.argv[0])
+        print("Usage: %s <port> <device>" % sys.argv[0])
         return 0
 
-    if device1 != 'none' and device2 != 'none':
-        print("Proxy set to rewrite device %s with device %s" % (device1, device2))
-        ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
-        ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
-    else:
-        ProxyRewrite.dev1info = None
-        ProxyRewrite.dev2info = None
+    print("Proxy set to scan for device %s" % (device1))
+    ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
 
     ProxyRewrite.logger = open("output.log", "wb")
     #server_address = (get_ip_address('wlp61s0'), port)
