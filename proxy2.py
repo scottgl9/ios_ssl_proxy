@@ -70,6 +70,8 @@ class ProxyRewrite:
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         if hostname == "gsa.apple.com": return False
         if hostname == "ppq.apple.com": return False
+        if hostname == "albert.apple.com": return False
+        if hostname == "static.ips.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         #if hostname == "gspe1-ssl.ls.apple.com:": return False
         #if hostname == "gsp10-ssl.apple.com": return False
@@ -77,9 +79,14 @@ class ProxyRewrite:
         #if hostname == "profile.ess.apple.com": return False
         #if hostname == "xp.apple.com": return False
         #if hostname == "itunes.apple.com": return False
-        #if hostname == "p15-ckdatabase.icloud.com": return False
+        if hostname == "p59-escrowproxy.icloud.com": return False
+        if hostname == "p59-ckdatabase.icloud.com": return False
         if hostname == "p57-escrowproxy.icloud.com": return False
         if hostname == "p57-ckdatabase.icloud.com": return False
+        if hostname == "p51-escrowproxy.icloud.com": return False
+        if hostname == "p51-ckdatabase.icloud.com": return False
+        if hostname == "p15-escrowproxy.icloud.com": return False
+        if hostname == "p15-ckdatabase.icloud.com": return False
         return True
 
     @staticmethod
@@ -126,6 +133,10 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier')
             return body
+        elif 'Host' in headers and headers['Host'] == 'gsp10-ssl.ls.apple.com':
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion')
+            return body
         return None
 
     @staticmethod
@@ -136,7 +147,7 @@ class ProxyRewrite:
         if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
             return headers
         oldval = headers[field]
-	print(ProxyRewrite.dev2info[attrib])
+        print(ProxyRewrite.dev2info[attrib])
         if ProxyRewrite.dev1info[attrib] in headers[field]:
             headers[field] = ProxyRewrite.dev2info[attrib]
         if headers[field] != oldval:
@@ -217,7 +228,6 @@ class ProxyRewrite:
         if 'x-appleid-device-udid' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-AppleID-Device-Udid', 'UniqueDeviceID')
 
-
         if 'X-Apple-I-SRL-NO' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-I-SRL-NO', 'SerialNumber')
 
@@ -229,6 +239,12 @@ class ProxyRewrite:
 
         if 'x-apple-client-info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductType,ProductVersion')
+
+        if 'X-Client-Device-Color' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Color', 'DeviceColor')
+
+        if 'X-Client-Device-Enclosure-Color' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Enclosure-Color', 'EnclosureColor')
 
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
@@ -304,12 +320,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     # hack to handle so that we can ignore certain hostnames
     def handle(self):
         SO_ORIGINAL_DST = 80
-	dst = self.request.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
-	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
-	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
-	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-	print('Client %s -> %s:443' % (peername, dst_ip))
-        """Handle multiple requests if necessary."""
+        dst = self.request.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
+        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
+        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
+        peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
+        print('Client %s -> %s:443' % (peername, dst_ip))
+        #    """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
         while not self.close_connection:
@@ -317,12 +333,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
-        print(self.path)
-        if ProxyRewrite.intercept_this_host(hostname) == False:
-            self.connect_relay()
-        elif os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
+        if 'Proxy-Connection' in self.headers:
+            del self.headers['Proxy-Connection']
+
+        if ProxyRewrite.dev1info != None and ProxyRewrite.dev2info != None:
+            self.headers = ProxyRewrite.rewrite_headers(self.headers, '')
+
+        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
+            print(self.headers)
             self.connect_relay()
 
     def connect_intercept(self):
@@ -360,7 +380,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
-        conntype = self.headers.get('Proxy-Connection', '')
+        conntype = self.headers.get('Connection', '')
         if self.protocol_version == "HTTP/1.1" and conntype.lower() != 'close':
             self.close_connection = 0
         else:
