@@ -22,6 +22,7 @@ from HTMLParser import HTMLParser
 from OpenSSL import crypto
 import fcntl
 import struct
+import binascii
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -69,6 +70,8 @@ class ProxyRewrite:
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         if hostname == "gsa.apple.com": return False
         if hostname == "ppq.apple.com": return False
+        if hostname == "albert.apple.com": return False
+        if hostname == "static.ips.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         #if hostname == "gspe1-ssl.ls.apple.com:": return False
         #if hostname == "gsp10-ssl.apple.com": return False
@@ -76,26 +79,15 @@ class ProxyRewrite:
         #if hostname == "profile.ess.apple.com": return False
         #if hostname == "xp.apple.com": return False
         #if hostname == "itunes.apple.com": return False
-        if hostname == "p59-fmfmobile.icloud.com": return False
-        if hostname == "p59-escrowproxy.icloud.com": return False
-        if hostname == "p59-ckdatabase.icloud.com": return False
+        #if hostname == "p59-escrowproxy.icloud.com": return False
+        #if hostname == "p59-ckdatabase.icloud.com": return False
+        #if hostname == "p57-escrowproxy.icloud.com": return False
+        #if hostname == "p57-ckdatabase.icloud.com": return False
+        #if hostname == "p51-escrowproxy.icloud.com": return False
+        #if hostname == "p51-ckdatabase.icloud.com": return False
+        #if hostname == "p15-escrowproxy.icloud.com": return False
+        #if hostname == "p15-ckdatabase.icloud.com": return False
         return True
-
-    @staticmethod
-    def rewrite_body_this_host(hostname):
-        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
-        if hostname == 'xp.apple.com': return True
-        if hostname == 'setup.icloud.com': return True
-        if hostname == 'p59-fmf.icloud.com': return True
-        if hostname == 'p57-fmf.icloud.com': return True
-        if hostname == 'p51-fmf.icloud.com': return True
-        if hostname == 'p15-fmf.icloud.com': return True
-        if hostname == 'p59-fmfmobile.icloud.com': return True
-        if hostname == 'p57-fmfmobile.icloud.com': return True
-        if hostname == 'p51-fmfmobile.icloud.com': return True
-        if hostname == 'p15-fmfmobile.icloud.com': return True
-        return False
-
 
     @staticmethod
     def scan_headers_attribs(headers, attribs):
@@ -106,13 +98,29 @@ class ProxyRewrite:
                     print("%s: %s" % (key, value))
 
     @staticmethod
-    def scan_body_attribs(body, attribs):
+    def scan_body_attribs(body, attribs, hostname):
         if body == None: return
         attriblist = attribs.split(',')
         for attrib in attriblist:
             if str(ProxyRewrite.dev1info[attrib]) in body:
+                print('Host: '+hostname)
                 print(str(body))
                 return
+
+    @staticmethod
+    def scan_body_attrib_binary(body, attrib, hostname):
+        if body == None: return
+        binstr = binascii.unhexlify(ProxyRewrite.dev1info[attrib])
+        encoded_data = base64.b64encode(binstr).replace('=', '')
+
+        if binstr in body:
+            print('Host: ' +hostname)
+            print(str(body))
+            return
+        if encoded_data in body:
+            print('Host: ' +hostname)
+            print(str(body))
+            return
 
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
@@ -158,12 +166,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
-        print(self.path)
-        if ProxyRewrite.intercept_this_host(hostname) == False:
-            self.connect_relay()
-        elif os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
+        if 'Proxy-Connection' in self.headers:
+            del self.headers['Proxy-Connection']
+
+        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
+            print(self.headers)
             self.connect_relay()
 
     def connect_intercept(self):
@@ -201,7 +210,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
-        conntype = self.headers.get('Proxy-Connection', '')
+        conntype = self.headers.get('Connection', '')
         if self.protocol_version == "HTTP/1.1" and conntype.lower() != 'close':
             self.close_connection = 0
         else:
@@ -236,6 +245,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if self.path == 'http://proxy2.test/':
             self.send_cacert()
             return
+
+        if 'Proxy-Connection' in self.headers:
+            del self.headers['Proxy-Connection']
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
@@ -293,20 +305,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 #self.send_error(502)
             return
 
-        if 'Host' in req.headers: # and ProxyRewrite.rewrite_body_this_host(req.headers['Host']):
-            content_encoding = res.headers.get('Content-Encoding', 'identity')
-            res_body_plain = self.decode_content_body(res_body, content_encoding)
+        content_encoding = res.headers.get('Content-Encoding', 'identity')
+        res_body_plain = self.decode_content_body(res_body, content_encoding)
 
-            res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
-            if res_body_modified is False:
-                self.send_error(403)
-                return
-            elif res_body_modified is not None:
-                res_body_plain = res_body_modified
-                res_body = self.encode_content_body(res_body_plain, content_encoding)
-                res.headers['Content-Length'] = str(len(res_body))
-        else:
-            res_body_plain = res_body
+        res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
+        if res_body_modified is False:
+            self.send_error(403)
+            return
+        elif res_body_modified is not None:
+            res_body_plain = res_body_modified
+            res_body = self.encode_content_body(res_body_plain, content_encoding)
+            res.headers['Content-Length'] = str(len(res_body))
 
         setattr(res, 'headers', self.filter_headers(res.headers))
 
@@ -489,8 +498,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if ProxyRewrite.dev1info == None:
             return
 
-        ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
-        ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        #DeviceGUID
+        ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+
+        hostname = ''
+        if 'Host' in req.headers:
+            hostname = req.headers['Host']
+
+        ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        ProxyRewrite.scan_body_attrib_binary(req_body, 'UniqueDeviceID', hostname)
+        ProxyRewrite.scan_body_attrib_binary(req_body, 'DeviceGUID', hostname)
 
     def response_handler(self, req, req_body, res, res_body):
         pass

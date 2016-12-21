@@ -137,6 +137,15 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion')
             return body
+        elif 'Host' in headers and headers['Host'] == 'sse-ws.apple.com':
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,SerialNumber,ProductType,ProductVersion')
+            return body
+        elif 'Host'  in headers and headers['Host'] == 'gs-loc.apple.com':
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion')
+            return body
+
         return None
 
     @staticmethod
@@ -416,6 +425,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_cacert()
             return
 
+        if 'Proxy-Connection' in self.headers:
+            del self.headers['Proxy-Connection']
+
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
         req_body = self.rfile.read(content_length) if content_length else None
@@ -452,6 +464,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 else:
                     self.tls.conns[origin] = httplib.HTTPConnection(netloc, timeout=self.timeout)
             conn = self.tls.conns[origin]
+
             conn.request(self.command, path, req_body, dict(req.headers))
             res = conn.getresponse()
 
@@ -475,20 +488,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 #self.send_error(502)
             return
 
-        if 'Host' in req.headers: # and ProxyRewrite.rewrite_body_this_host(req.headers['Host']):
-            content_encoding = res.headers.get('Content-Encoding', 'identity')
-            res_body_plain = self.decode_content_body(res_body, content_encoding)
+        content_encoding = res.headers.get('Content-Encoding', 'identity')
+        res_body_plain = self.decode_content_body(res_body, content_encoding)
 
-            res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
-            if res_body_modified is False:
-                self.send_error(403)
-                return
-            elif res_body_modified is not None:
-                res_body_plain = res_body_modified
-                res_body = self.encode_content_body(res_body_plain, content_encoding)
-                res.headers['Content-Length'] = str(len(res_body))
-        else:
-            res_body_plain = res_body
+        res_body_modified = self.response_handler(req, req_body, res, res_body_plain)
+        if res_body_modified is False:
+            self.send_error(403)
+            return
+        elif res_body_modified is not None:
+            res_body_plain = res_body_modified
+            res_body = self.encode_content_body(res_body_plain, content_encoding)
+            res.headers['Content-Length'] = str(len(res_body))
 
         setattr(res, 'headers', self.filter_headers(res.headers))
 
