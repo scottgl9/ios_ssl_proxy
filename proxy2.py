@@ -693,6 +693,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def save_handler(self, req, req_body, res, res_body):
+        ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
         ProxyRewrite.logger.write(str(req.headers))
         ProxyRewrite.logger.write(str(req_body))
         ProxyRewrite.logger.write(str(res.headers))

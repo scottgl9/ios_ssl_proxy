@@ -98,12 +98,21 @@ class ProxyRewrite:
                     print("%s: %s" % (key, value))
 
     @staticmethod
+    def scan_headers_attrib_binary_b64(headers, attrib):
+        binstr = binascii.unhexlify(ProxyRewrite.dev1info[attrib])
+        encoded_data = base64.b64encode(binstr).replace('=', '')
+
+        for (key, value) in headers.items():
+            if encoded_data in value:
+                print("%s: %s" % (key, value))
+
+    @staticmethod
     def scan_body_attribs(body, attribs, hostname):
         if body == None: return
         attriblist = attribs.split(',')
         for attrib in attriblist:
             if str(ProxyRewrite.dev1info[attrib]) in body:
-                print('Host: '+hostname)
+                print('Host: %s (%s)' % (hostname, attrib))
                 print(str(body))
                 return
 
@@ -114,11 +123,11 @@ class ProxyRewrite:
         encoded_data = base64.b64encode(binstr).replace('=', '')
 
         if binstr in body:
-            print('Host: ' +hostname)
+            print('Host: %s (%s)' % (hostname, attrib))
             print(str(body))
             return
         if encoded_data in body:
-            print('Host: ' +hostname)
+            print('Host: %s (%s)' % (hostname, attrib))
             print(str(body))
             return
 
@@ -498,19 +507,37 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if ProxyRewrite.dev1info == None:
             return
 
-        #DeviceGUID
-        ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        ProxyRewrite.scan_headers_attribs(req.headers,'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        #ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'UniqueDeviceID')
+        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'DeviceGUID')
+
 
         hostname = ''
         if 'Host' in req.headers:
             hostname = req.headers['Host']
 
-        ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        ProxyRewrite.scan_body_attribs(req_body, 'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        #ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+
         ProxyRewrite.scan_body_attrib_binary(req_body, 'UniqueDeviceID', hostname)
         ProxyRewrite.scan_body_attrib_binary(req_body, 'DeviceGUID', hostname)
 
+
     def response_handler(self, req, req_body, res, res_body):
-        pass
+        ProxyRewrite.scan_headers_attribs(res.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'UniqueDeviceID')
+        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'DeviceGUID')
+
+        hostname = ''
+        if 'Host' in req.headers:
+            hostname = req.headers['Host']
+
+        ProxyRewrite.scan_body_attribs(res_body, 'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        #ProxyRewrite.scan_body_attribs(res_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        ProxyRewrite.scan_body_attrib_binary(res_body, 'UniqueDeviceID', hostname)
+        ProxyRewrite.scan_body_attrib_binary(res_body, 'DeviceGUID', hostname)
+
 
     def save_handler(self, req, req_body, res, res_body):
         def parse_qsl(s):
