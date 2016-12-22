@@ -507,21 +507,22 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if ProxyRewrite.dev1info == None:
             return
 
-        ProxyRewrite.scan_headers_attribs(req.headers,'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
+        ProxyRewrite.scan_headers_attribs(req.headers,'BasebandMasterKeyHash,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
         #ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
         ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'UniqueDeviceID')
         ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'DeviceGUID')
-
+        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'BasebandMasterKeyHash')
 
         hostname = ''
         if 'Host' in req.headers:
             hostname = req.headers['Host']
 
-        ProxyRewrite.scan_body_attribs(req_body, 'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        ProxyRewrite.scan_body_attribs(req_body, 'BasebandMasterKeyHash,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
         #ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
 
         ProxyRewrite.scan_body_attrib_binary(req_body, 'UniqueDeviceID', hostname)
         ProxyRewrite.scan_body_attrib_binary(req_body, 'DeviceGUID', hostname)
+        ProxyRewrite.scan_body_attrib_binary(req.headers, 'BasebandMasterKeyHash', hostname)
 
 
     def response_handler(self, req, req_body, res, res_body):
@@ -547,12 +548,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         print with_color(33, req_header_text)
 
-        #ProxyRewrite.logger.write(str(req.headers))
-        #ProxyRewrite.logger.write(str(req_body))
-        #ProxyRewrite.logger.write(str(res.headers))
-        #ProxyRewrite.logger.write(str(res_body))
-        #self.print_info(req, req_body, res, res_body)
+        hostname = ''
+        if 'Host' in req.headers:
+            hostname = req.headers['Host']
 
+        ProxyRewrite.logger = open(hostname+".log", "ab")
+        ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
+        ProxyRewrite.logger.write(str(req.headers))
+        ProxyRewrite.logger.write(str(req_body))
+        ProxyRewrite.logger.write(str(res.headers))
+        ProxyRewrite.logger.write(str(res_body))
+        ProxyRewrite.logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     if sys.argv[2:]:
@@ -566,7 +572,6 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     print("Proxy set to scan for device %s" % (device1))
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
 
-    ProxyRewrite.logger = open("output.log", "wb")
     #server_address = (get_ip_address('wlp61s0'), port)
     server_address = (get_ip_address('wlo1'), port)
 
@@ -582,7 +587,6 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     except KeyboardInterrupt:
         print '^C received, shutting down proxy'
-        ProxyRewrite.logger.close()
         httpd.socket.close()
 
 

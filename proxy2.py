@@ -68,10 +68,12 @@ class ProxyRewrite:
     @staticmethod
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        hostname = hostname.replace(':443','')
         if hostname == "gsa.apple.com": return False
         if hostname == "ppq.apple.com": return False
         if hostname == "albert.apple.com": return False
         if hostname == "static.ips.apple.com": return False
+        if hostname == "captive.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         #if hostname == "gspe1-ssl.ls.apple.com:": return False
         #if hostname == "gsp10-ssl.apple.com": return False
@@ -92,6 +94,7 @@ class ProxyRewrite:
     @staticmethod
     def rewrite_body_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        hostname = hostname.replace(':443','')
         if hostname == 'xp.apple.com': return True
         if hostname == 'setup.icloud.com': return True
         if hostname == 'p59-fmf.icloud.com': return True
@@ -121,27 +124,33 @@ class ProxyRewrite:
     @staticmethod
     def rewrite_body(body, headers):
         if body == None: return None
-        if 'Host' in headers and headers['Host'] == 'xp.icloud.com':
+
+        hostname = ''
+        if 'Host' in headers:
+            hostname = headers['Host']
+            hostname = hostname.replace(':443','')
+
+        if hostname == 'xp.icloud.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,HardwareModel')
             return body
-        if 'Host' in headers and (headers['Host'] == 'setup.icloud.com' or headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p57-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
+        elif hostname == 'setup.icloud.com' or hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p15-fmf.icloud.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier')
             return body
-        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p57-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
+        elif hostname == 'p59-fmfmobile.icloud.com' or hostname == 'p57-fmfmobile.icloud.com' or hostname == 'p51-fmfmobile.icloud.com' or hostname == 'p15-fmfmobile.icloud.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier')
             return body
-        elif 'Host' in headers and headers['Host'] == 'gsp10-ssl.ls.apple.com':
+        elif hostname == 'gsp10-ssl.ls.apple.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion')
             return body
-        elif 'Host' in headers and headers['Host'] == 'sse-ws.apple.com':
+        elif hostname == 'sse-ws.apple.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,SerialNumber,ProductType,ProductVersion')
             return body
-        elif 'Host'  in headers and headers['Host'] == 'gs-loc.apple.com':
+        elif hostname == 'gs-loc.apple.com':
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion')
             return body
@@ -273,23 +282,28 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_path(headers, path):
-        if 'Host' in headers and (headers['Host'] == 'p59-fmf.icloud.com' or headers['Host'] == 'p57-fmf.icloud.com' or headers['Host'] == 'p51-fmf.icloud.com' or headers['Host'] == 'p15-fmf.icloud.com'):
+        hostname = ''
+        if 'Host' in headers:
+            hostname = headers['Host']
+            hostname = hostname.replace(':443','')
+
+        if (hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p29-fmfmobile.icloud.com' or hostname == 'p15-fmf.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-fmfmobile.icloud.com' or headers['Host'] == 'p57-fmfmobile.icloud.com' or headers['Host'] == 'p51-fmfmobile.icloud.com' or headers['Host'] == 'p29-fmfmobile.icloud.com' or headers['Host'] == 'p15-fmfmobile.icloud.com'):
+        elif (hostname == 'p59-fmfmobile.icloud.com' or hostname == 'p57-fmfmobile.icloud.com' or hostname == 'p51-fmfmobile.icloud.com' or hostname == 'p29-fmfmobile.icloud.com' or hostname == 'p15-fmfmobile.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-mobilebackup.icloud.com' or headers['Host'] == 'p57-mobilebackup.icloud.com' or ['Host'] == 'p51-mobilebackup.icloud.com' or headers['Host'] == 'p15-mobilebackup.icloud.com'):
+        elif (hostname == 'p59-mobilebackup.icloud.com' or hostname == 'p57-mobilebackup.icloud.com' or ['Host'] == 'p51-mobilebackup.icloud.com' or hostname == 'p29-mobilebackup.icloud.com' or hostname == 'p15-mobilebackup.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'p59-quota.icloud.com' or headers['Host'] == 'p57-quota.icloud.com' or ['Host'] == 'p51-quota.icloud.com' or headers['Host'] == 'p15-quota.icloud.com'):
+        elif (hostname == 'p59-quota.icloud.com' or hostname == 'p57-quota.icloud.com' or ['Host'] == 'p51-quota.icloud.com' or hostname == 'p29-quota.icloud.com' or hostname == 'p15-quota.icloud.com'):
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("replace path %s -> %s" % (old_path, path))
-        elif 'Host' in headers and (headers['Host'] == 'gspe35-ssl.ls.apple.com' or headers['Host'] == 'gspe1-ssl.ls.apple.com'):
+        elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
