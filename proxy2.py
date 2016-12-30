@@ -142,7 +142,7 @@ class ProxyRewrite:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity')
+            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity')
             return body
         elif hostname == 'p62-fmfmobile.icloud.com' or hostname == 'p59-fmfmobile.icloud.com' or hostname == 'p57-fmfmobile.icloud.com' or hostname == 'p51-fmfmobile.icloud.com' or hostname == 'p31-fmfmobile.icloud.com' or hostname == 'p29-fmfmobile.icloud.com' or hostname == 'p15-fmfmobile.icloud.com':
             old_body = body
@@ -150,7 +150,7 @@ class ProxyRewrite:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
+            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
             # replace meDeviceId
             d1udid_encoded = base64.b64encode(ProxyRewrite.dev1info['UniqueDeviceID'])
             d2udid_encoded = base64.b64encode(ProxyRewrite.dev2info['UniqueDeviceID'])
@@ -162,7 +162,7 @@ class ProxyRewrite:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
+            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
             return body
         elif hostname == 'p62-ckdevice.icloud.com' or  hostname == 'p59-ckdevice.icloud.com' or hostname == 'p57-ckdevice.icloud.com' or hostname == 'p51-ckdevice.icloud.com' or hostname == 'p15-ckdevice.icloud.com':
             old_body = body
@@ -247,14 +247,14 @@ class ProxyRewrite:
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'InternationalMobileEquipmentIdentity')
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'MobileEquipmentIdentifier')
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
+            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'aps-token,DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
 
         if 'x-mme-nas-qualify' in headers:
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'InternationalMobileEquipmentIdentity')
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'MobileEquipmentIdentifier')
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
+            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'aps-token,DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
 
         if 'User-Agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
@@ -310,6 +310,12 @@ class ProxyRewrite:
         if 'X-Client-Device-Enclosure-Color' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Enclosure-Color', 'EnclosureColor')
 
+        if 'X-Apple-DAV-Pushtoken' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
+
+        if 'x-apple-dav-pushtoken' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
+
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
             print("x-apple-translated-wo-url" + apple_url)
@@ -324,8 +330,11 @@ class ProxyRewrite:
         if 'x-apple-mbs-lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
+        if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
+
         if 'x-apple-mme-sharedstreams-client-token' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
 
         return headers
 
