@@ -115,9 +115,7 @@ class ProxyRewrite:
         attriblist = attribs.split(',')
         for attrib in attriblist:
         # skip if attribute not in dev1info or dev2info
-            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-                return body
-
+            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
             body = body.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
                 print("Replacing body value %s -> %s" % (str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
@@ -138,31 +136,49 @@ class ProxyRewrite:
             return body
         elif hostname == 'setup.icloud.com' or hostname == 'p62-fmf.icloud.com' or hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p31-fmf.icloud.com' or hostname == 'p29-fmf.icloud.com' or hostname == 'p15-fmf.icloud.com':
             old_body = body
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity')
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+
+            body = ProxyRewrite.rewrite_body_attribs(body, attribs)
             return body
         elif hostname == 'p62-fmfmobile.icloud.com' or hostname == 'p59-fmfmobile.icloud.com' or hostname == 'p57-fmfmobile.icloud.com' or hostname == 'p51-fmfmobile.icloud.com' or hostname == 'p31-fmfmobile.icloud.com' or hostname == 'p29-fmfmobile.icloud.com' or hostname == 'p15-fmfmobile.icloud.com':
             old_body = body
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            body = ProxyRewrite.rewrite_body_attribs(body, attribs)
             # replace meDeviceId
             d1udid_encoded = base64.b64encode(ProxyRewrite.dev1info['UniqueDeviceID'])
             d2udid_encoded = base64.b64encode(ProxyRewrite.dev2info['UniqueDeviceID'])
             body = body.replace(d1udid_encoded, d2udid_encoded)
             return body
+        elif hostname == 'p62-keyvalueservice.icloud.com' or hostname == 'p59-keyvalueservice.icloud.com' or hostname == 'p57-keyvalueservice.icloud.com' or hostname == 'p51-keyvalueservice.icloud.com' or hostname == 'p31-keyvalueservice.icloud.com' or hostname == 'p29-keyvalueservice.icloud.com' or hostname == 'p15-keyvalueservice.icloud.com':
+            old_body = body
+            # replace apns-token
+            if 'aps-token' in ProxyRewrite.dev1info:
+                d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
+                d2apns_encoded = base64.b64encode(str(ProxyRewrite.dev2info['aps-token']).encode())
+                body = body.replace(d1apns_encoded, d2apns_encoded)
+            return body
         elif hostname == 'p62-quota.icloud.com' or hostname == 'p59-quota.icloud.com' or hostname == 'p57-quota.icloud.com' or hostname == 'p51-quota.icloud.com' or hostname == 'p31-quota.icloud.com' or hostname == 'p29-quota.icloud.com' or hostname == 'p15-quota.icloud.com':
             old_body = body
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'InternationalMobileEquipmentIdentity')
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                body = ProxyRewrite.rewrite_body_attribs(body, 'MobileEquipmentIdentifier')
-            body = ProxyRewrite.rewrite_body_attribs(body, 'aps-token,BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass')
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            body = ProxyRewrite.rewrite_body_attribs(body, attribs)
             return body
         elif hostname == 'p62-ckdevice.icloud.com' or  hostname == 'p59-ckdevice.icloud.com' or hostname == 'p57-ckdevice.icloud.com' or hostname == 'p51-ckdevice.icloud.com' or hostname == 'p15-ckdevice.icloud.com':
             old_body = body
@@ -200,12 +216,13 @@ class ProxyRewrite:
         if field not in headers: return headers
 
         # skip if attribute not in dev1info or dev2info
-        if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-            return headers
+        if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): return headers
         oldval = headers[field]
         print(ProxyRewrite.dev2info[attrib])
         if ProxyRewrite.dev1info[attrib] in headers[field]:
             headers[field] = ProxyRewrite.dev2info[attrib]
+        elif str(ProxyRewrite.dev1info[attrib]).lower() in headers[field]:
+            headers[field] = str(ProxyRewrite.dev2info[attrib]).lower()
         if headers[field] != oldval:
             print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
@@ -230,9 +247,7 @@ class ProxyRewrite:
         attriblist = attribs.split(',')
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info
-            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys():
-                return headers
-
+            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
             val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
                 print("%s: Replacing %s: %s -> %s" % (headers["Host"], attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
@@ -243,30 +258,36 @@ class ProxyRewrite:
     @staticmethod
     def rewrite_headers(headers, path):
         if 'X-Mme-Nas-Qualify' in headers:
+            attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'InternationalMobileEquipmentIdentity')
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'MobileEquipmentIdentifier')
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', 'aps-token,DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
 
         if 'x-mme-nas-qualify' in headers:
+            attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'InternationalMobileEquipmentIdentity')
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'MobileEquipmentIdentifier')
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', 'aps-token,DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass')
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
 
         if 'User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2')
 
         if 'user-agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion,ProductVersion2')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2')
 
         if 'X-MMe-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductType,ProductVersion,HardwareModel,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
 
         if 'x-mme-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductType,ProductVersion,HardwareModel,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
 
         if 'X-Client-UDID' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
@@ -299,10 +320,10 @@ class ProxyRewrite:
             headers = ProxyRewrite.replace_header_field(headers, 'x-apple-i-srl-no', 'SerialNumber')
 
         if 'X-Apple-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion,ProductType,ProductVersion,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,DeviceClass')
 
         if 'x-apple-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductType,ProductVersion,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,DeviceClass')
 
         if 'X-Client-Device-Color' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Color', 'DeviceColor')
@@ -310,11 +331,11 @@ class ProxyRewrite:
         if 'X-Client-Device-Enclosure-Color' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Enclosure-Color', 'EnclosureColor')
 
-        if 'X-Apple-DAV-Pushtoken' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
+        #if 'X-Apple-DAV-Pushtoken' in headers:
+        #    headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
 
-        if 'x-apple-dav-pushtoken' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
+        #if 'x-apple-dav-pushtoken' in headers:
+        #    headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
 
         if 'x-apple-translated-wo-url' in headers:
             apple_url = headers['x-apple-translated-wo-url']
@@ -331,10 +352,16 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
+            if 'aps-token' in headers:
+                headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
+            else:
+                headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'x-apple-mme-sharedstreams-client-token' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
+            if 'aps-token' in headers:
+                headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
+            else:
+                headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
 
         return headers
 
@@ -372,8 +399,8 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 print("replace path %s -> %s" % (old_path, path))
         elif hostname == 'configuration.apple.com':
-		old_path = path
-                path = path.replace("7.1.plist", "10.1.plist")
+                old_path = path
+                path = path.replace("9.0.plist", "10.1.plist")
                 print("replace path %s -> %s" % (old_path, path))
         return path
 
