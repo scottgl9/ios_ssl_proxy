@@ -68,27 +68,13 @@ class ProxyRewrite:
     @staticmethod
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
-        if hostname == "gsa.apple.com": return False
+        hostname = hostname.replace(':443','')
+        #if hostname == "gsa.apple.com": return False
+        #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         if hostname == "albert.apple.com": return False
         if hostname == "static.ips.apple.com": return False
-        if hostname == "p59-keyvalueservice.icloud.com": return False
-        #if hostname == "gsas.apple.com": return False
-        #if hostname == "gspe1-ssl.ls.apple.com:": return False
-        #if hostname == "gsp10-ssl.apple.com": return False
-        #if hostname == "init.itunes.apple.com": return False
-        #if hostname == "profile.ess.apple.com": return False
-        #if hostname == "xp.apple.com": return False
-        #if hostname == "itunes.apple.com": return False
-        
-        #if hostname == "p59-escrowproxy.icloud.com": return False
-        #if hostname == "p59-ckdatabase.icloud.com": return False
-        #if hostname == "p57-escrowproxy.icloud.com": return False
-        #if hostname == "p57-ckdatabase.icloud.com": return False
-        #if hostname == "p51-escrowproxy.icloud.com": return False
-        #if hostname == "p51-ckdatabase.icloud.com": return False
-        #if hostname == "p15-escrowproxy.icloud.com": return False
-        #if hostname == "p15-ckdatabase.icloud.com": return False
+        if hostname == "captive.apple.com": return False
         return True
 
     @staticmethod
@@ -132,6 +118,7 @@ class ProxyRewrite:
     @staticmethod
     def scan_body_attrib_binary(body, attrib, hostname):
         if body == None: return
+        if '-' in ProxyRewrite.dev1info[attrib]: return
         binstr = binascii.unhexlify(ProxyRewrite.dev1info[attrib])
         encoded_data = base64.b64encode(binstr).replace('=', '')
 
@@ -159,6 +146,11 @@ class ProxyRewrite:
             print('Host: %s (%s)' % (hostname, attrib))
             print(str(body))
             return
+
+    @staticmethod
+    def convert_b64_to_hex(encoded_value):
+        value = base64.b64decode(encoded_value)
+        return str(binascii.hexlify(value))
 
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
@@ -269,8 +261,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
-            print("SSLEOFError occurred on "+self.path)
-            self.finish()
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+            except ssl.SSLEOFError as e:
+                print("SSLEOFError occurred on "+self.path)
+                self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
@@ -484,6 +479,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
 
         req_header_text = "%s %s %s\n%s" % (req.command, req.path, req.request_version, req.headers)
+
+        #^@(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+        #for (key, value) in req.headers.items():
+
         res_header_text = "%s %d %s\n%s" % (res.response_version, res.status, res.reason, res.headers)
 
         print with_color(33, req_header_text)
@@ -568,7 +567,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             ProxyRewrite.scan_headers_attribs(req.headers,'DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
         #ProxyRewrite.scan_headers_attribs(req.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
-        ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'UniqueDeviceID')
+        #ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'UniqueDeviceID')
         #ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'DeviceGUID')
         #ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'BasebandMasterKeyHash')
         ProxyRewrite.scan_headers_attrib_binary_mac_b64(req.headers, 'EthernetAddress')
@@ -595,7 +594,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def response_handler(self, req, req_body, res, res_body):
         #ProxyRewrite.scan_headers_attribs(res.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
-        ProxyRewrite.scan_headers_attrib_binary_b64(res.headers, 'UniqueDeviceID')
+        #ProxyRewrite.scan_headers_attrib_binary_b64(res.headers, 'UniqueDeviceID')
         #ProxyRewrite.scan_headers_attrib_binary_b64(res.headers, 'DeviceGUID')
         #ProxyRewrite.scan_headers_attrib_binary_b64(req.headers, 'BasebandMasterKeyHash')
         ProxyRewrite.scan_headers_attrib_binary_mac_b64(req.headers, 'EthernetAddress')
@@ -651,6 +650,19 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
+
+    # ugly hack due to python issue5853 (for threaded use)
+    try:
+        import mimetypes
+        mimetypes.init()
+    except UnicodeDecodeError:
+        # Python 2.x's mimetypes module attempts to decode strings
+        sys.argv # unwrap demand-loader so that reload() works
+        reload(sys) # resurrect sys.setdefaultencoding()
+        oldenc = sys.getdefaultencoding()
+        sys.setdefaultencoding("latin1") # or any full 8-bit encoding
+        mimetypes.init()
+        sys.setdefaultencoding(oldenc)
 
     try:
         HandlerClass.protocol_version = protocol

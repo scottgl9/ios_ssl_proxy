@@ -27,7 +27,7 @@ TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
 
 # get cert from static.ess.apple.com and use when connecting to identity.ess.apple.com
-
+#  https://gsa.apple.com/iforgot/static/jsj/1273877966/app.js
 # get cert from here before doing fmip authentication
 # GET /configurations/init?context=settings HTTP/1.1
 # Host: setup.icloud.com
@@ -83,8 +83,8 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
-        if hostname == "gsas.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
+        #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         if hostname == "albert.apple.com": return False
         if hostname == "static.ips.apple.com": return False
@@ -134,7 +134,7 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,HardwareModel')
             return body
-        elif hostname == 'setup.icloud.com' or hostname == 'p62-fmf.icloud.com' or hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p31-fmf.icloud.com' or hostname == 'p29-fmf.icloud.com' or hostname == 'p15-fmf.icloud.com':
+        elif hostname == 'setup.icloud.com' or hostname == 'appleid.cdn-apple.com' or hostname == 'p62-fmf.icloud.com' or hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p31-fmf.icloud.com' or hostname == 'p29-fmf.icloud.com' or hostname == 'p15-fmf.icloud.com':
             old_body = body
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -250,7 +250,7 @@ class ProxyRewrite:
             if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
             val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
-                print("%s: Replacing %s: %s -> %s" % (headers["Host"], attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
+                print("%s: %s Replacing %s: %s -> %s" % (headers["Host"], field, attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
 
         headers[field] = base64.b64encode(val)
         return headers
@@ -486,7 +486,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
-            print(self.headers)
             self.connect_relay()
 
     def connect_intercept(self):
@@ -518,8 +517,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
-            print("SSLEOFError occurred on "+self.path)
-            self.finish()
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+            except ssl.SSLEOFError as e:
+                print("SSLEOFError occurred on "+self.path)
+                self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
@@ -559,7 +561,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if self.path == 'http://proxy2.test/':
             self.send_cacert()
             return
-
+        print(self.headers)
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
 
@@ -860,12 +862,24 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
-    ProxyRewrite.logger = open("output.log", "wb")
     #server_address = (get_ip_address('wlp61s0'), port)
     server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
+
+    # ugly hack due to python issue5853 (for threaded use)
+    try:
+        import mimetypes
+        mimetypes.init()
+    except UnicodeDecodeError:
+        # Python 2.x's mimetypes module attempts to decode strings
+        sys.argv # unwrap demand-loader so that reload() works
+        reload(sys) # resurrect sys.setdefaultencoding()
+        oldenc = sys.getdefaultencoding()
+        sys.setdefaultencoding("latin1") # or any full 8-bit encoding
+        mimetypes.init()
+        sys.setdefaultencoding(oldenc)
 
     try:
         HandlerClass.protocol_version = protocol
@@ -879,9 +893,16 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     except KeyboardInterrupt:
         print '^C received, shutting down proxy'
-        ProxyRewrite.logger.close()
         httpd.socket.close()
 
 
 if __name__ == '__main__':
+    try:
+        _create_unverified_https_context = ssl._create_unverified_context
+    except AttributeError:
+        # Legacy Python that doesn't verify HTTPS certificates by default
+        pass
+    else:
+        # Handle target environment that doesn't support HTTPS verification
+        ssl._create_default_https_context = _create_unverified_https_context
     test()
