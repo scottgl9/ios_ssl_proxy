@@ -461,6 +461,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 return
             if not self.parse_request():
                 # An error code has been sent, just exit
+                self.close_connection = 1
                 return
             mname = 'do_' + self.command
             if not hasattr(self, mname):
@@ -480,6 +481,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
 
+        if 'Host' in self.headers:
+            print("CONNECT %s" % (self.headers['Host']))
+            if 'gsa.apple.com' in self.headers['Host']:
+                print(self.path)
+                print(self.headers)
+
         if ProxyRewrite.dev1info != None and ProxyRewrite.dev2info != None:
             self.headers = ProxyRewrite.rewrite_headers(self.headers, '')
 
@@ -491,11 +498,28 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
+        # always use same cert for all *.icloud.com
+        if 'icloud.com' in hostname:
+            srvcertname = "server_certs/icloud.com.crt"
+        else:
+            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
+        srvcert=None
 
         with self.lock:
             if not os.path.isfile(certpath):
+                if os.path.isfile(srvcertname):
+                    st_cert=open(srvcertname, 'rt').read()
+                    srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
                 req = crypto.X509Req()
-                req.get_subject().CN = hostname
+                if srvcert:
+                    subject = srvcert.get_subject()
+                    req.get_subject().CN = subject.CN
+                    req.get_subject().O = subject.O
+                    req.get_subject().C = subject.C
+                else:
+                    req.get_subject().CN = hostname
+                    req.get_subject().O = "Apple Inc."
+                    req.get_subject().C = "US"
                 req.set_pubkey(self.certKey)
                 req.sign(self.certKey, "sha1")
                 epoch = int(time.time() * 1000)
@@ -506,6 +530,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 cert.set_issuer(self.issuerCert.get_subject())
                 cert.set_subject(req.get_subject())
                 cert.set_pubkey(req.get_pubkey())
+
+                # for adding subjectAltName such as the case is with gsa.apple.com
+                #cert.set_version(2)
+                #cert.add_extensions([OpenSSL.crypto.X509Extension("subjectAltName", True, ss)])
+
                 cert.sign(self.issuerKey, "sha256")
                 with open(certpath, "w") as cert_file:
                     cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
@@ -515,10 +544,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLEOFError as e:
                 print("SSLEOFError occurred on "+self.path)
                 self.finish()
