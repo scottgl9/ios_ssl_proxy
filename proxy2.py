@@ -511,15 +511,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     st_cert=open(srvcertname, 'rt').read()
                     srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
                 req = crypto.X509Req()
-                if srvcert:
-                    subject = srvcert.get_subject()
-                    req.get_subject().CN = subject.CN
-                    req.get_subject().O = subject.O
-                    req.get_subject().C = subject.C
-                else:
-                    req.get_subject().CN = hostname
-                    req.get_subject().O = "Apple Inc."
-                    req.get_subject().C = "US"
+                #if srvcert:
+                #    subject = srvcert.get_subject()
+                #    req.get_subject().CN = subject.CN
+                #    req.get_subject().O = subject.O
+                #    req.get_subject().C = subject.C
+                #else:
+                req.get_subject().CN = hostname
+                req.get_subject().O = "Apple Inc."
+                req.get_subject().C = "US"
                 req.set_pubkey(self.certKey)
                 req.sign(self.certKey, "sha1")
                 epoch = int(time.time() * 1000)
@@ -618,7 +618,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         u = urlparse.urlsplit(req.path)
         scheme, netloc, path = u.scheme, u.netloc, (u.path + '?' + u.query if u.query else u.path)
         assert scheme in ('http', 'https')
-        if netloc:
+        if netloc and netloc != '':
             req.headers['Host'] = netloc
         setattr(req, 'headers', self.filter_headers(req.headers))
 
@@ -635,6 +635,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             version_table = {10: 'HTTP/1.0', 11: 'HTTP/1.1'}
             setattr(res, 'headers', res.msg)
+
+            # sets response_version *FIXME* check if this value is None, if so then do not send
             setattr(res, 'response_version', version_table[res.version])
 
             # support streaming
@@ -717,7 +719,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'Accept-Encoding' in headers:
             ae = headers['Accept-Encoding']
             filtered_encodings = [x for x in re.split(r',\s*', ae) if x in ('identity', 'gzip', 'x-gzip', 'deflate')]
-            headers['Accept-Encoding'] = ', '.join(filtered_encodings)
+            # FIX for 'None' appearing on the line after Accept-Encoding
+            #headers['Accept-Encoding'] = ', '.join(filtered_encodings)
 
         return headers
 
