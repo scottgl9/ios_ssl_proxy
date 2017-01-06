@@ -622,9 +622,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if self.path == 'http://proxy2.test/':
             self.send_cacert()
             return
-        print(self.headers)
-        if 'Proxy-Connection' in self.headers:
-            del self.headers['Proxy-Connection']
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
@@ -655,6 +652,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             req.headers['Host'] = netloc
 
         setattr(req, 'headers', self.filter_headers(req.headers))
+
+        # fix for \r\n being replaced with \n when updating a header field
+        for index in range(len(req.headers.headers)):
+            if "\r" not in req.headers.headers[index]: req.headers.headers[index] = req.headers.headers[index].replace("\n", "\r\n")
 
         try:
             origin = (scheme, netloc)
@@ -896,7 +897,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'Host' in req.headers:
             hostname = req.headers['Host']
 
-        #self.print_info(req, req_body, res, res_body)
+        self.print_info(req, req_body, res, res_body)
 
         ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
         ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
