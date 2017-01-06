@@ -6,12 +6,21 @@ import sys
 
 session = frida.get_usb_device().attach("Settings")
 fo = open("SSL.bin", "wb")
-fo2 = open("CCDigest.bin", "wb")
+#fo2 = open("CCDigest.bin", "wb")
 fo3 = open("functionlog.txt", "wt")
-fo4 = open("CCCryptorCreateWithMode", "wb")
-fo5 = open("decode.bin", "wb")
-fo6 = open("aesencrypt.bin", "wb")
+#fo4 = open("CCCryptorCreateWithMode", "wb")
+#fo5 = open("decode.bin", "wb")
+#fo6 = open("aesencrypt.bin", "wb")
 script = session.create_script("""
+var f1 = Module.findExportByName("Foundation",
+    "CFWriteStreamWrite");
+Interceptor.attach(f1, {
+    onEnter: function (args) {
+                var bytes = Memory.readByteArray(args[1], args[2].toInt32());
+                send("CFWriteStreamWrite", bytes);
+    }
+});
+/*
 var f1 = Module.findExportByName("Security",
     "SSLWrite");
 Interceptor.attach(f1, {
@@ -20,15 +29,20 @@ Interceptor.attach(f1, {
 		send("SSLWrite", bytes);
     }
 });
-/*
-var f2 = Module.findExportByName("libcommonCrypto.dylib",
-    "CCCryptorGCMDecrypt");
+var f2 = Module.findExportByName("Security",
+    "SSLRead");
 Interceptor.attach(f2, {
     onEnter: function (args) {
-		var bytes = Memory.readByteArray(args[1], args[2].toInt32());
-		send("CCCryptorGCMDecrypt", bytes);
+ 		this.dataPtr = args[1];
+		this.dataSize = args[2].toInt32();
+    },
+    onLeave: function (retval) {
+		var bytes = Memory.readByteArray(this.dataPtr, this.dataSize);
+		send("SSLRead", bytes);
     }
 });
+*/
+/*
 var f3 = Module.findExportByName("libcommonCrypto.dylib",
     "CCDigest");
 Interceptor.attach(f3, {
@@ -69,27 +83,27 @@ def on_message(message, data):
 	pname = message['payload']
 	print(pname)
 	fo3.write(pname+"\n")
-	if (pname == "SSLWrite"):
+	if (pname == "CFWriteStreamWrite"):
 		fo.write(data)
-	elif (pname == "CCCryptorGCMDecrypt"):
+	elif (pname == "SSLRead"):
 		fo.write(data)
-	elif (pname == "CCDigest"):
-		fo2.write(data)
-	elif (pname == "CCCryptorCreateWithMode"):
-		fo4.write(data)
-	elif (pname == "CCCryptorGCMAddIV"):
-		fo5.write(data)
-	elif (pname == "AES_cbc_encrypt"):
-		fo6.write(data)
+	#elif (pname == "CCDigest"):
+	#	fo2.write(data)
+	#elif (pname == "CCCryptorCreateWithMode"):
+	#	fo4.write(data)
+	#elif (pname == "CCCryptorGCMAddIV"):
+	#	fo5.write(data)
+	#elif (pname == "AES_cbc_encrypt"):
+	#	fo6.write(data)
 try:
     script.on('message', on_message)
     script.load()
     sys.stdin.read()
 except KeyboardInterrupt as e:
     fo.close()
-    fo2.close()
+    #fo2.close()
     fo3.close()
-    fo4.close()
-    fo5.close()
-    fo6.close()
+    #fo4.close()
+    #fo5.close()
+    #fo6.close()
     sys.exit(0)
