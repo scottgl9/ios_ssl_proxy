@@ -491,6 +491,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if not self.raw_requestline:
                 self.close_connection = 1
                 return
+            if re.search("CONNECT|OPTIONS|GET|HEAD|POST|PUT|DELETE|MKCOL|MOVE|REPORT|PROPFIND|PROPPATCH|ORDERPATCH", self.raw_requestline) is None:
+                self.wfile.flush()
+                return
             if not self.parse_request():
                 # An error code has been sent, just exit
                 self.close_connection = 1

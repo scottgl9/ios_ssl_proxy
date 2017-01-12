@@ -188,6 +188,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
 	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
 	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
+        print('Client %s -> %s:443' % (peername, dst_ip))
         """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
@@ -205,6 +206,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 return
             if not self.raw_requestline:
                 self.close_connection = 1
+                return
+            if re.search("CONNECT|OPTIONS|GET|HEAD|POST|PUT|DELETE|MKCOL|MOVE|REPORT|PROPFIND|PROPPATCH|ORDERPATCH", self.raw_requestline) is None:
+                self.wfile.flush()
                 return
             if not self.parse_request():
                 # An error code has been sent, just exit
@@ -226,6 +230,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         hostname = self.path.split(':')[0]
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
+
+        if 'Host' in self.headers:
+            print("CONNECT %s" % (self.headers['Host']))
 
         if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
@@ -260,15 +267,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         try:
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
-        except ssl.SSLEOFError as e:
+        except ssl.SSLError as e:
             try:
+                print("SSLError\n")
+                exit(1)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-            except ssl.SSLEOFError as e:
-                print("SSLEOFError occurred on "+self.path)
+            except ssl.SSLError as e:
+                print("SSLError\n")
                 self.finish()
 
-        self.rfile = self.connection.makefile("rb", self.rbufsize)
-        self.wfile = self.connection.makefile("wb", self.wbufsize)
+        try:
+            self.rfile = self.connection.makefile("rb", self.rbufsize)
+            self.wfile = self.connection.makefile("wb", self.wbufsize)
+        except Exception as e:
+            self.log_error("connect_intercept() Exception: %r", e)
 
         conntype = self.headers.get('Connection', '')
         if self.protocol_version == "HTTP/1.1" and conntype.lower() != 'close':
@@ -646,7 +658,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
 
     #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('wlo1'), port)
+    server_address = (get_ip_address('ppp0'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
