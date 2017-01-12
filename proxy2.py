@@ -530,9 +530,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
-        # always use same cert for all *.icloud.com
-        if 'icloud.com' in hostname:
+        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
+        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
+        elif 'fmip.icloud.com' in hostname:
+            srvcertname = "server_certs/fmip.icloud.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
@@ -543,15 +545,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     st_cert=open(srvcertname, 'rt').read()
                     srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
                 req = crypto.X509Req()
-                #if srvcert:
-                #    subject = srvcert.get_subject()
-                #    req.get_subject().CN = subject.CN
-                #    req.get_subject().O = subject.O
-                #    req.get_subject().C = subject.C
-                #else:
-                req.get_subject().CN = hostname
-                #req.get_subject().O = "Apple Inc."
-                #req.get_subject().C = "US"
+                if srvcert:
+                    subject = srvcert.get_subject()
+                    req.get_subject().CN = subject.CN
+                    req.get_subject().O = subject.O
+                    req.get_subject().C = subject.C
+                    req.get_subject().OU = subject.OU
+                else:
+                    req.get_subject().CN = hostname
                 req.set_pubkey(self.certKey)
                 req.sign(self.certKey, "sha1")
                 epoch = int(time.time() * 1000)
@@ -566,6 +567,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 # for adding subjectAltName such as the case is with gsa.apple.com
                 #cert.set_version(2)
                 #cert.add_extensions([OpenSSL.crypto.X509Extension("subjectAltName", True, ss)])
+
+                if srvcert:
+                    cert.set_serial_number(int(srvcert.get_serial_number()))
 
                 cert.sign(self.issuerKey, "sha256")
                 with open(certpath, "w") as cert_file:
@@ -684,6 +688,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             res_body = res.read()
         except Exception as e:
+            self.log_error("do_GET() Exception: %r", e)
             if origin in self.tls.conns:
                 del self.tls.conns[origin]
                 #self.send_error(502)
@@ -927,7 +932,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev2info = None
 
     #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('wlo1'), port)
+    server_address = (get_ip_address('ppp0'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')

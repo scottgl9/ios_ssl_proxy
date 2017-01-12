@@ -270,7 +270,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         except ssl.SSLError as e:
             try:
                 print("SSLError\n")
-                exit(1)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 print("SSLError\n")
@@ -376,6 +375,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             res_body = res.read()
         except Exception as e:
+            self.log_error("do_GET() Exception: %r", e)
             if origin in self.tls.conns:
                 del self.tls.conns[origin]
                 #self.send_error(502)
