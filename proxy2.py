@@ -173,13 +173,12 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
-            for line in body.splitlines():
-                if 'hasCellularCapability' in line:
-                    old_line = line
-                    line = line.replace('false', 'true')
-                    body = body.replace(old_line, line)
-                    return body
-
+            #for line in body.splitlines():
+            #    if 'hasCellularCapability' in line:
+            #        old_line = line
+            #        line = line.replace('false', 'true')
+            #        body = body.replace(old_line, line)
+            #        return body
             return body
         elif hostname == 'p62-keyvalueservice.icloud.com' or hostname == 'p59-keyvalueservice.icloud.com' or hostname == 'p57-keyvalueservice.icloud.com' or hostname == 'p51-keyvalueservice.icloud.com' or hostname == 'p31-keyvalueservice.icloud.com' or hostname == 'p29-keyvalueservice.icloud.com' or hostname == 'p15-keyvalueservice.icloud.com':
             old_body = body
@@ -234,6 +233,10 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+            return body
+        elif 'buy.itunes.apple.com' in hostname:
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'SerialNumber,UniqueDeviceID', hostname)
             return body
         return None
 
@@ -304,10 +307,10 @@ class ProxyRewrite:
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
 
         if 'User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2,DeviceClass')
 
         if 'user-agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2,DeviceClass')
 
         if 'X-MMe-Client-Info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
@@ -400,40 +403,40 @@ class ProxyRewrite:
         else:
             hostname = path.split(':')[0]
 
-        if hostname == 'p62-fmf.icloud.com' or hostname == 'p59-fmf.icloud.com' or hostname == 'p57-fmf.icloud.com' or hostname == 'p51-fmf.icloud.com' or hostname == 'p31-fmf.icloud.com' or hostname == 'p29-fmf.icloud.com' or hostname == 'p15-fmf.icloud.com':
+        if 'fmf.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif hostname == 'p62-fmfmobile.icloud.com' or hostname == 'p59-fmfmobile.icloud.com' or hostname == 'p57-fmfmobile.icloud.com' or hostname == 'p51-fmfmobile.icloud.com' or hostname == 'p31-fmfmobile.icloud.com' or hostname == 'p29-fmfmobile.icloud.com' or hostname == 'p15-fmfmobile.icloud.com':
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+        elif 'fmfmobile.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif (hostname == 'p62-mobilebackup.icloud.com' or hostname == 'p59-mobilebackup.icloud.com' or hostname == 'p57-mobilebackup.icloud.com' or hostname == 'p51-mobilebackup.icloud.com' or hostname == 'p29-mobilebackup.icloud.com' or hostname == 'p15-mobilebackup.icloud.com'):
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+        elif 'mobilebackup.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif hostname == 'p62-quota.icloud.com' or hostname == 'p59-quota.icloud.com' or hostname == 'p57-quota.icloud.com' or hostname == 'p51-quota.icloud.com' or hostname == 'p31-quota.icloud.com' or hostname == 'p29-quota.icloud.com' or hostname == 'p15-quota.icloud.com':
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+        elif 'quota.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
         elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
-                print("replace path %s -> %s" % (old_path, path))
-        elif hostname == 'p20-buy.itunes.apple.com':
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+        elif 'buy.itunes.apple.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
         elif hostname == 'configuration.apple.com':
                 old_path = path
                 path = path.replace("9.0.plist", "10.1.plist")
-                print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
         elif hostname == 'gsa.apple.com':
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s" % (old_path, path))
         return path
 
 
@@ -496,7 +499,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 return
             if not self.parse_request():
                 # An error code has been sent, just exit
-                self.close_connection = 1
+                #self.close_connection = 1
                 return
             mname = 'do_' + self.command
             if not hasattr(self, mname):
@@ -515,12 +518,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         hostname = self.path.split(':')[0]
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
-
-        if 'Host' in self.headers:
-            print("CONNECT %s" % (self.headers['Host']))
-            if 'gsa.apple.com' in self.headers['Host']:
-                print(self.path)
-                print(self.headers)
 
         if ProxyRewrite.dev1info != None and ProxyRewrite.dev2info != None:
             self.headers = ProxyRewrite.rewrite_headers(self.headers, '')
@@ -553,8 +550,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 #    req.get_subject().C = subject.C
                 #else:
                 req.get_subject().CN = hostname
-                req.get_subject().O = "Apple Inc."
-                req.get_subject().C = "US"
+                #req.get_subject().O = "Apple Inc."
+                #req.get_subject().C = "US"
                 req.set_pubkey(self.certKey)
                 req.sign(self.certKey, "sha1")
                 epoch = int(time.time() * 1000)
@@ -579,10 +576,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False) #suppress_ragged_eofs=True)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
             except ssl.SSLEOFError as e:
                 print("SSLEOFError occurred on "+self.path)
                 self.finish()
@@ -673,12 +670,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             version_table = {10: 'HTTP/1.0', 11: 'HTTP/1.1'}
             setattr(res, 'headers', res.msg)
-
             # sets response_version *FIXME* check if this value is None, if so then do not send
             setattr(res, 'response_version', version_table[res.version])
 
             # support streaming
-            if not 'Content-Length' in res.headers and 'no-store' in res.headers.get('Cache-Control'):
+            if (not 'Content-Length' in res.headers and res.headers.get('Cache-Control') and 'no-store' in res.headers.get('Cache-Control')):
                 self.response_handler(req, req_body, res, '')
                 setattr(res, 'headers', self.filter_headers(res.headers))
                 self.relay_streaming(res)
@@ -896,20 +892,21 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def save_handler(self, req, req_body, res, res_body):
-        hostname = ''
+        hostname = None
         if 'Host' in req.headers:
             hostname = req.headers['Host']
+        else:
+            hostname = self.path.split(':')[0]
 
-        self.print_info(req, req_body, res, res_body)
-
-        ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
-        ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
-        ProxyRewrite.logger.write(str(req.headers))
-        ProxyRewrite.logger.write(str(req_body))
-        ProxyRewrite.logger.write(str(res.headers))
-        ProxyRewrite.logger.write(str(res_body))
-        ProxyRewrite.logger.close()
-
+        if 'icloud.com' in hostname or 'apple.com' in hostname:
+            self.print_info(req, req_body, res, res_body)
+            ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
+            ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
+            ProxyRewrite.logger.write(str(req.headers))
+            ProxyRewrite.logger.write(str(req_body))
+            ProxyRewrite.logger.write(str(res.headers))
+            ProxyRewrite.logger.write(str(res_body))
+            ProxyRewrite.logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     if sys.argv[3:]:
@@ -964,12 +961,4 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
 
 if __name__ == '__main__':
-    try:
-        _create_unverified_https_context = ssl._create_unverified_context
-    except AttributeError:
-        # Legacy Python that doesn't verify HTTPS certificates by default
-        pass
-    else:
-        # Handle target environment that doesn't support HTTPS verification
-        ssl._create_default_https_context = _create_unverified_https_context
     test()
