@@ -346,6 +346,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             req.headers['Host'] = netloc
         setattr(req, 'headers', self.filter_headers(req.headers))
 
+        # fix for \r\n being replaced with \n when updating a header field
+        for index in range(len(req.headers.headers)):
+            if "\r" not in req.headers.headers[index]: req.headers.headers[index] = req.headers.headers[index].replace("\n", "\r\n")
+
         try:
             origin = (scheme, netloc)
             if not origin in self.tls.conns:
@@ -362,7 +366,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             setattr(res, 'response_version', version_table[res.version])
 
             # support streaming
-            if not 'Content-Length' in res.headers and 'no-store' in res.headers.get('Cache-Control'):
+            if (not 'Content-Length' in res.headers and res.headers.get('Cache-Control') and 'no-store' in res.headers.get('Cache-Control')):
                 self.response_handler(req, req_body, res, '')
                 setattr(res, 'headers', self.filter_headers(res.headers))
                 self.relay_streaming(res)
