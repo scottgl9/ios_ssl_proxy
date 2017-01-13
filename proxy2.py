@@ -416,38 +416,45 @@ class ProxyRewrite:
         if 'fmf.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %si\n" % (old_path, path))
         elif 'fmfmobile.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif 'mobilebackup.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif 'quota.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif 'buy.itunes.apple.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'configuration.apple.com':
                 old_path = path
                 path = path.replace("9.0.plist", "10.1.plist")
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gsa.apple.com':
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %s" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         return path
+
+    @staticmethod
+    def rewrite_status(path, status):
+        if 'appleid.apple.com' in path and status == 401:
+                status = 200
+                print("replace status 401 -> 200\n")
+        return status
 
     @staticmethod
     def altnames(cert):
@@ -560,6 +567,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
             srvcertname = "server_certs/fmip.icloud.com.crt"
+        elif 'itunes.apple.com' in hostname:
+            srvcertname = "server_certs/itunes.apple.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
@@ -923,7 +932,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
-        pass
+        # rewrite response status
+        res.status = ProxyRewrite.rewrite_status(req.path, res.status)
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -933,11 +943,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             hostname = self.path.split(':')[0]
 
         if 'icloud.com' in hostname or 'apple.com' in hostname:
-            self.print_info(req, req_body, res, res_body)
+            #self.print_info(req, req_body, res, res_body)
+            req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
+            res_header_text = "%s %d %s\n%s" % (res.response_version, res.status, res.reason, res.headers)
+
+            print with_color(33, req_header_text)
+
             ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
             ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
             ProxyRewrite.logger.write(str(req.headers))
             ProxyRewrite.logger.write(str(req_body))
+            ProxyRewrite.logger.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             ProxyRewrite.logger.write(str(res.headers))
             ProxyRewrite.logger.write(str(res_body))
             ProxyRewrite.logger.close()
@@ -961,7 +977,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev2info = None
 
     #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('wlo1'), port)
+    server_address = (get_ip_address('ppp0'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
