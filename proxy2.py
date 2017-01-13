@@ -20,6 +20,9 @@ from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from HTMLParser import HTMLParser
 from OpenSSL import crypto
+from pyasn1.type import univ, constraint, char, namedtype, tag
+from pyasn1.codec.der.decoder import decode
+from pyasn1.error import PyAsn1Error
 import fcntl
 import struct
 
@@ -53,6 +56,22 @@ def get_ip_address(ifname):
 def with_color(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
 
+class _GeneralName(univ.Choice):
+    # We are only interested in dNSNames. We use a default handler to ignore
+    # other types.
+    # TODO: We should also handle iPAddresses.
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('dNSName', char.IA5String().subtype(
+            implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2)
+        )
+        ),
+    )
+
+
+class _GeneralNames(univ.SequenceOf):
+    componentType = _GeneralName()
+    sizeSpec = univ.SequenceOf.sizeSpec + \
+        constraint.ValueSizeConstraint(1, 1024)
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     # lets use IPv4 instead of IPv6
@@ -295,8 +314,7 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
-
-        if 'x-mme-nas-qualify' in headers:
+        elif 'x-mme-nas-qualify' in headers:
             attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
@@ -308,50 +326,42 @@ class ProxyRewrite:
 
         if 'User-Agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2,DeviceClass')
-
-        if 'user-agent' in headers:
+        elif 'user-agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductVersion,ProductVersion2,DeviceClass')
 
         if 'X-MMe-Client-Info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
-
-        if 'x-mme-client-info' in headers:
+        elif 'x-mme-client-info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
 
         if 'X-Client-UDID' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
-
-        if 'x-client-udid' in headers:
+        elif 'x-client-udid' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'x-client-udid', 'UniqueDeviceID')
 
         if 'X-Mme-Device-Id' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Mme-Device-Id', 'UniqueDeviceID')
-
-        if 'x-mme-device-id' in headers:
+        elif 'x-mme-device-id' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'x-mme-device-id', 'UniqueDeviceID')
 
         if 'Device-UDID' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'Device-UDID', 'UniqueDeviceID')
-
-        if 'device-udid' in headers:
+        elif 'device-udid' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'device-udid', 'UniqueDeviceID')
 
         if 'X-AppleID-Device-Udid' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-AppleID-Device-Udid', 'UniqueDeviceID')
-
-        if 'x-appleid-device-udid' in headers:
+        elif 'x-appleid-device-udid' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'x-appleid-device-udid', 'UniqueDeviceID')
 
         if 'X-Apple-I-SRL-NO' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-I-SRL-NO', 'SerialNumber')
-
-        if 'x-apple-i-srl-no' in headers:
+        elif 'x-apple-i-srl-no' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'x-apple-i-srl-no', 'SerialNumber')
 
         if 'X-Apple-Client-Info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,DeviceClass')
-
-        if 'x-apple-client-info' in headers:
+        elif 'x-apple-client-info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,DeviceClass')
 
         if 'X-Client-Device-Color' in headers:
@@ -362,8 +372,7 @@ class ProxyRewrite:
 
         if 'X-Apple-DAV-Pushtoken' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
-
-        if 'x-apple-dav-pushtoken' in headers:
+        elif 'x-apple-dav-pushtoken' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
 
         if 'x-apple-translated-wo-url' in headers:
@@ -376,8 +385,7 @@ class ProxyRewrite:
 
         if 'X-Apple-MBS-Lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-MBS-Lock', 'UniqueDeviceID,UniqueDeviceID')
-
-        if 'x-apple-mbs-lock' in headers:
+        elif 'x-apple-mbs-lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
@@ -385,12 +393,14 @@ class ProxyRewrite:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
             else:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'UniqueDeviceID,UniqueDeviceID')
-
-        if 'x-apple-mme-sharedstreams-client-token' in headers:
+        elif 'x-apple-mme-sharedstreams-client-token' in headers:
             if 'aps-token' in headers:
                 headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
             else:
                 headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
+
+        if 'X-iTunes-User-Agent' in headers:
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-iTunes-User-Agent', 'BuildVersion,HardwareModel,ProductName,ProductType,ProductVersion,DeviceClass')
 
         return headers
 
@@ -438,6 +448,21 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s" % (old_path, path))
         return path
+
+    @staticmethod
+    def altnames(cert):
+        # tcp.TCPClient.convert_to_ssl assumes that this property only contains DNS altnames for hostname verification.
+        altnames = []
+        for i in range(cert.get_extension_count()):
+            ext = cert.get_extension(i)
+            if ext.get_short_name() == b"subjectAltName":
+                try:
+                    dec = decode(ext.get_data(), asn1Spec=_GeneralNames())
+                except PyAsn1Error:
+                    continue
+                for i in dec[0]:
+                    altnames.append("DNS:%s" % i[0].asOctets())
+        return altnames
 
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
@@ -538,12 +563,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
+        altnames=None
 
         with self.lock:
             if not os.path.isfile(certpath):
                 if os.path.isfile(srvcertname):
                     st_cert=open(srvcertname, 'rt').read()
                     srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+                    altnames = ProxyRewrite.altnames(srvcert)
                 req = crypto.X509Req()
                 if srvcert:
                     subject = srvcert.get_subject()
@@ -566,10 +593,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
                 # for adding subjectAltName such as the case is with gsa.apple.com
                 #cert.set_version(2)
-                #cert.add_extensions([OpenSSL.crypto.X509Extension("subjectAltName", True, ss)])
 
                 if srvcert:
                     cert.set_serial_number(int(srvcert.get_serial_number()))
+                    if altnames:
+                        print("ALTNAMES: %s\n" % altnames)
+                        cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
 
                 cert.sign(self.issuerKey, "sha256")
                 with open(certpath, "w") as cert_file:
@@ -932,7 +961,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev2info = None
 
     #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('ppp0'), port)
+    server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
