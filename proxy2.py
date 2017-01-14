@@ -102,7 +102,7 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         if hostname == "albert.apple.com": return False
@@ -192,12 +192,9 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
-            #for line in body.splitlines():
-            #    if 'hasCellularCapability' in line:
-            #        old_line = line
-            #        line = line.replace('false', 'true')
-            #        body = body.replace(old_line, line)
-            #        return body
+            if "hasCellularCapability</key>\n\t\t<false/>" in body:
+                body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
+                print(body)
             return body
         elif hostname == 'p62-keyvalueservice.icloud.com' or hostname == 'p59-keyvalueservice.icloud.com' or hostname == 'p57-keyvalueservice.icloud.com' or hostname == 'p51-keyvalueservice.icloud.com' or hostname == 'p31-keyvalueservice.icloud.com' or hostname == 'p29-keyvalueservice.icloud.com' or hostname == 'p15-keyvalueservice.icloud.com':
             old_body = body
@@ -291,6 +288,10 @@ class ProxyRewrite:
         if field not in headers: return headers
         val = bytearray(base64.b64decode(headers[field]))
         oldval = val
+
+        if "hasCellularCapability</key>\n\t\t<false/>" in val:
+            val = val.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
+            print(val)
 
         attriblist = attribs.split(',')
         for attrib in attriblist:
@@ -943,7 +944,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             hostname = self.path.split(':')[0]
 
         if 'icloud.com' in hostname or 'apple.com' in hostname:
-            #self.print_info(req, req_body, res, res_body)
+            self.print_info(req, req_body, res, res_body)
             req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
             res_header_text = "%s %d %s\n%s" % (res.response_version, res.status, res.reason, res.headers)
 
@@ -977,7 +978,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev2info = None
 
     #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('ppp0'), port)
+    server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
