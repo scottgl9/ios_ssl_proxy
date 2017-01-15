@@ -25,6 +25,7 @@ from pyasn1.codec.der.decoder import decode
 from pyasn1.error import PyAsn1Error
 import fcntl
 import struct
+import binascii
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -102,7 +103,7 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         if hostname == "albert.apple.com": return False
@@ -136,6 +137,9 @@ class ProxyRewrite:
         # skip if attribute not in dev1info or dev2info
             if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
             body = body.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
+            if str(ProxyRewrite.dev1info[attrib]).lower() in body:
+                body = body.replace(str(ProxyRewrite.dev1info[attrib]).lower(), str(ProxyRewrite.dev2info[attrib].lower()))
+
             if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
                 print("%s: Replacing body value %s -> %s" % (hostname, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
         return body
@@ -183,7 +187,7 @@ class ProxyRewrite:
             return body
         elif 'fmip.icloud.com' in hostname:
             old_body = body
-            attribs = 'BuildVersion,DeviceClass,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity'
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
@@ -192,11 +196,19 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
+            d1uid = str(hex(ProxyRewrite.dev1info['UniqueChipID']))
+            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            body = body.replace(d1uid, d2uid)
+            print("Replaced %s with %s\n" % (d1uid, d2uid))
+
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
                 print(body)
+            elif "\"hasCellularCapability\":false" in body:
+                body = body.replace( "\"hasCellularCapability\":false",  "\"hasCellularCapability\":true")
+                print("hasCellularCapability:true")
             return body
-        elif hostname == 'p62-keyvalueservice.icloud.com' or hostname == 'p59-keyvalueservice.icloud.com' or hostname == 'p57-keyvalueservice.icloud.com' or hostname == 'p51-keyvalueservice.icloud.com' or hostname == 'p31-keyvalueservice.icloud.com' or hostname == 'p29-keyvalueservice.icloud.com' or hostname == 'p15-keyvalueservice.icloud.com':
+        elif 'keyvalueservice.icloud.com' in hostname:
             old_body = body
             # replace apns-token
             if 'aps-token' in ProxyRewrite.dev1info:
@@ -414,10 +426,14 @@ class ProxyRewrite:
         else:
             hostname = path.split(':')[0]
 
-        if 'fmf.icloud.com' in hostname:
+        if 'fmip.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
-                if path != old_path: print("replace path %s -> %si\n" % (old_path, path))
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        elif 'fmf.icloud.com' in hostname:
+                old_path = path
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif 'fmfmobile.icloud.com' in hostname:
                 old_path = path
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
@@ -508,7 +524,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-        print('Client %s -> %s:443' % (peername, dst_ip))
+        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
@@ -622,6 +638,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
         except ssl.SSLEOFError as e:
             try:
+                ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
             except ssl.SSLEOFError as e:
                 print("SSLEOFError occurred on "+self.path)
@@ -997,6 +1014,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         sys.setdefaultencoding(oldenc)
 
     try:
+        ssl._https_verify_certificates(enable=False)
         HandlerClass.protocol_version = protocol
         httpd = ServerClass(server_address, HandlerClass)
         httpd.allow_reuse_address = True
