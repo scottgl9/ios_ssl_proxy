@@ -20,9 +20,11 @@ from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from HTMLParser import HTMLParser
 from OpenSSL import crypto
+import sqlite3 as lite
 import fcntl
 import struct
 import binascii
+
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -666,6 +668,17 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
+
+    con = lite.connect('scan.db')
+    cur = con.cursor()
+    cur.executescript("""
+        CREATE TABLE SCAN(
+            Host TEXT,
+            Name TEXT,
+            Value TEXT
+        );
+        """)
+    con.commit()
 
     # ugly hack due to python issue5853 (for threaded use)
     try:
