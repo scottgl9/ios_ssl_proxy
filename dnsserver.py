@@ -64,9 +64,14 @@ if __name__ == '__main__':
       data, addr = udps.recvfrom(1024)
       p=DNSQuery(data)
       address = socket.gethostbyname(p.domain)
-      con.execute("INSERT INTO DNS VALUES('"+p.domain+"','"+address+"');")
-      con.commit()
-      udps.sendto(p.answer(ip), addr)
+      cur = con.cursor()
+      cur.execute("SELECT Address FROM DNS WHERE Hostname = '"+p.domain+"';")
+      exists=cur.fetchone()
+      if exists is None:
+          con.execute("INSERT INTO DNS VALUES('"+p.domain+"','"+address+"');")
+          con.commit()
+      udps.sendto(p.answer(address), addr)
+      #udps.sendto(p.answer(ip), addr)
       print 'Answer: %s -> %s' % (p.domain, address)
 
   except KeyboardInterrupt:
