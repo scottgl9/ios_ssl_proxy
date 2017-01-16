@@ -6,3 +6,4 @@ iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port
 iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports 8080
 iptables -t nat -A PREROUTING -p tcp --destination-port 993 -j REDIRECT --to-ports 8080
 iptables -t nat -A PREROUTING -p tcp --destination-port 5223 -j REDIRECT --to-ports 8080
+iptables -t nat -A PREROUTING -p tcp --destination-port 5228 -j REDIRECT --to-ports 8080

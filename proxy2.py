@@ -173,8 +173,8 @@ class ProxyRewrite:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
                 print(body)
             elif "\"hasCellularCapability\":false" in body:
-                body = body.replace( "\"hasCellularCapability\":false",  "\"hasCellularCapability\":true")
-                print("hasCellularCapability:true")
+                body = body.replace( "\"hasCellularCapability\":false", "\"hasCellularCapability\":true,\"imei\":\"%s\"" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity']))
+                print(body)
             return body
         elif 'fmfmobile.icloud.com' in hostname:
             old_body = body
@@ -220,6 +220,9 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info:
                 d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
                 d2apns_encoded = base64.b64encode(str(ProxyRewrite.dev2info['aps-token']).encode())
+                body = body.replace(d1apns_encoded, d2apns_encoded)
+                d1apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev1info['aps-token']))
+                d2apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev2info['aps-token']))
                 body = body.replace(d1apns_encoded, d2apns_encoded)
             return body
         elif 'quota.icloud.com' in hostname:
@@ -971,7 +974,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def response_handler(self, req, req_body, res, res_body):
         # rewrite response status
-        res.status = ProxyRewrite.rewrite_status(req.path, res.status)
+        #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
+        pass
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -986,10 +990,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(req_body, content_encoding)
 
-            self.print_info(req, req_body_plain, res, res_body)
-            #req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
-            #res_header_text = "%s %d %s\n%s" % (res.response_version, res.status, res.reason, res.headers)
-            #print with_color(33, req_header_text)
+            #self.print_info(req, req_body_plain, res, res_body)
+            req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
+            res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
+            print with_color(33, req_header_text)
+            print with_color(32, res_header_text)
 
             ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
             ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
