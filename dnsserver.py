@@ -3,6 +3,8 @@
 import socket
 import fcntl
 import struct
+import sqlite3 as lite
+import sys
 
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -45,13 +47,29 @@ if __name__ == '__main__':
   
   udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   udps.bind(('',53))
-  
   try:
+    con = lite.connect('dns.db')
+    cur = con.cursor()
+    cur.executescript("""
+        DROP TABLE IF EXISTS DNS;
+        CREATE TABLE DNS(
+            Hostname TEXT,
+            Address TEXT,
+            unique(Hostname)
+        );
+        """)
+    con.commit()
+
     while 1:
       data, addr = udps.recvfrom(1024)
       p=DNSQuery(data)
+      address = socket.gethostbyname(p.domain)
+      con.execute("INSERT INTO DNS VALUES('"+p.domain+"','"+address+"');")
+      con.commit()
       udps.sendto(p.answer(ip), addr)
-      print 'Answer: %s -> %s' % (p.domain, ip)
+      print 'Answer: %s -> %s' % (p.domain, address)
+
   except KeyboardInterrupt:
+    if con: con.close()
     udps.close()
 
