@@ -998,16 +998,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
             #print with_color(33, req_header_text)
             #print with_color(32, res_header_text)
+            ProxyRewrite.logger.write(req_header_text)
+            ProxyRewrite.logger.write(res_header_text)
 
-            ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
-            ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
-            ProxyRewrite.logger.write(str(req.headers))
+            logger = open("logs/"+hostname+".log", "ab")
+            logger.write(str(self.command+' '+self.path+"\n"))
+            logger.write(str(req.headers))
 
-            if req_body: ProxyRewrite.logger.write(str(req_body))
-            ProxyRewrite.logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
-            ProxyRewrite.logger.write(str(res.headers))
-            if res_body: ProxyRewrite.logger.write(str(res_body))
-            ProxyRewrite.logger.close()
+            if req_body: logger.write(str(req_body))
+            logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
+            logger.write(str(res.headers))
+            if res_body: logger.write(str(res_body))
+            logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     if sys.argv[3:]:
@@ -1053,11 +1055,14 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         httpd.allow_reuse_address = True
         httpd.request_queue_size = 256
 
+        ProxyRewrite.logger = open("requests.log", "w")
+
         sa = httpd.socket.getsockname()
         print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
         httpd.serve_forever()
 
     except KeyboardInterrupt:
+        ProxyRewrite.logger.close()
         print '^C received, shutting down proxy'
         httpd.socket.close()
 
