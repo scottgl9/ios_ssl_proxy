@@ -275,7 +275,7 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'SerialNumber,UniqueDeviceID', hostname)
             return body
-        return None
+        return body
 
     @staticmethod
     def replace_header_field(headers, field, attrib):
@@ -849,9 +849,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if encoding == 'identity':
             text = data
         elif encoding in ('gzip', 'x-gzip'):
-            io = StringIO(data)
-            with gzip.GzipFile(fileobj=io) as f:
-                text = f.read()
+            try:
+                io = StringIO(data)
+                with gzip.GzipFile(fileobj=io) as f:
+                    text = f.read()
+            except IOError:
+                return data
         elif encoding == 'deflate':
             try:
                 text = zlib.decompress(data)
@@ -962,11 +965,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         req_body_plain = req_body
         if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
-            req_body = self.decode_content_body(str(req_body), content_encoding)
+            req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-        req_body_modified = ProxyRewrite.rewrite_body(req_body, req.headers, req.path)
+        req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
-        if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
+        if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
 
@@ -990,19 +993,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(req_body, content_encoding)
 
-            #self.print_info(req, req_body_plain, res, res_body)
+            self.print_info(req, req_body_plain, res, res_body)
             req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
             res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
-            print with_color(33, req_header_text)
-            print with_color(32, res_header_text)
+            #print with_color(33, req_header_text)
+            #print with_color(32, res_header_text)
 
             ProxyRewrite.logger = open("logs/"+hostname+".log", "ab")
             ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
             ProxyRewrite.logger.write(str(req.headers))
-            ProxyRewrite.logger.write(str(req_body))
-            ProxyRewrite.logger.write("%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
+
+            if req_body: ProxyRewrite.logger.write(str(req_body))
+            ProxyRewrite.logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             ProxyRewrite.logger.write(str(res.headers))
-            ProxyRewrite.logger.write(str(res_body))
+            if res_body: ProxyRewrite.logger.write(str(res_body))
             ProxyRewrite.logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
@@ -1023,8 +1027,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
-    #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('wlo1'), port)
+    server_address = (get_ip_address('wlp61s0'), port)
+    #server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
