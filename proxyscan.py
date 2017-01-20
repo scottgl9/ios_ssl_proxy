@@ -304,6 +304,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     req.get_subject().O = subject.O
                     req.get_subject().C = subject.C
                     req.get_subject().OU = subject.OU
+                    if subject.L: req.get_subject().L = subject.L
+                    if subject.ST: req.get_subject().ST = subject.ST
                 else:
                     req.get_subject().CN = hostname
                 req.set_pubkey(self.certKey)
@@ -319,6 +321,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
                 # for adding subjectAltName such as the case is with gsa.apple.com
                 #cert.set_version(2)
+                cert.add_extensions([crypto.X509Extension('extendedKeyUsage', True, 'serverAuth'),crypto.X509Extension('basicConstraints', True, 'CA:false')])
 
                 if srvcert:
                     cert.set_serial_number(int(srvcert.get_serial_number()))
@@ -725,27 +728,20 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             ProxyRewrite.logger.write(req_header_text)
             ProxyRewrite.logger.write(res_header_text)
 
-            for (key, value) in req.headers.items():
-                if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
-                print("%s %s: %s" % (hostname, key, value))
-                con = lite.connect('scan.db')
-                cur = con.cursor()
-                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+key+"';")
-                exists=cur.fetchone()
-                if exists is None:
-                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+key+"','"+value+"');")
-                    con.commit()
-                con.close()
+            items = dict(req.headers.items() + res.headers.items())
 
-            for (key, value) in res.headers.items():
+            if 'Content-Type' in req.headers and 'application/json' in req.headers['Content-Type']:
+                jsonobj = json.loads(req_body_plain)
+                items.update(jsonobj)
+
+            for (key, value) in items.iteritems():
                 if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
-                print("%s %s: %s" % (hostname, key, value))
                 con = lite.connect('scan.db')
                 cur = con.cursor()
-                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+key+"';")
+                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+str(key)+"';")
                 exists=cur.fetchone()
                 if exists is None:
-                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+key+"','"+value+"');")
+                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+str(key)+"',\""+str(value)+"\");")
                     con.commit()
                 con.close()
 
