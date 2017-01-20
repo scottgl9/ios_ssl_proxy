@@ -80,6 +80,7 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 class ProxyRewrite:
     dev1info = dict()
     logger = None
+    con = None
 
     @staticmethod
     def load_device_info(sn):
@@ -724,6 +725,30 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             ProxyRewrite.logger.write(req_header_text)
             ProxyRewrite.logger.write(res_header_text)
 
+            for (key, value) in req.headers.items():
+                if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
+                print("%s %s: %s" % (hostname, key, value))
+                con = lite.connect('scan.db')
+                cur = con.cursor()
+                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+key+"';")
+                exists=cur.fetchone()
+                if exists is None:
+                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+key+"','"+value+"');")
+                    con.commit()
+                con.close()
+
+            for (key, value) in res.headers.items():
+                if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
+                print("%s %s: %s" % (hostname, key, value))
+                con = lite.connect('scan.db')
+                cur = con.cursor()
+                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+key+"';")
+                exists=cur.fetchone()
+                if exists is None:
+                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+key+"','"+value+"');")
+                    con.commit()
+                con.close()
+
             logger = open("logs/"+hostname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
@@ -752,16 +777,17 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
 
-    con = lite.connect('scan.db')
-    cur = con.cursor()
-    cur.executescript("""
-        CREATE TABLE SCAN(
-            Host TEXT,
-            Name TEXT,
-            Value TEXT
-        );
-        """)
-    con.commit()
+    #ProxyRewrite.con = lite.connect('scan.db')
+    #cur = ProxyRewrite.con.cursor()
+    #cur.executescript("""
+    #    CREATE TABLE SCAN(
+    #        Host TEXT,
+    #        Name TEXT,
+    #        Value TEXT
+    #    );
+    #    """)
+    #ProxyRewrite.con.commit()
+    #ProxyRewrite.con.close()
 
     # ugly hack due to python issue5853 (for threaded use)
     try:
