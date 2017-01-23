@@ -155,7 +155,7 @@ class ProxyRewrite:
         else:
             hostname = path.split(':')[0]
 
-        if hostname == 'xp.icloud.com':
+        if 'xp.apple.com' in hostname:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,HardwareModel', hostname)
             return body
@@ -166,7 +166,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
@@ -183,7 +183,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             # replace meDeviceId
@@ -198,7 +198,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
@@ -217,7 +217,7 @@ class ProxyRewrite:
         elif 'keyvalueservice.icloud.com' in hostname:
             old_body = body
             # replace apns-token
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
                 d2apns_encoded = base64.b64encode(str(ProxyRewrite.dev2info['aps-token']).encode())
                 body = body.replace(d1apns_encoded, d2apns_encoded)
@@ -232,7 +232,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
@@ -267,7 +267,7 @@ class ProxyRewrite:
         elif hostname == 'gsa.apple.com' or hostname == 'gsas.apple.com':
             old_body = body
             attribs = 'DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID'
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
@@ -336,7 +336,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
         elif 'x-mme-nas-qualify' in headers:
@@ -345,7 +345,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
 
@@ -395,9 +395,9 @@ class ProxyRewrite:
         if 'X-Client-Device-Enclosure-Color' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Enclosure-Color', 'EnclosureColor')
 
-        if 'X-Apple-DAV-Pushtoken' in headers:
+        if 'X-Apple-DAV-Pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
-        elif 'x-apple-dav-pushtoken' in headers:
+        elif 'x-apple-dav-pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
             headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
 
         if 'x-apple-translated-wo-url' in headers:
@@ -414,12 +414,12 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
-            if 'aps-token' in headers:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
             else:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'UniqueDeviceID,UniqueDeviceID')
         elif 'x-apple-mme-sharedstreams-client-token' in headers:
-            if 'aps-token' in headers:
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
             else:
                 headers = ProxyRewrite.replace_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
@@ -628,10 +628,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 cert.set_issuer(self.issuerCert.get_subject())
                 cert.set_subject(req.get_subject())
                 cert.set_pubkey(req.get_pubkey())
-
-                # for adding subjectAltName such as the case is with gsa.apple.com
                 #cert.set_version(2)
 
+                cert.add_extensions([crypto.X509Extension(b('basicConstraints'), True, b('CA:false'))])
                 if srvcert:
                     cert.set_serial_number(int(srvcert.get_serial_number()))
                     if altnames:
@@ -827,7 +826,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             ae = headers['Accept-Encoding']
             filtered_encodings = [x for x in re.split(r',\s*', ae) if x in ('identity', 'gzip', 'x-gzip', 'deflate')]
             # FIX for 'None' appearing on the line after Accept-Encoding
-            #headers['Accept-Encoding'] = ', '.join(filtered_encodings)
+            headers['Accept-Encoding'] = ', '.join(filtered_encodings)
 
         return headers
 
