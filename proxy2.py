@@ -196,6 +196,7 @@ class ProxyRewrite:
             old_body = body
             if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
                 body = body.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+                print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
@@ -221,6 +222,7 @@ class ProxyRewrite:
             old_body = body
             if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
                 body = body.replace("\"deviceColor\":\"unknown\"", "\"deviceColor\":\"%s\",\"enclosureColor\":\"%s\"" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+                print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
@@ -303,6 +305,10 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,DeviceClass', hostname)
             return body
+        elif 'identity.apple.com' in hostname:
+            old_body = body
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductVersion', hostname)
+            return body
         return body
 
     @staticmethod
@@ -346,6 +352,7 @@ class ProxyRewrite:
             print("hasCellularCapability:true")
         if 'enclosureColor' not in val and 'EnclosureColor' in ProxyRewrite.dev2info:
             val = val.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+            print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
         attriblist = attribs.split(',')
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info
@@ -418,11 +425,13 @@ class ProxyRewrite:
         elif 'x-apple-client-info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,DeviceClass')
 
-        if 'X-Client-Device-Color' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Color', 'DeviceColor')
-
         if 'X-Client-Device-Enclosure-Color' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Enclosure-Color', 'EnclosureColor')
+
+        if 'X-Client-Device-Color' in headers:
+            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-Device-Color', 'DeviceColor')
+            if 'X-Client-Device-Enclosure-Color' not in headers and 'EnclosureColor' in ProxyRewrite.dev2info:
+                headers['X-Client-Device-Enclosure-Color'] = ProxyRewrite.dev2info['EnclosureColor']
 
         if 'X-Apple-DAV-Pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
@@ -430,12 +439,10 @@ class ProxyRewrite:
             headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
 
         if 'x-apple-translated-wo-url' in headers:
-            apple_url = headers['x-apple-translated-wo-url']
-            print("x-apple-translated-wo-url" + apple_url)
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-translated-wo-url', 'BuildVersion,ProductType,ProductVersion,UniqueDeviceID')
 
         if 'x-apple-orig-url' in headers:
-            apple_url = headers['x-apple-orig-url']
-            print("x-apple-orig-url" + apple_url)
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,ProductType,ProductVersion,UniqueDeviceID')
 
         if 'X-Apple-MBS-Lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-MBS-Lock', 'UniqueDeviceID,UniqueDeviceID')
@@ -461,6 +468,9 @@ class ProxyRewrite:
 
         if 'X-APPLE-UB-PUSHTOKEN' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
             headers = ProxyRewrite.replace_header_field(headers, 'X-APPLE-UB-PUSHTOKEN', 'aps-token')
+
+        if 'X-Apple-ATS-Cache-Key' in headers:
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,ProductType,ProductVersion')
 
         return headers
 
