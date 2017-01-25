@@ -26,6 +26,7 @@ from pyasn1.error import PyAsn1Error
 import fcntl
 import struct
 import binascii
+import netifaces
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -1073,8 +1074,11 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
-    #server_address = (get_ip_address('wlp61s0'), port)
-    server_address = (get_ip_address('wlo1'), port)
+    iflist = netifaces.interfaces()
+    server_address = ('', port)
+    if 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
+    elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
+    elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
