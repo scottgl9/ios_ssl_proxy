@@ -1057,13 +1057,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[3:]:
-        port = int(sys.argv[1])
-        device1 = sys.argv[2]
-        device2 = sys.argv[3]
+    if sys.argv[2:]:
+        port = int('8080') #sys.argv[1])
+        device1 = sys.argv[1]
+        device2 = sys.argv[2]
 
     else:
-        print("Usage: %s <port> <device1> <device2>" % sys.argv[0])
+        print("Usage: %s <device1> <device2>" % sys.argv[0])
         return 0
 
     if device1 != 'none' and device2 != 'none':
