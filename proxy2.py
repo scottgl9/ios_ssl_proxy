@@ -27,25 +27,15 @@ import fcntl
 import struct
 import binascii
 import netifaces
+import hashlib
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
 
-# get cert from static.ess.apple.com and use when connecting to identity.ess.apple.com
-#  https://gsa.apple.com/iforgot/static/jsj/1273877966/app.js
-# get cert from here before doing fmip authentication
-# GET /configurations/init?context=settings HTTP/1.1
-# Host: setup.icloud.com
-# GET /setup/fmipauthenticate/$APPLE_ID$ HTTP/1.1
-#Host: setup.icloud.com
-# POST /setup/account/deregisterDevice HTTP/1.1
-#Host: setup.icloud.com
-# POST /setup/login_or_create_account HTTP/1.1
-# Host: setup.icloud.com
-# POST /fmipservice/fmf/10579378869/ae3484a9b45603653aed233a0c3f884a546f3c23/register HTTP/1.1
-# Host: p51-fmf.icloud.com
 
-# Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, MKCOL, MOVE, REPORT, PROPFIND, PROPPATCH, ORDERPATCH
+# NOTE: these are special case hostnames where the cert forging isn't working correctly:
+# gsa.apple.com, gsas.apple.com, and p**-fmip.icloud.com (such as p51-fmip.icloud.com)_
+
 
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -666,9 +656,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     req.get_subject().CN = hostname
                 req.set_pubkey(self.certKey)
                 req.sign(self.certKey, "sha1")
-                epoch = int(time.time() * 1000)
                 cert = crypto.X509()
-                cert.set_serial_number(epoch)
+                try:
+                    cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
+                except OpenSSL.SSL.Error:
+                    epoch = int(time.time() * 1000)
+                    cert.set_serial_number(epoch)
+
                 cert.gmtime_adj_notBefore(0)
                 cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
                 cert.set_issuer(self.issuerCert.get_subject())
@@ -676,7 +670,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 cert.set_pubkey(req.get_pubkey())
                 #cert.set_version(2)
 
-                #cert.add_extensions([crypto.X509Extension(b('basicConstraints'), True, b('CA:false'))])
+                cert.add_extensions([
+                    crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+                    #crypto.X509Extension("nsCertType", True, "sslCA"),
+                    crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+                    crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+                    crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
+                ])
+
                 if srvcert:
                     cert.set_serial_number(int(srvcert.get_serial_number()))
                     if altnames:
@@ -691,14 +692,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
 
+        if 'gsa.apple.com' in self.path or 'gsas.apple.com' in self.path or 'fmip.icloud.com' in self.path:
+            print(self.path)
+            print(self.headers)
+
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
-        except ssl.SSLEOFError as e:
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+        except ssl.SSLError as e:
             try:
                 ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-            except ssl.SSLEOFError as e:
-                print("SSLEOFError occurred on "+self.path)
+            except ssl.SSLError as e:
+                print("SSLError occurred on "+self.path+e)
                 self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
