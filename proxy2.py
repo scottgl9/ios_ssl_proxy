@@ -324,7 +324,12 @@ class ProxyRewrite:
         oldval = headers[field]
         attriblist = attribs.split(',')
         for attrib in attriblist:
-            headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
+            if attrib == 'ProductType2':
+                headers[field] = headers[field].replace(ProxyRewrite.dev1info['ProductType'].replace(',','_'), ProxyRewrite.dev2info['ProductType'].replace(',','_'))
+            elif attrib == 'ProductVersion2':
+                headers[field] = headers[field].replace(ProxyRewrite.dev1info['ProductVersion'].replace('.','_'), ProxyRewrite.dev2info['ProductVersion'].replace('.','_'))
+            else:
+                headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
             if headers[field] != oldval:
                 print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
@@ -742,8 +747,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == 'http://proxy2.test/':
-            self.send_cacert()
+            self.send_cacert(self.cacert)
             return
+        elif self.path == 'http://proxy2.gsa/':
+            self.send_cacert('certs/gsa.apple.com.crt')
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
@@ -914,8 +921,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             raise Exception("Unknown Content-Encoding: %s" % encoding)
         return text
 
-    def send_cacert(self):
-        with open(self.cacert, 'rb') as f:
+    def send_cacert(self, path):
+        with open(path, 'rb') as f:
             data = f.read()
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'OK'))
