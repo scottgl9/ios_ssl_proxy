@@ -92,14 +92,15 @@ class ProxyRewrite:
 
     @staticmethod
     def intercept_this_host(hostname):
+        if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
         #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
-        if hostname == "ppq.apple.com": return False
-        if hostname == "albert.apple.com": return False
-        if hostname == "static.ips.apple.com": return False
-        if hostname == "captive.apple.com": return False
+        #if hostname == "ppq.apple.com": return False
+        #if hostname == "albert.apple.com": return False
+        #if hostname == "static.ips.apple.com": return False
+        #if hostname == "captive.apple.com": return False
         return True
 
     @staticmethod
@@ -125,7 +126,9 @@ class ProxyRewrite:
         oldbody = body
         attriblist = attribs.split(',')
         for attrib in attriblist:
-        # skip if attribute not in dev1info or dev2info
+            if attrib == 'HardwarePlatform2':
+                body = body.replace(str(ProxyRewrite.dev1info['HardwarePlatform'])[1:], (str(ProxyRewrite.dev2info['HardwarePlatform'])[1:]))
+            # skip if attribute not in dev1info or dev2info
             if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
             body = body.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if str(ProxyRewrite.dev1info[attrib]).lower() in body:
@@ -153,7 +156,7 @@ class ProxyRewrite:
             return body
         elif hostname == 'setup.icloud.com' or hostname == 'appleid.cdn-apple.com' or 'fmf.icloud.com' in hostname:
             old_body = body
-            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,HardwareModel,HardwarePlatform,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
@@ -185,9 +188,9 @@ class ProxyRewrite:
             return body
         elif 'fmipmobile.icloud.com' in hostname:
             old_body = body
-            if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
-                body = body.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-                print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+            #if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
+                #body = body.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+                #print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
@@ -211,10 +214,11 @@ class ProxyRewrite:
             return body
         elif 'fmip.icloud.com' in hostname:
             old_body = body
-            if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
-                body = body.replace("\"deviceColor\":\"unknown\"", "\"deviceColor\":\"%s\",\"enclosureColor\":\"%s\"" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-                print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
+            #if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
+            #    body = body.replace("\"deviceColor\":\"unknown\"", "\"deviceColor\":\"%s\",\"enclosureColor\":\"%s\"" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+            #    print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,HardwarePlatform2,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
@@ -222,6 +226,13 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+
+            content_type = headers['Content-Type']
+            if 'identityV3Session' in path and content_type.startswith('application/json'):
+                json_obj = json.loads(body)
+                text = json_obj['collectionInfo']['data']
+                json_obj['collectionInfo']['data'] = ProxyRewrite.b64_rewrite_text(json_obj['collectionInfo']['data'], attribs)
+                body = json.dumps(json_obj)
 
             d1uid = str(hex(ProxyRewrite.dev1info['UniqueChipID']))
             d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
@@ -285,11 +296,34 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion,SerialNumber,UniqueDeviceID', hostname)
             return body
-        elif hostname == 'gsa.apple.com' or hostname == 'gsas.apple.com':
+        elif 'gsa.apple.com' in hostname:
             old_body = body
-            attribs = 'DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID'
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID'
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,HardwareModel,HardwarePlatform,DeviceClass'
+            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+
+            body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+            return body
+        elif 'gsas.apple.com' in hostname:
+            old_body = body
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID'
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,HardwareModel,HardwarePlatform,DeviceClass'
+            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
         elif 'buy.itunes.apple.com' in hostname:
@@ -300,6 +334,14 @@ class ProxyRewrite:
             old_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductVersion', hostname)
             return body
+        elif 'albert.apple.com' in hostname:
+            old_body = body
+            attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID'
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
+            body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+            return body
+
         return body
 
     @staticmethod
@@ -335,6 +377,20 @@ class ProxyRewrite:
         return headers
 
     @staticmethod
+    def b64_rewrite_text(text, attribs):
+        val = bytearray(base64.b64decode(text))
+        attriblist = attribs.split(',')
+        for attrib in attriblist:
+            oldval = val
+            # skip if attribute not in dev1info or dev2info
+            if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
+            val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
+            if val != oldval:
+                print("%s: Replacing %s -> %s" % (attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
+        text = base64.b64encode(val)
+        return text
+
+    @staticmethod
     def b64_rewrite_header_field(headers, field, attribs):
         if field not in headers: return headers
         val = bytearray(base64.b64decode(headers[field]))
@@ -346,9 +402,9 @@ class ProxyRewrite:
         elif "\"hasCellularCapability\":false" in val:
             val = val.replace( "\"hasCellularCapability\":false",  "\"hasCellularCapability\":true")
             print("hasCellularCapability:true")
-        if 'enclosureColor' not in val and 'EnclosureColor' in ProxyRewrite.dev2info:
-            val = val.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-            print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+        #if 'enclosureColor' not in val and 'EnclosureColor' in ProxyRewrite.dev2info:
+        #    val = val.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+        #    print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
         attriblist = attribs.split(',')
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info

@@ -1,4 +1,4 @@
-/usr/bin/python2.7
+#!/usr/bin/python2.7
 import frida
 import sys
 
@@ -11,19 +11,17 @@ var f2 = Module.findExportByName("Security",
 Interceptor.attach(f2, {
     onEnter: function (args) {
         this.dataPtr = ObjC.Object(args[1]);
-        args[1] = 1;
-        log("SecTrustEvaluate(" + 4 + ")");
+        args[1] = 4;
     },
     onLeave: function (retval) {
-        log("SecTrustEvaluate(" + "" + ")");
 	retval = 0;
-	send("SecTrustEvaluate", this.dataPtr);
+	send("SecTrustEvaluate");
     }
 });
 """)
-#def on_message(message, data):
-	#pname = message['payload']
-	#print(pname)
+def on_message(message, data):
+	pname = message['payload']
+	print(pname)
 	#fo3.write(pname+"\n")
 	#if (pname == "CFWriteStreamWrite"):
 	#	fo.write(data)
@@ -38,7 +36,7 @@ Interceptor.attach(f2, {
 	#elif (pname == "AES_cbc_encrypt"):
 	#	fo6.write(data)
 try:
-    #script.on('message', on_message)
+    script.on('message', on_message)
     script.load()
     sys.stdin.read()
 except KeyboardInterrupt as e:
