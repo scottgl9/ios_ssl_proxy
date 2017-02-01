@@ -2,6 +2,11 @@
 import frida
 import sys
 
+# MobileGestalt functions:
+# CFPropertyListRef MGCopyAnswer(CFStringRef property);
+# int MGSetAnswer(CFStringRef question, CFTypeRef answer);
+# Boolean MGGetBoolAnswer(CFStringRef property);
+# MGGetSInt32Answer
 # Note: the SHA1 hashes seem to be the SHA1 hashes of DER certificates
 
 session = frida.get_usb_device().attach("Settings")
