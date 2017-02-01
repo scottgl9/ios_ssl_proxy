@@ -1,0 +1,15 @@
+Research on pXX-fmip.icloud.com (such as p15-fmip.icloud.com:
+
+In the json request body for URL https://p15-fmip.icloud.com/fmipservice/findme/$(UDID)/qc, the 'mid' field under 'deviceInfo' seems to be very similar to the header field value of X-Apple-I-MD-M:
+
+MID:
+"mid":         "7uFG2/ZgB6SmF5r93yaqedoq+ruKOeHFqlr+/g8GIhJv84akWFicotj46AtB6A+Svt7ks4Nh+E0/GAeW"
+X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+rugYFfglwmtO8rZlzO2ICtyDYMjk28WsJ7Ao7BMiPcwfupM8nF8zW87
+
+I still have no idea what 'mid' indicates or how it is generated.
+
+
+aps-token:
+	"aps-token": "F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2"
+	aps-token is the apple push service token used with various other servers, and is constant for a give device, but it seems that it can change possibly when a device is factory reset (or possibly only when a device is updated?)
+

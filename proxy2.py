@@ -122,14 +122,14 @@ class ProxyRewrite:
         return False
 
     @staticmethod
-    def replace_json_fields(text, fields, value)
+    def replace_json_fields(text, fields, value):
         try:
             json_obj = json.loads(text)
- 		    if ',' in fields:
-			    fieldlist = fields.split(',')
-			    fields = fieldlist[-1]
-			for field in fieldlist[:-1]
-			    json_obj = json_obj[field]
+            if ',' in fields:
+                fieldlist = fields.split(',')
+                fields = fieldlist[-1]
+                for field in fieldlist[:-1]:
+                    json_obj = json_obj[field]
             json_obj[fields] = value
             print ("Setting field %s to %s" % (fields, value))
             return json.dumps(json_obj)
@@ -137,15 +137,15 @@ class ProxyRewrite:
             return text
 
     @staticmethod
-    def rewrite_json_fields(text, fields, oldval, newval)
+    def rewrite_json_fields(text, fields, oldval, newval):
         try:
             json_obj = json.loads(text)
- 		    if ',' in fields:
-			    fieldlist = fields.split(',')
-			    fields = fieldlist[-1]
-			for field in fieldlist[:-1]
-			    json_obj = json_obj[field]
-			if json_obj[fields] == oldval:
+            if ',' in fields:
+                fieldlist = fields.split(',')
+                fields = fieldlist[-1]
+            for field in fieldlist[:-1]:
+                 json_obj = json_obj[field]
+            if json_obj[fields] == oldval:
                 json_obj[fields] = newval
                 print("replacing field %s: %s -> %s" % (fields, oldval, newval))
             return json.dumps(json_obj)
