@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>deviceClass</key>
+	<string>iPhone</string>
+	<key>deviceName</key>
+	<string>OSX1011</string>
+	<key>productType</key>
+	<string>iPhone7,1</string>
+	<key>ProductVersion</key>
+	<string>10.11.6</string>
+	<key>ProductVersion2</key>
+	<string>10_11_6</string>
+	<key>aps-token</key>
+	<string>793d491f0710bf8f8717b4c42ea16b427dbc792ecf15794bbd03860f790e577a</string>
+	<key>SerialNumber</key>
+	<string>C39Q55U0G5QG</string>
+	<key>TotalDiskCapacity</key>
+	<string>83.97 GB</string>
+	<key>UniqueDeviceID</key>
+	<string>564D91AF-091E-A380-F761-9E6FD23F584F</string>
+</dict>
+
+
