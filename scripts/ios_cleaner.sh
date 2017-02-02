@@ -2,6 +2,8 @@
 
 rm -f /var/Keychains/*.db*
 rm -f /var/Keychains/*.sqlite*
+rm -f /var/Keychains/keychain-ota-backup.plist
+rm -rf /var/root/Library/Caches/*
 rm -f /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
 rm -f /var/mobile/Library/AccountNotifications/*.sqlite*
 rm -f /var/mobile/Library/Accounts/*.sqlite*
@@ -22,7 +24,6 @@ rm -f /var/mobile/Library/Preferences/com.apple.icloud.*
 rm -f /var/mobile/Library/Preferences/com.apple.mobile.ldpair.plist
 rm -f /var/mobile/Library/Preferences/com.apple.seld.plist
 rm -f /var/mobile/Library/Preferences/ProtectedCloudKeySyncing.plist
-
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.cloudrecents.*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
@@ -30,3 +31,5 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainprox
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 rm -rf /var/mobile/Library/Caches/com.apple.*
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
+rm -f /var/tmp/com.apple.purplebuddy.sentinel
+rm -rf /var/tmp/*
