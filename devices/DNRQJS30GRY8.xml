@@ -63,10 +63,14 @@
 	<string>iPhone</string>
 	<key>DeviceColor</key>
 	<string>#e4e7e8</string>
+	<key>DevicePublicKey</key>
+	<string>LS0tLS1CRUdJTiBSU0EgUFVCTElDIEtFWS0tLS0tCk1JSUJDZ0tDQVFFQXF4K3AzVXVnRGo5QzBGODhYR1RJU3Q3R0pCaGZBQlFGT2dWWFgyWDhUeHp4alc0SVlKb3ANCmNqSHlNbzlOYWFpTUtuYkZMNFhvdXYyRkR1UVZpR0l3WGVLYTVkQkVNNWpKcUY2NzJEbWExSytxYkxBRTNGaHQNCmNHSUdZZVk3KzNQejNITGNMVW00d2tWaHBLVkVVV1JtWW9CanFqZTJoc3lvQWNDSkhOMW05c3hwRWhTdU1oV1gNCmppdzB3UHZtdHpyb0F4TjNjaDczeW1JUU5uWGNiczNqUGJLOGd5Q3NzZE9MOEM1VFNURlhxSHdSbXUwTXVNYmYNCnZYdVpTWGVuU2VVMVQ1YXFiZFlBWU9FdXJiOWlieUdHQllqSUt6TmY0MUlaNnBoZStGT2tNVDVOZFZYVlhOc2sNCmNmMUlweGU5dDJzMEc2ZDNpM0RpSDJTY0pDUzczVmhnZXdJREFRQUIKLS0tLS1FTkQgUlNBIFBVQkxJQyBLRVktLS0tLQo=</string>
 	<key>DeviceName</key>
-	<string>scottgl’s iPhone</string>
+	<string>iPhone</string>
 	<key>DieID</key>
 	<integer>5195793809173542</integer>
+	<key>EnclosureColor</key>
+	<string>#e4c1b9</string>
 	<key>EthernetAddress</key>
 	<string>00:cd:fe:10:a7:9f</string>
 	<key>FirmwareVersion</key>
