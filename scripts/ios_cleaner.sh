@@ -24,6 +24,14 @@ rm -rf /var/mobile/Library/DataAccess/*
 rm -f /var/mobile/Library/Health/*.sqlite*
 rm -f /var/mobile/Library/IdentityServices/ids*
 rm -f /var/mobile/Library/ApplePushService/aps.*
+rm -rf /var/mobile/Library/com.apple.companionappd/*
+rm -rf /var/mobile/Library/com.apple.nsurlsessiond/*
+rm -rf /var/mobile/Library/Health/*
+rm -rf /var/mobile/Library/locationd/*
+rm -rf /var/mobile/Library/Mail/*
+rm -rf /var/mobile/Library/Mobile\ Documents/*
+rm -rf /var/mobile/Library/MusicLibrary/*
+rm -rf /var/mobile/Library/Safari/*
 rm -f /var/mobile/Library/Preferences/com.apple.accounts*
 rm -f /var/mobile/Library/Preferences/com.apple.assistant*
 rm -f /var/mobile/Library/Preferences/com.apple.CoreDuet*

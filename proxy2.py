@@ -84,10 +84,14 @@ class ProxyRewrite:
     dev1info = dict()
     dev2info = dict()
     logger = None
+    transparent = False
 
     @staticmethod
     def load_device_info(sn):
-        device = plistlib.readPlist("devices/%s.xml" % sn)
+        if '.xml' in sn:
+            device = plistlib.readPlist(sn)
+        else:
+            device = plistlib.readPlist("devices/%s.xml" % sn)
         return device
 
     @staticmethod
@@ -641,6 +645,22 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        # use non-transparent mode
+        if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+            certpath = self.generate_cert(dst_ip)
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            except ssl.SSLError as e:
+                try:
+                    ssl._https_verify_certificates(enable=False)
+                    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                except ssl.SSLError as e:
+                    print("SSLError occurred on %s: %r" % (dst_ip,e))
+                    #self.finish()
+
+        self.rfile = self.connection.makefile("rb", self.rbufsize)
+        self.wfile = self.connection.makefile("wb", self.wbufsize)
+
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
@@ -691,6 +711,67 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.connect_intercept()
         else:
             self.connect_relay()
+
+    def generate_cert(self, hostname):
+        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
+        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
+        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
+            srvcertname = "server_certs/icloud.com.crt"
+        elif 'fmip.icloud.com' in hostname:
+            srvcertname = "server_certs/fmip.icloud.com.crt"
+        elif 'itunes.apple.com' in hostname:
+            srvcertname = "server_certs/itunes.apple.com.crt"
+        else:
+            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
+        srvcert=None
+        altnames=None
+
+	if os.path.isfile(srvcertname):
+		st_cert=open(srvcertname, 'rt').read()
+		srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+		altnames = ProxyRewrite.altnames(srvcert)
+	req = crypto.X509Req()
+	if srvcert:
+		subject = srvcert.get_subject()
+		req.get_subject().CN = subject.CN
+		req.get_subject().O = subject.O
+		req.get_subject().C = subject.C
+		req.get_subject().OU = subject.OU
+	else:
+		req.get_subject().CN = hostname
+	req.set_pubkey(self.certKey)
+	req.sign(self.certKey, "sha1")
+	cert = crypto.X509()
+	try:
+		cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
+	except OpenSSL.SSL.Error:
+		epoch = int(time.time() * 1000)
+		cert.set_serial_number(epoch)
+
+	cert.gmtime_adj_notBefore(0)
+	cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
+	cert.set_issuer(self.issuerCert.get_subject())
+	cert.set_subject(req.get_subject())
+	cert.set_pubkey(req.get_pubkey())
+	#cert.set_version(2)
+
+	cert.add_extensions([
+		crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+		#crypto.X509Extension("nsCertType", True, "sslCA"),
+		crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+		crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+		crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
+	])
+
+	if srvcert:
+		cert.set_serial_number(int(srvcert.get_serial_number()))
+		if altnames:
+			print("ALTNAMES: %s\n" % altnames)
+			cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+	cert.sign(self.issuerKey, "sha256")
+	with open(certpath, "w") as cert_file:
+		cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+	return certpath
 
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
@@ -771,7 +852,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
-                print("SSLError occurred on "+self.path+e)
+                print("SSLError occurred on %s: %r" % (self.path,e))
                 self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
@@ -1132,7 +1213,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[2:]:
+    if sys.argv[3:]:
+        port = int('8080') #sys.argv[1])
+        device1 = sys.argv[1]
+        device2 = sys.argv[2]
+        if sys.argv[3] == '-T':
+            print("Setting transparent mode")
+            ProxyRewrite.transparent = True
+    elif sys.argv[2:]:
         port = int('8080') #sys.argv[1])
         device1 = sys.argv[1]
         device2 = sys.argv[2]
@@ -1152,6 +1240,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
     if 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
+    elif 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 
