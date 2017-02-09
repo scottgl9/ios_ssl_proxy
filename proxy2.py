@@ -645,11 +645,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
-        # use non-transparent mode
+        # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
-            certpath = self.generate_cert(dst_ip)
+            with self.lock:
+                certpath = self.generate_cert(dst_ip)
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 try:
                     ssl._https_verify_certificates(enable=False)
@@ -715,6 +716,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def generate_cert(self, hostname):
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
+        if os.path.isfile(certpath): return certpath
         if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
