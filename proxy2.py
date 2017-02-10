@@ -99,10 +99,10 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         #if hostname == "ppq.apple.com": return False
-        #if hostname == "albert.apple.com": return False
+        if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
         return True
@@ -726,7 +726,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if ProxyRewrite.dev1info != None and ProxyRewrite.dev2info != None:
             self.headers = ProxyRewrite.rewrite_headers(self.headers, '')
 
-        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
+        if 'captive.apple.com' in self.path or 'static.ips.apple.com' in self.path:
+            self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+            self.connect_intercept()
+        elif os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
             self.connect_relay()
@@ -915,6 +918,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
         elif self.path == 'http://proxy2.gsa/':
             self.send_cacert('certs/gsa.apple.com.crt')
+        elif 'captive.apple.com' in self.path:
+            self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))

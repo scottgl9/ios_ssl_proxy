@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ActivationRandomness</key>
-	<string>2228038D-BA2D-4CB8-8567-F62AB565C39D</string>
+	<key>ActivationState</key>
+	<string>Activated</string>
+	<key>ActivationStateAcknowledged</key>
+	<true/>
 	<key>BasebandActivationTicketVersion</key>
 	<string>V2</string>
 	<key>BasebandCertId</key>
@@ -52,7 +54,7 @@
 			<key>CFBundleIdentifier</key>
 			<string>com.apple.Sprint_CSIM_LTE_US</string>
 			<key>CFBundleVersion</key>
-			<string>25.1</string>
+			<string>27.2</string>
 			<key>IntegratedCircuitCardIdentity</key>
 			<string>89011201002160924092</string>
 			<key>InternationalMobileSubscriberIdentity</key>
@@ -83,14 +85,10 @@
 	<string>iPhone</string>
 	<key>DeviceColor</key>
 	<string>#272728</string>
-	<key>DeviceGUID</key>
-	<string>8BD66AAFFA6CFA8B384F5D9C468D6F5C</string>
 	<key>DeviceName</key>
-	<string>scottgl’s iPhone</string>
+	<string>Scott's iPhone</string>
 	<key>DieID</key>
 	<integer>3404706751931322</integer>
-        <key>EnclosureColor</key>
-        <string>#b9b7ba</string>
 	<key>EthernetAddress</key>
 	<string>90:b0:ed:7a:0e:05</string>
 	<key>FirmwareVersion</key>
@@ -125,6 +123,10 @@
 	<string>MN3E2</string>
 	<key>NonVolatileRAM</key>
 	<dict>
+		<key>IONVRAM-SYNCNOW-PROPERTY</key>
+		<data>
+		SU9OVlJBTS1TWU5DTk9XLVBST1BFUlRZ
+		</data>
 		<key>auto-boot</key>
 		<data>
 		dHJ1ZQ==
@@ -148,14 +150,6 @@
 		<data>
 		aGFuZGxlX21lc3NhZ2U6IE9ibGl0ZXJhdGlvbiBDb21wbGV0ZQ==
 		</data>
-		<key>ota-conv-panic-indicator</key>
-		<data>
-		MTRCNzE=
-		</data>
-		<key>ota-retry-enabled</key>
-		<data>
-		dHJ1ZQ==
-		</data>
 	</dict>
 	<key>PartitionType</key>
 	<string></string>
@@ -171,12 +165,8 @@
 	<string>iPhone OS</string>
 	<key>ProductType</key>
 	<string>iPhone8,2</string>
-	<key>ProductType2</key>
-	<string>iPhone8_2</string>
 	<key>ProductVersion</key>
 	<string>10.2.1</string>
-        <key>ProductVersion2</key>
-        <string>10_2_1</string>
 	<key>ProductionSOC</key>
 	<true/>
 	<key>ProtocolVersion</key>
@@ -188,8 +178,6 @@
 	</data>
 	<key>RegionInfo</key>
 	<string>LL/A</string>
-	<key>RegulatoryModelNumber</key>
-	<string>A1687</string>
 	<key>SBLockdownEverRegisteredKey</key>
 	<true/>
 	<key>SIMGID1</key>
@@ -219,7 +207,7 @@
 	<key>TelephonyCapability</key>
 	<true/>
 	<key>TimeIntervalSince1970</key>
-	<real>1479940494.385099</real>
+	<real>1486718169.489680</real>
 	<key>TimeZone</key>
 	<string>America/Chicago</string>
 	<key>TimeZoneOffsetFromUTC</key>
@@ -239,7 +227,7 @@
 	<key>WiFiAddress</key>
 	<string>90:b0:ed:7a:0e:03</string>
 	<key>kCTPostponementInfoPRIVersion</key>
-	<string>0.1.152</string>
+	<string>0.1.156</string>
 	<key>kCTPostponementInfoPRLName</key>
 	<integer>0</integer>
 	<key>kCTPostponementInfoServiceProvisioningState</key>
@@ -247,21 +235,23 @@
 	<key>kCTPostponementStatus</key>
 	<string>kCTPostponementStatusActivated</string>
 	<key>AmountDataAvailable</key>
-	<integer>15027736576</integer>
+	<integer>22081581056</integer>
 	<key>AmountDataReserved</key>
 	<integer>209715200</integer>
 	<key>CalculateDiskUsage</key>
 	<string>OkilyDokily</string>
 	<key>TotalDataAvailable</key>
-	<integer>15237451776</integer>
+	<integer>22291296256</integer>
 	<key>TotalDataCapacity</key>
-	<integer>27623735296</integer>
+	<integer>27560370176</integer>
 	<key>TotalDiskCapacity</key>
 	<integer>31698497536</integer>
 	<key>TotalSystemAvailable</key>
 	<integer>335544320</integer>
 	<key>TotalSystemCapacity</key>
-	<integer>4074762240</integer>
+	<integer>4138127360</integer>
+	<key>ActivationInfoComplete</key>
+	<true/>
 	<key>ActivationInfoXML</key>
 	<data>
 	PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBs
