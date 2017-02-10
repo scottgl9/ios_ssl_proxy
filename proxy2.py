@@ -157,6 +157,24 @@ class ProxyRewrite:
             return text
 
     @staticmethod
+    def rewrite_plist_body(headers, text):
+        text = text[text.find('<?xml'):text.find('</plist>')+8]
+        boundary = headers['Content-Type'].split('=')[1]
+        print("Boundary = %s" % boundary)
+        p = plistlib.readPlistFromString(text)
+        attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
+        if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+        if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+        if 'RegulatoryModelNumber' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'RegulatoryModelNumber'))
+        text_modified = ProxyRewrite.rewrite_body_attribs(str(p['ActivationInfoXML']), attribs, '')
+        p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
+        text = ("--%s\nContent-Disposition: form-data; name=\"activation-info\"\n\n%s\n--%s--" % (boundary,plistlib.writePlistToString(p),boundary))
+        print(text)
+
+    @staticmethod
     def replace_header_field(headers, field, attrib):
         if field not in headers: return headers
 
@@ -1169,6 +1187,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_plain = self.decode_content_body(str(req_body), content_encoding)
+
+        if ('albert.apple.com' in req.path and 'deviceActivation' in req.path):
+            ProxyRewrite.rewrite_plist_body(req.headers, req_body_plain)
 
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
