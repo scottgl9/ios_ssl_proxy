@@ -102,7 +102,7 @@ class ProxyRewrite:
         if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         #if hostname == "ppq.apple.com": return False
-        if hostname == "albert.apple.com": return False
+        #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
         return True
@@ -162,15 +162,23 @@ class ProxyRewrite:
         boundary = headers['Content-Type'].split('=')[1]
         print("Boundary = %s" % boundary)
         p = plistlib.readPlistFromString(text)
-        attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
-        if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-            attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-        if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-            attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-        if 'RegulatoryModelNumber' in ProxyRewrite.dev1info:
-            attribs = ("%s,%s" % (attribs, 'RegulatoryModelNumber'))
-        text_modified = ProxyRewrite.rewrite_body_attribs(str(p['ActivationInfoXML']), attribs, '')
-        p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
+        if 'ActivationInfoXML' in ProxyRewrite.dev2info:
+            # copy straight from device info
+            p['ActivationInfoXML'] = ProxyRewrite.dev2info['ActivationInfoXML']
+            if 'FairPlayCertChain' in ProxyRewrite.dev2info:
+                p['FairPlayCertChain'] = ProxyRewrite.dev2info['FairPlayCertChain']
+            if 'FairPlaySignature' in ProxyRewrite.dev2info:
+                p['FairPlaySignature'] = ProxyRewrite.dev2info['FairPlaySignature']
+        else:
+            attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
+            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'RegulatoryModelNumber' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'RegulatoryModelNumber'))
+            text_modified = ProxyRewrite.rewrite_body_attribs(str(p['ActivationInfoXML']), attribs, '')
+            p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
         text = ("--%s\nContent-Disposition: form-data; name=\"activation-info\"\n\n%s\n--%s--" % (boundary,plistlib.writePlistToString(p),boundary))
         print(text)
 
@@ -1268,8 +1276,6 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
     if 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
-    elif 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
-    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 

@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>ActivationState</key>
-	<string>Unactivated</string>
-	<key>aps-token</key>
-	<string>608E63B24EC6010F42F8AADB18C3B01F60C5DAB1B767A92064F33733DCF00034</string>
+	<string>Activated</string>
+	<key>ActivationStateAcknowledged</key>
+	<true/>
 	<key>BasebandActivationTicketVersion</key>
 	<string>V2</string>
 	<key>BasebandCertId</key>
@@ -37,7 +37,7 @@
 	<key>BasebandStatus</key>
 	<string>BBInfoAvailable</string>
 	<key>BasebandVersion</key>
-	<string>7.01.00</string>
+	<string>7.21.00</string>
 	<key>BluetoothAddress</key>
 	<string>b4:4b:d2:c7:8a:f2</string>
 	<key>BoardId</key>
@@ -45,11 +45,33 @@
 	<key>BrickState</key>
 	<true/>
 	<key>BuildVersion</key>
-	<string>14B100</string>
+	<string>14D27</string>
 	<key>CPUArchitecture</key>
 	<string>arm64</string>
 	<key>CarrierBundleInfoArray</key>
 	<array>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.apple.Verizon_TFW_LTE_US</string>
+			<key>CFBundleVersion</key>
+			<string>27.1</string>
+			<key>IntegratedCircuitCardIdentity</key>
+			<string>89148000002885325180</string>
+			<key>InternationalMobileSubscriberIdentity</key>
+			<string>311480288742558</string>
+			<key>MCC</key>
+			<string>311</string>
+			<key>MNC</key>
+			<string>480</string>
+			<key>SIMGID1</key>
+			<data>
+			ugEnAAAAAAA=
+			</data>
+			<key>SIMGID2</key>
+			<data>
+			oQAAAAAAAAA=
+			</data>
+		</dict>
 	</array>
 	<key>CertID</key>
 	<integer>3554301762</integer>
@@ -74,7 +96,7 @@
 	<key>EthernetAddress</key>
 	<string>b4:4b:d2:c7:8a:d2</string>
 	<key>FirmwareVersion</key>
-	<string>iBoot-3406.20.16</string>
+	<string>iBoot-3406.42.5</string>
 	<key>FusingStatus</key>
 	<integer>3</integer>
 	<key>HardwareModel</key>
@@ -83,16 +105,20 @@
 	<string>s5l8960x</string>
 	<key>HostAttached</key>
 	<true/>
+	<key>IntegratedCircuitCardIdentity</key>
+	<string>89148000002885325180</string>
 	<key>InternationalMobileEquipmentIdentity</key>
 	<string>352031066207191</string>
+	<key>InternationalMobileSubscriberIdentity</key>
+	<string>311480288742558</string>
 	<key>MLBSerialNumber</key>
 	<string>FJ6637704D5FN64J</string>
 	<key>MobileEquipmentIdentifier</key>
 	<string>35203106620719</string>
 	<key>MobileSubscriberCountryCode</key>
-	<string></string>
+	<string>311</string>
 	<key>MobileSubscriberNetworkCode</key>
-	<string></string>
+	<string>480</string>
 	<key>ModelNumber</key>
 	<string>MN6T2</string>
 	<key>NonVolatileRAM</key>
@@ -111,9 +137,14 @@
 		<data>
 		MA==
 		</data>
-		<key>enable-rolld-dev1</key>
+		<key>oblit-begins</key>
 		<data>
-		L2Rldi9kaXNrMHMxczI=
+		T2JsaXRUeXBlOiBPYmxpdGVyYXRlRGF0YVBhcnRpdGlvbi4gUmVhc29uOiB1bmtub3du
+		
+		</data>
+		<key>obliteration</key>
+		<data>
+		aGFuZGxlX21lc3NhZ2U6IE9ibGl0ZXJhdGlvbiBDb21wbGV0ZQ==
 		</data>
 	</dict>
 	<key>PartitionType</key>
@@ -129,9 +160,9 @@
 	<key>ProductType</key>
 	<string>iPhone6,1</string>
 	<key>ProductVersion</key>
-	<string>10.1.1</string>
+	<string>10.2.1</string>
 	<key>ProductVersion2</key>
-	<string>10_1_1</string>
+	<string>10_2_1</string>
 	<key>ProductionSOC</key>
 	<true/>
 	<key>ProtocolVersion</key>
@@ -208,5 +239,134 @@
 	<integer>167772160</integer>
 	<key>TotalSystemCapacity</key>
 	<integer>3604496384</integer>
+	<key>ActivationInfoXML</key>
+	<data>
+	PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBs
+	aXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3
+	dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJz
+	aW9uPSIxLjAiPgo8ZGljdD4KCTxrZXk+QWN0aXZhdGlvblJhbmRvbW5lc3M8L2tleT4K
+	CTxzdHJpbmc+MkY1NkY4MjMtNDZBMy00OTRGLUE2ODQtMzM3Rjg5OEM1MTUzPC9zdHJp
+	bmc+Cgk8a2V5PkFjdGl2YXRpb25SZXF1aXJlc0FjdGl2YXRpb25UaWNrZXQ8L2tleT4K
+	CTx0cnVlLz4KCTxrZXk+QWN0aXZhdGlvblN0YXRlPC9rZXk+Cgk8c3RyaW5nPkFjdGl2
+	YXRlZDwvc3RyaW5nPgoJPGtleT5CYXNlYmFuZEFjdGl2YXRpb25UaWNrZXRWZXJzaW9u
+	PC9rZXk+Cgk8c3RyaW5nPlYyPC9zdHJpbmc+Cgk8a2V5PkJhc2ViYW5kQ2hpcElEPC9r
+	ZXk+Cgk8aW50ZWdlcj43MjgyOTEzPC9pbnRlZ2VyPgoJPGtleT5CYXNlYmFuZE1hc3Rl
+	cktleUhhc2g8L2tleT4KCTxzdHJpbmc+QUVBNUNDRTE0MzY2OEQwRUZCNENFMUYyQzk0
+	Qzk2NkE2NDk2QzZBQTwvc3RyaW5nPgoJPGtleT5CYXNlYmFuZFNlcmlhbE51bWJlcjwv
+	a2V5PgoJPGRhdGE+CglQQjUvaXc9PQoJPC9kYXRhPgoJPGtleT5CdWlsZFZlcnNpb248
+	L2tleT4KCTxzdHJpbmc+MTREMjc8L3N0cmluZz4KCTxrZXk+RGV2aWNlQ2VydFJlcXVl
+	c3Q8L2tleT4KCTxkYXRhPgoJTFMwdExTMUNSVWRKVGlCRFJWSlVTVVpKUTBGVVJTQlNS
+	VkZWUlZOVUxTMHRMUzBLVFVsSlFuaEVRME5CVXpCRFFWRkIKCWQyZFpUWGhNVkVGeVFt
+	ZE9Wa0pCVFZSS1JWRjNVbFJGTUZGcWF6Sk1WVXBEVVd0VmRFNUZUa1pOVXpGRFRXcHJk
+	dzBLCglURlJyZWs1NlFURk9SRWw0VVZSQk5VOVVSVXhOUVd0SFFURlZSVUpvVFVOV1Zr
+	MTRRM3BCU2tKblRsWkNRV2RVUVd0TwoJUWsxU1NYZEZRVmxFVmxGUlNBMEtSWGRzUkdS
+	WVFteGpibEp3WW0wNGVFVjZRVkpDWjA1V1FrRnZWRU5yUm5kalIzaHMKCVNVVnNkVmw1
+	TkhoRWVrRk9RbWRPVmtKQmMxUkNiV3hSWVVjNWRRMEtXbFJEUW01NlFVNUNaMnR4YUd0
+	cFJ6bDNNRUpCCglVVVZHUVVGUFFtcFJRWGRuV1d0RFoxbEZRV2xDYTBKU1VsUnhiRFJs
+	Y0dGeGFWTndVMnh6VUhBeFZnMEtlVGwzYW0xNAoJWVVFM1FXcGpjaTlWUms0dmRtTTBU
+	RWhvTDFSVVpEazRSbEExU21SdWIybE1TRGgwUTFGSWRUSmlXVkJNVFZobGRqWkwKCU0y
+	RjJkMUU0VlEwS09HWnlOMkpLWVROclZHTkxMME5uVWpaTFIwTlBVeXREV21nM1ZucFJT
+	R2hzVFVaUGMyOWlaemwxCgliVlUzYUhkUlJuUkdkek42ZFVJME1tcFFlV1ZaWVEwS1lt
+	RkJOWG81TldsVmJIUlhWSEpNVGs1cE9FTkJkMFZCUVdGQgoJUVUxQk1FZERVM0ZIVTBs
+	aU0wUlJSVUpDVVZWQlFUUkhRa0ZCYTFRclRqbHpNVzB2UmcwS1IweHZjRVp2T1c0NE5V
+	bHcKCVdUZ3lWRms0VGpCclUxVnRVWHB2TjI5RE0wcDFaRVJOU1ZWcGRXTkNaa3h1Ym1w
+	d1dWWlpORXN4TlRkR2R6QnhLM2RXCglOdzBLWVM5bVoyTlNibTVVVm1WT2VEaElSbmhS
+	VTFFeVMwcENlbEJFVW5WV1pFY3dkM1ZDVDBSM05tUkJOV1F4YW1OaQoJWWxkSmVGTkZX
+	a2xrZDNwTUsxcHBRUTBLTVVKMFVUWnVWbmMwS3k5S1pFUlljbFp5ZG5scmVVUXlaemx5
+	UzFaMlUwVUsKCUxTMHRMUzFGVGtRZ1EwVlNWRWxHU1VOQlZFVWdVa1ZSVlVWVFZDMHRM
+	UzB0Cgk8L2RhdGE+Cgk8a2V5PkRldmljZUNsYXNzPC9rZXk+Cgk8c3RyaW5nPmlQaG9u
+	ZTwvc3RyaW5nPgoJPGtleT5EZXZpY2VWYXJpYW50PC9rZXk+Cgk8c3RyaW5nPkI8L3N0
+	cmluZz4KCTxrZXk+Rk1pUEFjY291bnRFeGlzdHM8L2tleT4KCTx0cnVlLz4KCTxrZXk+
+	SW50ZWdyYXRlZENpcmN1aXRDYXJkSWRlbnRpdHk8L2tleT4KCTxzdHJpbmc+ODkxNDgw
+	MDAwMDI4ODUzMjUxODA8L3N0cmluZz4KCTxrZXk+SW50ZXJuYXRpb25hbE1vYmlsZUVx
+	dWlwbWVudElkZW50aXR5PC9rZXk+Cgk8c3RyaW5nPjM1MjAzMTA2NjIwNzE5MTwvc3Ry
+	aW5nPgoJPGtleT5JbnRlcm5hdGlvbmFsTW9iaWxlU3Vic2NyaWJlcklkZW50aXR5PC9r
+	ZXk+Cgk8c3RyaW5nPjMxMTQ4MDI4ODc0MjU1ODwvc3RyaW5nPgoJPGtleT5Nb2JpbGVF
+	cXVpcG1lbnRJZGVudGlmaWVyPC9rZXk+Cgk8c3RyaW5nPjM1MjAzMTA2NjIwNzE5PC9z
+	dHJpbmc+Cgk8a2V5Pk1vZGVsTnVtYmVyPC9rZXk+Cgk8c3RyaW5nPk1ONlQyPC9zdHJp
+	bmc+Cgk8a2V5Pk9TVHlwZTwva2V5PgoJPHN0cmluZz5pUGhvbmUgT1M8L3N0cmluZz4K
+	CTxrZXk+UHJvZHVjdFR5cGU8L2tleT4KCTxzdHJpbmc+aVBob25lNiwxPC9zdHJpbmc+
+	Cgk8a2V5PlByb2R1Y3RWZXJzaW9uPC9rZXk+Cgk8c3RyaW5nPjEwLjIuMTwvc3RyaW5n
+	PgoJPGtleT5SZWdpb25Db2RlPC9rZXk+Cgk8c3RyaW5nPkxMPC9zdHJpbmc+Cgk8a2V5
+	PlJlZ2lvbkluZm88L2tleT4KCTxzdHJpbmc+TEwvQTwvc3RyaW5nPgoJPGtleT5SZWd1
+	bGF0b3J5TW9kZWxOdW1iZXI8L2tleT4KCTxzdHJpbmc+QTE0NTM8L3N0cmluZz4KCTxr
+	ZXk+U0lNR0lEMTwva2V5PgoJPGRhdGE+Cgl1Zz09Cgk8L2RhdGE+Cgk8a2V5PlNJTUdJ
+	RDI8L2tleT4KCTxkYXRhPgoJb1E9PQoJPC9kYXRhPgoJPGtleT5TSU1TdGF0dXM8L2tl
+	eT4KCTxzdHJpbmc+a0NUU0lNU3VwcG9ydFNJTVN0YXR1c1JlYWR5PC9zdHJpbmc+Cgk8
+	a2V5PlNlcmlhbE51bWJlcjwva2V5PgoJPHN0cmluZz5EWDNTRkc5VEZGRE48L3N0cmlu
+	Zz4KCTxrZXk+U3VwcG9ydHNQb3N0cG9uZW1lbnQ8L2tleT4KCTx0cnVlLz4KCTxrZXk+
+	VW5pcXVlQ2hpcElEPC9rZXk+Cgk8aW50ZWdlcj42MjgxNTc1NzI0NzYwPC9pbnRlZ2Vy
+	PgoJPGtleT5VbmlxdWVEZXZpY2VJRDwva2V5PgoJPHN0cmluZz5hNjRiYWRjMzQ4Nzk2
+	MTlmNjZiNTZkNWM5MDE3MGVmMWFlNzNiMWRhPC9zdHJpbmc+Cgk8a2V5PmtDVFBvc3Rw
+	b25lbWVudEluZm9QUklWZXJzaW9uPC9rZXk+Cgk8c3RyaW5nPjAuMS45MTwvc3RyaW5n
+	PgoJPGtleT5rQ1RQb3N0cG9uZW1lbnRJbmZvUFJMTmFtZTwva2V5PgoJPGludGVnZXI+
+	MTwvaW50ZWdlcj4KCTxrZXk+a0NUUG9zdHBvbmVtZW50SW5mb1NlcnZpY2VQcm92aXNp
+	b25pbmdTdGF0ZTwva2V5PgoJPGZhbHNlLz4KPC9kaWN0Pgo8L3BsaXN0Pgo=
+	</data>
+	<key>FairPlayCertChain</key>
+	<data>
+	MIICxDCCAi2gAwIBAgINMzOvBwQCrwACrwAABDANBgkqhkiG9w0BAQUFADB7MQswCQYD
+	VQQGEwJVUzETMBEGA1UEChMKQXBwbGUgSW5jLjEmMCQGA1UECxMdQXBwbGUgQ2VydGlm
+	aWNhdGlvbiBBdXRob3JpdHkxLzAtBgNVBAMTJkFwcGxlIEZhaXJQbGF5IENlcnRpZmlj
+	YXRpb24gQXV0aG9yaXR5MB4XDTA3MDQwMjE1MTcyOFoXDTEyMDMzMTE1MTcyOFowZzEL
+	MAkGA1UEBhMCVVMxEzARBgNVBAoTCkFwcGxlIEluYy4xFzAVBgNVBAsTDkFwcGxlIEZh
+	aXJQbGF5MSowKAYDVQQDEyFpUGhvbmUuMzMzM0FGMDcwNDAyQUYwMDAyQUYwMDAwMDQw
+	gZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAOrE+Z6WlHVaKLMKgqpfXSX7wR04C/Up
+	7mPuhwI9ldnu6ZfAGKaDZxaNR030f5Q/F4y1mf0VAp+L4zVmE6Em61TnMDCc/yV+8sYG
+	DxLzkYOaTyCisLWuKKkzcjm+MZjjU1rzqjhFVRm0A0TUUtIurSlztHjdTKiLiOvMZDki
+	1zu5AgMBAAGjYDBeMA4GA1UdDwEB/wQEAwIDuDAMBgNVHRMBAf8EAjAAMB0GA1UdDgQW
+	BBSZP3GmZC2yR1M58Fm1Wg/htEgO6DAfBgNVHSMEGDAWgBT6DdQRkRvmsk4eBkmUEd1j
+	YgdZZDANBgkqhkiG9w0BAQUFAAOBgQAlQDFS1ADhOGky3OYXqHLU/2bJTPBjlsZHAADH
+	Q2Msm2YOK8Hvx6SO++dSg7lM6E0/PI91WgcrYGsKQyz9xaxkDs9+1JifB2msGbgu7R/r
+	x1fWFf+s5eqy19aefXS8mLrxiPaeNry3pVLLu7aX7IokNBU8iWy6H5I4vTRhu32QxzCC
+	A3EwggJZoAMCAQICAREwDQYJKoZIhvcNAQEFBQAwYjELMAkGA1UEBhMCVVMxEzARBgNV
+	BAoTCkFwcGxlIEluYy4xJjAkBgNVBAsTHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9y
+	aXR5MRYwFAYDVQQDEw1BcHBsZSBSb290IENBMB4XDTA3MDIxNDE5MjA0MVoXDTEyMDIx
+	NDE5MjA0MVowezELMAkGA1UEBhMCVVMxEzARBgNVBAoTCkFwcGxlIEluYy4xJjAkBgNV
+	BAsTHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MS8wLQYDVQQDEyZBcHBsZSBG
+	YWlyUGxheSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTCBnzANBgkqhkiG9w0BAQEFAAOB
+	jQAwgYkCgYEAsmc8XSrnj/J3z+8xvNEE/eqf0IYpkAqj/2RK72n0CrnvxMRjyjotIT1S
+	jCOJKarbF9zLKMRpzXIkwhDB9HgdMRbF5uoZHSozvoCr3BFIBiofDmGBzXmaXRL0hJDI
+	fPZ4m1L4+vGIbhBy+F3LiOy2VRSXpE0LwU8nZ5mmpLPX2q0CAwEAAaOBnDCBmTAOBgNV
+	HQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQU+g3UEZEb5rJOHgZJ
+	lBHdY2IHWWQwHwYDVR0jBBgwFoAUK9BpR5R2Cf70a40uQKb3R01/CF4wNgYDVR0fBC8w
+	LTAroCmgJ4YlaHR0cDovL3d3dy5hcHBsZS5jb20vYXBwbGVjYS9yb290LmNybDANBgkq
+	hkiG9w0BAQUFAAOCAQEAwKBz+B3qHNHNxYZ1pLvrQMVqLQz+W/xuwVvXSH1AqWEtSzdw
+	OO8GkUuvEcIfle6IM29fcur21Xa1V1hx8D4Qw9Uuuy+mOnPCMmUKVgQWGZhNC3ht0KN0
+	ZJhU9KfXHaL/KsN5ALKZ5+e71Qai60kzaWdBAZmtaLDTevSV4P0kiCoQ56No/617+tm6
+	8aV/ypOizgM3A2aFkwUbMfZ1gpMv0/DaOTc9X/66zZpwwAaLIu6pzgRuJGk7FlKlwPLA
+	rkNwhLshkUPLu7fqW7qT4Ld3ie9NVgQzXc5cWTGn1ztFVhHNrsubDqDP3JOoysVYeAAF
+	2Zmr1l6H6pJzNFSjkxikgzCCBLswggOjoAMCAQICAQIwDQYJKoZIhvcNAQEFBQAwYjEL
+	MAkGA1UEBhMCVVMxEzARBgNVBAoTCkFwcGxlIEluYy4xJjAkBgNVBAsTHUFwcGxlIENl
+	cnRpZmljYXRpb24gQXV0aG9yaXR5MRYwFAYDVQQDEw1BcHBsZSBSb290IENBMB4XDTA2
+	MDQyNTIxNDAzNloXDTM1MDIwOTIxNDAzNlowYjELMAkGA1UEBhMCVVMxEzARBgNVBAoT
+	CkFwcGxlIEluYy4xJjAkBgNVBAsTHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5
+	MRYwFAYDVQQDEw1BcHBsZSBSb290IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+	CgKCAQEA5JGpCR+R2x5HUOsF7V55hC3rNqJXTFXsixmJ3vlLbPUHqyIwAugYPvhQCdN/
+	QaiY+dHKZpwkaxHQo7vkGyrDH5WeegykR4tb1BY3M8vED03OFGnRyRly9V0O1X9fm/Il
+	A7pVj01dDfFkNSMVSxVZHbOU9/acns9QusFYUGePCLQg98usLCBvcLY/ATCMt0PPD509
+	8ytJKBrI/s61uQ7ZXhzWyz21Oq30Dw4AkguxIRYudNU8DdtiFqujcZJHU1XBry9Bs/j7
+	43DN5qNMRX4fTGtQlkGJxHRiCxCDQYczioGxMFjsWgQyjGizjx3eZXP/Z15lvEnYdp8z
+	FGWhd5TJLQIDAQABo4IBejCCAXYwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMB
+	Af8wHQYDVR0OBBYEFCvQaUeUdgn+9GuNLkCm90dNfwheMB8GA1UdIwQYMBaAFCvQaUeU
+	dgn+9GuNLkCm90dNfwheMIIBEQYDVR0gBIIBCDCCAQQwggEABgkqhkiG92NkBQEwgfIw
+	KgYIKwYBBQUHAgEWHmh0dHBzOi8vd3d3LmFwcGxlLmNvbS9hcHBsZWNhLzCBwwYIKwYB
+	BQUHAgIwgbYagbNSZWxpYW5jZSBvbiB0aGlzIGNlcnRpZmljYXRlIGJ5IGFueSBwYXJ0
+	eSBhc3N1bWVzIGFjY2VwdGFuY2Ugb2YgdGhlIHRoZW4gYXBwbGljYWJsZSBzdGFuZGFy
+	ZCB0ZXJtcyBhbmQgY29uZGl0aW9ucyBvZiB1c2UsIGNlcnRpZmljYXRlIHBvbGljeSBh
+	bmQgY2VydGlmaWNhdGlvbiBwcmFjdGljZSBzdGF0ZW1lbnRzLjANBgkqhkiG9w0BAQUF
+	AAOCAQEAXDaZTC14t+2Mm9zzd5vydtJ3ME/BH4WDhRuZPUc38qmbQI4s1LGQEti+9HOb
+	7tJkD8t5TzTYoj75eP9ryAfsfTmDi1Mg0zjEsb+aTwpr/yv8WacFCXwXQFYRHnTTt4sj
+	O0ej1W8k4uvRt3DfD0XhJ8rxbXjt57UXF6jcfiI1yiXV2Q/Wa9SiJCMR96Gsj3OBYMYb
+	WwkvkrL4REjwYDieFfU9JmcgijNq9w2Cz97roy/5U2pbZMBjM3f3OgcsVuvaDyEO2rpz
+	GU+12TZ/wYdV2aeZuTJC+9jVcZ5+oVK3G72TQiQSKscPHbZNnF5jyEuAF1CqitXa5PzQ
+	CQc3sHV1IQ==
+	</data>
+	<key>FairPlaySignature</key>
+	<data>
+	peM1w/8vGZTvma1vDbMv5dh/yH+gnrJO+hh0tMHUJWPYMxSsSlm+kHEifOKJsry5Voe5
+	E6jHVRyXlzBvQX77Kev39uQPcP/VUgBUpMY/mE/IUC9fOyXETtJ2GaZRXrRzwS50+97u
+	aQVCIGElAj8n4Gpl9V7EPOUl2mdLVleup84=
+	</data>
 </dict>
 </plist>
