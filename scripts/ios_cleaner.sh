@@ -48,7 +48,6 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
-#rm -rf /var/mobile/Library/Caches/com.apple.*
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
 # Respring

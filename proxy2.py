@@ -99,31 +99,13 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
-        #if hostname == "ppq.apple.com": return False
+        if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
         return True
-
-    @staticmethod
-    def rewrite_body_this_host(hostname):
-        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
-        hostname = hostname.replace(':443','')
-        if hostname == 'xp.apple.com': return True
-        if hostname == 'setup.icloud.com': return True
-        if hostname == 'p62-fmf.icloud.com': return True
-        if hostname == 'p59-fmf.icloud.com': return True
-        if hostname == 'p57-fmf.icloud.com': return True
-        if hostname == 'p51-fmf.icloud.com': return True
-        if hostname == 'p15-fmf.icloud.com': return True
-        if hostname == 'p62-fmfmobile.icloud.com': return True
-        if hostname == 'p59-fmfmobile.icloud.com': return True
-        if hostname == 'p57-fmfmobile.icloud.com': return True
-        if hostname == 'p51-fmfmobile.icloud.com': return True
-        if hostname == 'p15-fmfmobile.icloud.com': return True
-        return False
 
     @staticmethod
     def replace_json_fields(text, fields, value):
@@ -157,8 +139,28 @@ class ProxyRewrite:
             return text
 
     @staticmethod
-    def rewrite_plist_body(headers, text):
+    def rewrite_plist_body_attribs(headers, text, attrdict, subname):
+        p = plistlib.readPlistFromString(text)
+        if subname != '' and subname in p:
+            psub = p[subname]
+        else:
+            psub = p
+        for (key, value) in attrdict.items():
+            if value in ProxyRewrite.dev2info:
+                print("setting body plist attrib %s to value %s" % (key, ProxyRewrite.dev2info[value]))
+                psub[key] = ProxyRewrite.dev2info[value]
+        if subname != '' and subname in p:
+            p[subname] = psub
+        else:
+            p = psub
+        text = plistlib.writePlistToString(p)
+        return text
+
+    @staticmethod
+    def rewrite_plist_body_activation(headers, text):
         text = text[text.find('<?xml'):text.find('</plist>')+8]
+        print(headers)
+        if headers['Content-Type'] == 'application/x-plist': return
         boundary = headers['Content-Type'].split('=')[1]
         print("Boundary = %s" % boundary)
         p = plistlib.readPlistFromString(text)
@@ -442,8 +444,9 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
-
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+            body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
+
             return body
         elif 'buy.itunes.apple.com' in hostname:
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,DeviceClass', hostname)
@@ -567,6 +570,9 @@ class ProxyRewrite:
 
         if 'X-Apple-ATS-Cache-Key' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,ProductType,ProductVersion')
+
+        if 'X-Apple-TA-Device' in headers:
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-TA-Device', 'BuildVersion,ProductType,ProductVersion')
 
         return headers
 
@@ -1110,6 +1116,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def print_info(self, req, req_body, res, res_body):
+        if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path: return
+
         def parse_qsl(s):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
 
@@ -1201,9 +1209,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-        if ('albert.apple.com' in req.path and 'deviceActivation' in req.path):
-            ProxyRewrite.rewrite_plist_body(req.headers, req_body_plain)
-
+        if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
+             req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
