@@ -99,7 +99,7 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -371,10 +371,10 @@ class ProxyRewrite:
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
-            if "hasCellularCapability</key>\n\t\t<false/>" in body:
+            if "hasCellularCapability</key>\n\t\t<false/>" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>meid</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
                 print(body)
-            elif "\"hasCellularCapability\":false" in body:
+            elif "\"hasCellularCapability\":false" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
                 body = body.replace("\"hasCellularCapability\":false", "\"hasCellularCapability\":true,\"imei\":" + ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'])
                 print("hasCellularCapability:true")
             return body
@@ -740,10 +740,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if ProxyRewrite.dev1info != None and ProxyRewrite.dev2info != None:
             self.headers = ProxyRewrite.rewrite_headers(self.headers, '')
 
-        if 'captive.apple.com' in self.path or 'static.ips.apple.com' in self.path:
-            self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
-            self.connect_intercept()
-        elif os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
+        #if 'captive.apple.com' in self.path or 'static.ips.apple.com' in self.path:
+        #    self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+        #    self.connect_intercept()
+        if os.path.isfile(self.cakey) and os.path.isfile(self.cacert) and os.path.isfile(self.certkey) and os.path.isdir(self.certdir) and ProxyRewrite.intercept_this_host(hostname):
             self.connect_intercept()
         else:
             self.connect_relay()
@@ -812,75 +812,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
-        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
-        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
-        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
-            srvcertname = "server_certs/icloud.com.crt"
-        elif 'fmip.icloud.com' in hostname:
-            srvcertname = "server_certs/fmip.icloud.com.crt"
-        elif 'itunes.apple.com' in hostname:
-            srvcertname = "server_certs/itunes.apple.com.crt"
-        else:
-            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
-        srvcert=None
-        altnames=None
 
-        with self.lock:
-            if not os.path.isfile(certpath):
-                if os.path.isfile(srvcertname):
-                    st_cert=open(srvcertname, 'rt').read()
-                    srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-                    altnames = ProxyRewrite.altnames(srvcert)
-                req = crypto.X509Req()
-                if srvcert:
-                    subject = srvcert.get_subject()
-                    req.get_subject().CN = subject.CN
-                    req.get_subject().O = subject.O
-                    req.get_subject().C = subject.C
-                    req.get_subject().OU = subject.OU
-                else:
-                    req.get_subject().CN = hostname
-                req.set_pubkey(self.certKey)
-                req.sign(self.certKey, "sha1")
-                cert = crypto.X509()
-                try:
-                    cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
-                except OpenSSL.SSL.Error:
-                    epoch = int(time.time() * 1000)
-                    cert.set_serial_number(epoch)
-
-                cert.gmtime_adj_notBefore(0)
-                cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
-                cert.set_issuer(self.issuerCert.get_subject())
-                cert.set_subject(req.get_subject())
-                cert.set_pubkey(req.get_pubkey())
-                #cert.set_version(2)
-
-                cert.add_extensions([
-                    crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
-                    #crypto.X509Extension("nsCertType", True, "sslCA"),
-                    crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-                    crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
-                    crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
-                ])
-
-                if srvcert:
-                    cert.set_serial_number(int(srvcert.get_serial_number()))
-                    if altnames:
-                        print("ALTNAMES: %s\n" % altnames)
-                        cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
-
-                cert.sign(self.issuerKey, "sha256")
-                with open(certpath, "w") as cert_file:
-                    cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-
+        certpath = self.generate_cert(hostname)
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
-
-        #if 'gsa.apple.com' in self.path or 'gsas.apple.com' in self.path or 'fmip.icloud.com' in self.path:
-        #    print(self.path)
-        #    print(self.headers)
 
         try:
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
@@ -932,8 +868,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
         elif self.path == 'http://proxy2.gsa/':
             self.send_cacert('certs/gsa.apple.com.crt')
-        elif 'captive.apple.com' in self.path:
-            self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+        #elif 'captive.apple.com' in self.path:
+        #    self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))

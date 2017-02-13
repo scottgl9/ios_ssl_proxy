@@ -149,6 +149,8 @@
 	</dict>
 	<key>PartitionType</key>
 	<string></string>
+	<key>PhoneNumber</key>
+	<string>+3463123284</string>
 	<key>PasswordProtected</key>
 	<false/>
 	<key>PkHash</key>

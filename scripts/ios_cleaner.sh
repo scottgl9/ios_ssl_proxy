@@ -1,6 +1,6 @@
 #!/bin/sh
 
-killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
+#killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
 rm -f /var/Keychains/*.db*
 rm -f /var/Keychains/*.sqlite*
 rm -f /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
@@ -49,6 +49,8 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
-killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
+rm -rf /var/root/Library/Lockdown
+reboot
+#killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
 # Respring
-killall -9 backboardd SpringBoard
+#killall -9 backboardd SpringBoard
