@@ -27,7 +27,8 @@ from pyasn1.error import PyAsn1Error
 import fcntl
 import struct
 import binascii
-
+import netifaces
+import hashlib
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -81,22 +82,26 @@ class ProxyRewrite:
     dev1info = dict()
     logger = None
     con = None
+    transparent = False
 
     @staticmethod
     def load_device_info(sn):
-        device = plistlib.readPlist("devices/%s.xml" % sn)
+        if '.xml' in sn:
+            device = plistlib.readPlist(sn)
+        else:
+            device = plistlib.readPlist("devices/%s.xml" % sn)
         return device
 
     @staticmethod
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
-        if hostname == "albert.apple.com": return False
-        if hostname == "static.ips.apple.com": return False
-        if hostname == "captive.apple.com": return False
+        #if hostname == "albert.apple.com": return False
+        #if hostname == "static.ips.apple.com": return False
+        #if hostname == "captive.apple.com": return False
         return True
 
     @staticmethod
@@ -225,8 +230,25 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 	_, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
 	dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
 	peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-        print('Client %s -> %s:443' % (peername, dst_ip))
-        """Handle multiple requests if necessary."""
+        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        # use transparent mode
+        if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+            with self.lock:
+                certpath = self.generate_cert(dst_ip)
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            except ssl.SSLError as e:
+                try:
+                    ssl._https_verify_certificates(enable=False)
+                    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                except ssl.SSLError as e:
+                    print("SSLError occurred on %s: %r" % (dst_ip,e))
+                    #self.finish()
+
+        self.rfile = self.connection.makefile("rb", self.rbufsize)
+        self.wfile = self.connection.makefile("wb", self.wbufsize)
+
+        #    """Handle multiple requests if necessary."""
         self.close_connection = 1
         self.handle_one_request()
         while not self.close_connection:
@@ -674,19 +696,23 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
+        req_body_plain = req_body
+        if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
+            content_encoding = req.headers.get('Content-Encoding', 'identity')
+            req_body_plain = self.decode_content_body(str(req_body), content_encoding)
+
         if 'InternationalMobileEquipmentIdentity' not in ProxyRewrite.dev1info:
-            ProxyRewrite.scan_body_attribs(req_body, 'DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,MLBSerialNumber,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+            ProxyRewrite.scan_body_attribs(req_body_plain, 'DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,MLBSerialNumber,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
         else:
-            ProxyRewrite.scan_body_attribs(req_body, 'DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
-        #ProxyRewrite.scan_body_attribs(req_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+            ProxyRewrite.scan_body_attribs(req_body_plain, 'DeviceColor,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
+        #ProxyRewrite.scan_body_attribs(req_body_plain, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
 
-        ProxyRewrite.scan_body_attrib_binary(req_body, 'UniqueDeviceID', hostname)
-        #ProxyRewrite.scan_body_attrib_binary(req_body, 'DeviceGUID', hostname)
-        #ProxyRewrite.scan_body_attrib_binary(req_body, 'BasebandMasterKeyHash', hostname)
-        ProxyRewrite.scan_body_attrib_binary_mac(req_body, 'EthernetAddress', hostname)
-        ProxyRewrite.scan_body_attrib_binary_mac(req_body, 'WiFiAddress', hostname)
-        ProxyRewrite.scan_body_attrib_binary_mac(req_body, 'BluetoothAddress', hostname)
-
+        ProxyRewrite.scan_body_attrib_binary(req_body_plain, 'UniqueDeviceID', hostname)
+        #ProxyRewrite.scan_body_attrib_binary(req_body_plain, 'DeviceGUID', hostname)
+        #ProxyRewrite.scan_body_attrib_binary(req_body_plain, 'BasebandMasterKeyHash', hostname)
+        ProxyRewrite.scan_body_attrib_binary_mac(req_body_plain, 'EthernetAddress', hostname)
+        ProxyRewrite.scan_body_attrib_binary_mac(req_body_plain, 'WiFiAddress', hostname)
+        ProxyRewrite.scan_body_attrib_binary_mac(req_body_plain, 'BluetoothAddress', hostname)
 
     def response_handler(self, req, req_body, res, res_body):
         #ProxyRewrite.scan_headers_attribs(res.headers,'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress')
@@ -697,15 +723,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         ProxyRewrite.scan_headers_attrib_binary_mac_b64(req.headers, 'WiFiAddress')
         ProxyRewrite.scan_headers_attrib_binary_mac_b64(req.headers, 'BluetoothAddress')
 
-        hostname = ''
+        hostname = None
         if 'Host' in req.headers:
             hostname = req.headers['Host']
+        else:
+            hostname = self.path.split(':')[0]
 
         #ProxyRewrite.scan_body_attribs(res_body, 'DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
         #ProxyRewrite.scan_body_attribs(res_body, 'BuildVersion,DeviceColor,DeviceGUID,DieID,EnclosureColor,EthernetAddress,FirmwareVersion,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MLBSerialNumber,MobileEquipmentIdentifier,ModelNumber,ProductType,ProductVersion,SerialNumber,TotalDiskCapacity,UniqueChipID,UniqueDeviceID,WiFiAddress', hostname)
         ProxyRewrite.scan_body_attrib_binary(res_body, 'UniqueDeviceID', hostname)
         #ProxyRewrite.scan_body_attrib_binary(res_body, 'DeviceGUID', hostname)
-
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -714,11 +741,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
+        # ignore saving binary data we don't care about
+        if 'setup.icloud.com/setup/qualify/cert' in self.path: return
+        if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
             if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
-                req_body_plain = self.decode_content_body(req_body, content_encoding)
+                req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
             self.print_info(req, req_body_plain, res, res_body)
             req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
@@ -734,16 +764,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 jsonobj = json.loads(req_body_plain)
                 items.update(jsonobj)
 
-            for (key, value) in items.iteritems():
-                if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
-                con = lite.connect('scan.db')
-                cur = con.cursor()
-                cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+str(key)+"';")
-                exists=cur.fetchone()
-                if exists is None:
-                    con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+str(key)+"',\""+str(value)+"\");")
-                    con.commit()
-                con.close()
+            #for (key, value) in items.iteritems():
+            #    if key in ('accept', 'accept-encoding', 'accept-language', 'brief', 'cache-control', 'content-encoding', 'content-length', 'content-type', 'depth', 'host', 'prefer', 'x-apple-i-client-time'): continue
+            #    con = lite.connect('scan.db')
+            #    cur = con.cursor()
+            #    cur.execute("SELECT Value FROM SCAN WHERE Host = '"+hostname+"' AND Name = '"+str(key)+"';")
+            #    exists=cur.fetchone()
+            #    if exists is None:
+            #        con.execute("INSERT INTO SCAN VALUES('"+hostname+"','"+str(key)+"',\""+str(value)+"\");")
+            #        con.commit()
+            #    con.close()
 
             logger = open("logs/"+hostname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
@@ -752,7 +782,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if req_body_plain: logger.write(str(req_body_plain))
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             logger.write(str(res.headers))
-            if res_body: logger.write(str(res_body))
+            if res_body:
+                logger.write(str(res_body))
+                logger.write("\n")
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
@@ -767,8 +799,11 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     print("Proxy set to scan for device %s" % (device1))
     ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
 
-    server_address = (get_ip_address('wlp61s0'), port)
-    #server_address = (get_ip_address('wlo1'), port)
+    iflist = netifaces.interfaces()
+    server_address = ('', port)
+    if 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
+    elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
