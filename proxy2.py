@@ -1185,7 +1185,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             ProxyRewrite.logger.write(req_header_text)
             ProxyRewrite.logger.write(res_header_text)
 
-            logger = open("logs/"+hostname+".log", "ab")
+            logname = hostname
+            # remove 'pXX-' from hostname for log filename
+            if 'icloud.com' in hostname: logname = re.sub(r'p\d\d-', '', hostname)
+
+            logger = open("logs/"+logname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 

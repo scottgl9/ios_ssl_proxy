@@ -777,7 +777,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #        con.commit()
             #    con.close()
 
-            logger = open("logs/"+hostname+".log", "ab")
+
+            logname = hostname
+            # remove 'pXX-' from hostname for log filename
+            if 'icloud.com' in hostname: logname = re.sub(r'p\d\d-', '', hostname)
+
+            logger = open("logs/"+logname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 
@@ -797,12 +802,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[2:]:
-        port = int(sys.argv[1])
-        device1 = sys.argv[2]
+    if sys.argv[1:]:
+        port = int(8080)
+        device1 = sys.argv[1]
 
     else:
-        print("Usage: %s <port> <device>" % sys.argv[0])
+        print("Usage: %s <device>" % sys.argv[0])
         return 0
 
     print("Proxy set to scan for device %s" % (device1))
