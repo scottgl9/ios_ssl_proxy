@@ -1167,11 +1167,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
+        # ignore saving binary data we don't care about
+        if 'setup.icloud.com/setup/qualify/cert' in self.path: return
+        if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
+
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
             if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
-                req_body_plain = self.decode_content_body(req_body, content_encoding)
+                req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
             self.print_info(req, req_body_plain, res, res_body)
             req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)

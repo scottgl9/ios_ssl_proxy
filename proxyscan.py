@@ -83,6 +83,7 @@ class ProxyRewrite:
     logger = None
     con = None
     transparent = False
+    nascount=0
 
     @staticmethod
     def load_device_info(sn):
@@ -96,6 +97,7 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
+        if "fmip.icloud.com" in hostname: return False
         if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
@@ -778,6 +780,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger = open("logs/"+hostname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
+
+            if 'setup.icloud.com' in hostname and 'X-Mme-Nas-Qualify' in req.headers:
+                logger.write("X-Mme-Nas-Qualify-Decoded:\n")
+                naslog = open("logs/nas%d.log" % (ProxyRewrite.nascount), "wb")
+                naslog.write(str(base64.b64decode(str(req.headers['X-Mme-Nas-Qualify']))))
+                naslog.close()
+                ProxyRewrite.nascount = ProxyRewrite.nascount + 1
 
             if req_body_plain: logger.write(str(req_body_plain))
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
