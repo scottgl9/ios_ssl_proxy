@@ -95,10 +95,10 @@ class ProxyRewrite:
 
     @staticmethod
     def intercept_this_host(hostname):
-        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        #if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if "fmip.icloud.com" in hostname: return False
-        if hostname == "gsa.apple.com": return False
+        #if "fmip.icloud.com" in hostname: return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -111,11 +111,12 @@ class ProxyRewrite:
         attriblist = attribs.split(',')
         for attrib in attriblist:
             for (key, value) in headers.items():
-                if str(ProxyRewrite.dev1info[attrib]) in value:
+                if attrib in ProxyRewrite.dev1info and str(ProxyRewrite.dev1info[attrib]) in value:
                     print("%s: %s" % (key, value))
 
     @staticmethod
     def scan_headers_attrib_binary_b64(headers, attrib):
+        if attrib not in ProxyRewrite.dev1info: return
         binstr = binascii.unhexlify(ProxyRewrite.dev1info[attrib])
         encoded_data = base64.b64encode(binstr).replace('=', '')
 
@@ -125,6 +126,7 @@ class ProxyRewrite:
 
     @staticmethod
     def scan_headers_attrib_binary_mac_b64(headers, attrib):
+        if attrib not in ProxyRewrite.dev1info: return
         value = str(ProxyRewrite.dev1info[attrib]).replace(':', '')
         binstr = binascii.unhexlify(value)
         encoded_data = base64.b64encode(binstr).replace('=', '')
@@ -139,7 +141,7 @@ class ProxyRewrite:
         if body == None: return
         attriblist = attribs.split(',')
         for attrib in attriblist:
-            if str(ProxyRewrite.dev1info[attrib]) in body:
+            if attrib in ProxyRewrite.dev1info and str(ProxyRewrite.dev1info[attrib]) in body:
                 print('Host: %s (%s)' % (hostname, attrib))
                 print(str(body))
                 return
@@ -147,6 +149,7 @@ class ProxyRewrite:
     @staticmethod
     def scan_body_attrib_binary(body, attrib, hostname):
         if body == None: return
+        if attrib not in ProxyRewrite.dev1info: return
         if '-' in ProxyRewrite.dev1info[attrib]: return
         binstr = binascii.unhexlify(ProxyRewrite.dev1info[attrib])
         encoded_data = base64.b64encode(binstr).replace('=', '')
@@ -163,6 +166,7 @@ class ProxyRewrite:
     @staticmethod
     def scan_body_attrib_binary_mac(body, attrib, hostname):
         if body == None: return
+        if attrib not in ProxyRewrite.dev1info: return
         value = str(ProxyRewrite.dev1info[attrib]).replace(':', '')
         binstr = binascii.unhexlify(value)
         encoded_data = base64.b64encode(binstr).replace('=', '')
@@ -299,6 +303,68 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.connect_intercept()
         else:
             self.connect_relay()
+
+    def generate_cert(self, hostname):
+        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
+        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
+        if os.path.isfile(certpath): return certpath
+        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
+            srvcertname = "server_certs/icloud.com.crt"
+        elif 'fmip.icloud.com' in hostname:
+            srvcertname = "server_certs/fmip.icloud.com.crt"
+        elif 'itunes.apple.com' in hostname:
+            srvcertname = "server_certs/itunes.apple.com.crt"
+        else:
+            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
+        srvcert=None
+        altnames=None
+
+	if os.path.isfile(srvcertname):
+		st_cert=open(srvcertname, 'rt').read()
+		srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+		altnames = ProxyRewrite.altnames(srvcert)
+	req = crypto.X509Req()
+	if srvcert:
+		subject = srvcert.get_subject()
+		req.get_subject().CN = subject.CN
+		req.get_subject().O = subject.O
+		req.get_subject().C = subject.C
+		req.get_subject().OU = subject.OU
+	else:
+		req.get_subject().CN = hostname
+	req.set_pubkey(self.certKey)
+	req.sign(self.certKey, "sha1")
+	cert = crypto.X509()
+	try:
+		cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
+	except OpenSSL.SSL.Error:
+		epoch = int(time.time() * 1000)
+		cert.set_serial_number(epoch)
+
+	cert.gmtime_adj_notBefore(0)
+	cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
+	cert.set_issuer(self.issuerCert.get_subject())
+	cert.set_subject(req.get_subject())
+	cert.set_pubkey(req.get_pubkey())
+	#cert.set_version(2)
+
+	cert.add_extensions([
+		crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+		#crypto.X509Extension("nsCertType", True, "sslCA"),
+		crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+		crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+		crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
+	])
+
+	if srvcert:
+		cert.set_serial_number(int(srvcert.get_serial_number()))
+		if altnames:
+			print("ALTNAMES: %s\n" % altnames)
+			cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+	cert.sign(self.issuerKey, "sha256")
+	with open(certpath, "w") as cert_file:
+		cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+	return certpath
 
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
@@ -802,8 +868,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[1:]:
-        port = int(8080)
+
+    if sys.argv[2:]:
+        port = int('8080') #sys.argv[1])
+        device1 = sys.argv[1]
+        if sys.argv[2] == '-T':
+            print("Setting transparent mode")
+            ProxyRewrite.transparent = True
+    elif sys.argv[1:]:
+        port = int('8080') #sys.argv[1])
         device1 = sys.argv[1]
 
     else:
@@ -816,6 +889,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
     if 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 
