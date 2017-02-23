@@ -97,9 +97,9 @@ class ProxyRewrite:
     def intercept_this_host(hostname):
         #if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if "fmip.icloud.com" in hostname: return False
-        #if hostname == "gsa.apple.com": return False
-        #if hostname == "gsas.apple.com": return False
+        if "fmip.icloud.com" in hostname: return False
+        if hostname == "gsa.apple.com": return False
+        if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
@@ -809,9 +809,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
-        # ignore saving binary data we don't care about
+        # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
         if 'setup.icloud.com/setup/qualify/cert' in self.path: return
         if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
+        if 'bookmarks.icloud.com' in hostname: return
+
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
             if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:

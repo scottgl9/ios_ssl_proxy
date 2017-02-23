@@ -100,7 +100,7 @@ class ProxyRewrite:
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
         if hostname == "gsa.apple.com": return False
-        #if hostname == "gsas.apple.com": return False
+        if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
@@ -137,6 +137,24 @@ class ProxyRewrite:
             return json.dumps(json_obj)
         except ValueError:
             return text
+
+    @staticmethod
+    def rewrite_json_body_attribs(headers, text, attrdict, subname):
+        j = json.loads(text)
+        if subname != '' and subname in j:
+            jsub = j[subname]
+        else:
+            jsub = j
+        for (key, value) in attrdict.items():
+            if value in ProxyRewrite.dev2info:
+                print("setting body json attrib %s to value %s" % (key, ProxyRewrite.dev2info[value]))
+                jsub[key] = ProxyRewrite.dev2info[value]
+        if subname != '' and subname in j:
+            j[subname] = jsub
+        else:
+            j = jsub
+        text = json.dumps(j)
+        return text
 
     @staticmethod
     def rewrite_plist_body_attribs(headers, text, attrdict, subname):
@@ -346,9 +364,7 @@ class ProxyRewrite:
             #    print("hasCellularCapability:true")
             return body
         elif 'fmip.icloud.com' in hostname:
-            #if 'enclosureColor' not in body and 'EnclosureColor' in ProxyRewrite.dev2info:
-            #    body = body.replace("\"deviceColor\":\"unknown\"", "\"deviceColor\":\"%s\",\"enclosureColor\":\"%s\"" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-            #    print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
+            body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"deviceClass":"DeviceClass","deviceColor":"DeviceColor","enclosureColor":"EnclosureColor"}, 'deviceInfo')
 
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,HardwarePlatform2,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -372,11 +388,11 @@ class ProxyRewrite:
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
             if "hasCellularCapability</key>\n\t\t<false/>" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
-                body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>meid</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
-                print(body)
+                body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
+                body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>")
             elif "\"hasCellularCapability\":false" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
-                body = body.replace("\"hasCellularCapability\":false", "\"hasCellularCapability\":true,\"imei\":" + ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'])
-                print("hasCellularCapability:true")
+                body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
+                body = body.replace("\"hasCellularCapability\":false", "\"hasCellularCapability\":true")
             return body
         elif 'keyvalueservice.icloud.com' in hostname:
             # replace apns-token
@@ -446,7 +462,6 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
-
             return body
         elif 'buy.itunes.apple.com' in hostname:
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,DeviceClass', hostname)
@@ -1167,9 +1182,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
-        # ignore saving binary data we don't care about
+        # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
         if 'setup.icloud.com/setup/qualify/cert' in self.path: return
         if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
+        if 'bookmarks.icloud.com' in hostname: return
 
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
@@ -1226,7 +1242,9 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     iflist = netifaces.interfaces()
     server_address = ('', port)
-    if 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
+
+    if 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
 
