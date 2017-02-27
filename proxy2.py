@@ -99,8 +99,8 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
-        if hostname == "gsas.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
+        #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
@@ -1209,10 +1209,30 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 
+            # format json request before writing to log file
+            if req_body and 'Content-Type' in req.headers and req.headers['Content-Type'].startswith('application/json'):
+                req_body_orig = req_body
+                try:
+                    json_obj = json.loads(req_body)
+                    req_body = json.dumps(json_obj, indent=2)
+                except ValueError:
+                    req_body = req_body_orig
+
             if req_body: logger.write(str(req_body))
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             logger.write(str(res.headers))
+
+            # format json response before writing to log file
+            if res_body and 'Content-Type' in res.headers and res.headers['Content-Type'].startswith('application/json'):
+                res_body_orig = res_body
+                try:
+                    json_obj = json.loads(res_body)
+                    res_body = json.dumps(json_obj, indent=2)
+                except ValueError:
+                    res_body = res_body_orig
+
             if res_body: logger.write(str(res_body))
+            logger.write(str("\n"))
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):

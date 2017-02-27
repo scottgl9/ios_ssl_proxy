@@ -6,6 +6,8 @@
 	<string>Activated</string>
 	<key>ActivationStateAcknowledged</key>
 	<true/>
+	<key>aps-token</key>
+	<string>BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1</string>
 	<key>BasebandStatus</key>
 	<string>NoTelephonyCapabilty</string>
 	<key>BluetoothAddress</key>

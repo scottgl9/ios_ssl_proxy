@@ -8,27 +8,45 @@
 
 F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2
 
+## in the case of the iPad Pro, the APNs token is:
+BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1
+
 ## The token appears in the following URLs:
-fmipmobile.icloud.com:
+### setup.icloud.com:
+                <key>pushToken</key>
+                <string>BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1</string>
+
+### fmipmobile.icloud.com:
 	"apsToken":"F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2"
 
-gsas.apple.com:
+### p15-fmip.icloud.com (pXX-fmip.icloud.com):
+        aps-token":"F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2"
+
+### p62-fmip.icloud.com (from ipad):
+	aps-token":"bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1"
+
+### p62-fmf.icloud.com (pXX-fmf.icloud.com):
+	{"deviceContext":{"deviceTS":"2017-02-15T01:08:52.554Z","cause":"PasscodeStateChanged"},"deviceInfo":{"locationServicesEnabled":true,"deviceClass":"iPad","passcodeIsSet":true,"isChargerConnected":true,"smlLS":true,"deviceName":"iPhone","deviceColor":"#e4e7e8","allPushTokens":["bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1"],"fmf":true,"fenceMonitoringCapable":true,"productType":"iPad6,3","locale":"en\_US","aps-token":"bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1","udid":"ae3484a9b45603653aed233a0c3f884a546f3c23","fmfVersion":"526","batteryStatus":"Charging","platform":"iphoneos","serialNumber":"DMPS75LGH1MV","timezone":"America\/Chicago","isInternal":false,"batteryLevel":0.31,"fmfRestrictions":false,"fmfBuildVersion":"5.0","enclosureColor":"#e4c1b9","buildVersion":"13G34","productVersion":"9.3.3"}}
+
+### gsas.apple.com:
 	<key>ptkn</key>
 	<string>F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2</string>
 
-p15-caldav.icloud.com (pXX-caldav.icloud.com):
+### p62-bookmarks.icloud.com (pXX-bookmarks.icloud.com):
+	POST https://p62-bookmarks.icloud.com/10730014885/mm/push/register?token=bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1&key=10730014885
+
+### p15-caldav.icloud.com (pXX-caldav.icloud.com):
 	X-Apple-DAV-Pushtoken: f88298e7b3deac94e84a7eb2ce98476f7764f65d6c657daeab63fcc8f96630b2
 	POST https://p15-caldav.icloud.com/mm/sub?token=f88298e7b3deac94e84a7eb2ce98476f7764f65d6c657daeab63fcc8f96630b2&key=280584859-1474a3d96c
 
-p15-keyvalueservice.icloud.com:
+### p15-keyvalueservice.icloud.com (pXX-keyvalueservice.icloud.com):
 	<key>apns-token</key>
 	<data>
 	+IKY57PerJToSn6yzphHb3dk9l1sZX2uq2P8yPlmMLI=
 	</data>
 
-p15-fmip.icloud.com (pXX-fmip.icloud.com):
-	aps-token":"F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2"
-
+### p62-sharedstreams.icloud.com (pXX-sharedstreams.icloud.com):
+x-apple-mme-sharedstreams-client-token: bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1
 
 ## APNS token shows up in syslog as:
 
