@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>aps-token</key>
+	<string>98E265E6326D5BC040566CCB2D9A07C88D0937125D44937EAD4DFCDB4E3C690F</string>
+	<key>fmipVersion</key>
+	<string>325</string>
+	<key>fmipBuildVersion</key>
+	<string>2.0.3</string>
+	<key>passcodeConstraint</key>
+	<string>fullKeyboard</string>
 	<key>ActivationPublicKey</key>
 	<data>
 	LS0tLS1CRUdJTiBSU0EgUFVCTElDIEtFWS0tLS0tCk1JR0pBb0dCQUtjT05SL0JETkdH

@@ -85,6 +85,7 @@ class ProxyRewrite:
     dev2info = dict()
     logger = None
     transparent = False
+    apnscnt = 0
 
     @staticmethod
     def load_device_info(sn):
@@ -96,6 +97,9 @@ class ProxyRewrite:
 
     @staticmethod
     def intercept_this_host(hostname):
+        # always intercept IP addresses
+        isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
+        if isip: return True
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
@@ -356,6 +360,9 @@ class ProxyRewrite:
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
+            if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info:
+                body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"buildVersion":"fmipVersion", "appVersion":"fmipBuildVersion"}, 'clientContext')
+
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>meid</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
                 print(body)
@@ -386,6 +393,9 @@ class ProxyRewrite:
             d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
+
+            if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipVersion' in body and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in body:
+                body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"fmipVersion":"fmipVersion", "fmipBuildVersion":"fmipBuildVersion"}, 'deviceInfo')
 
             if "hasCellularCapability</key>\n\t\t<false/>" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
                 body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
@@ -708,6 +718,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
+
+        if dst_port == 5223:
+            print("APNS connection (%s, %s)" % (dst_ip, dst_port))
+            #logger = open("logs/apns%d.log" % ProxyRewrite.apnscnt, "wb")
+            #ProxyRewrite.apnscnt = ProxyRewrite.apnscnt + 1
+            #logger.write(self.rfile.read(128))
+            #logger.write(self.rfile.read(32))
+            #logger.write(self.rfile.read(32))
+            #logger.close()
+            #self.rfile.seek(0)
 
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
@@ -1264,6 +1284,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     server_address = ('', port)
 
     if 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)

@@ -1,5 +1,43 @@
 # Research on fmipmobile.icloud.com:
 
+## NOTE: do not need push token when initially connecting to fmipmobile:
+
+	POST https://fmipmobile.icloud.com/fmipservice/device/scottgl@gmail.com/initClient
+	X-Apple-Realm-Support: 1.0^M
+	X-Apple-I-MD-RINFO: 17106176^M
+	Accept: */*^M
+	Authorization: Basic c2NvdHRnbEBnbWFpbC5jb206R1hJcUUyaHlIN0l5NnhkcWFheGRqWHVjOVlObVorVVZETFlYcStINUFWdGZWekZSL2taZFF6Z0Y0ZUJYVHkwTDhqdXc3ZjA0Y3Vod0ZFbTh2V2c4eHFseGFzSk8vZmJYbEQ4ZzRHc0MvdXBBMjQ2ZHQ5MzEvZmx4TTA0RXIxMExQT2R0Nms1c1lnQ3dhTVdxTzlqOUZYWVB6V2RQL1JxVVRTOTlGZEZYcWFQTzhZODBTM01QWmRuRVVHb3ZJY0k3TEJSR1JGMHRUcWhCYnlIeDZ2L0hiZE9UZFFmcHdFMVppMXhMWUZvVnZSYTREMktpRERscHFFT0hJUlNkRlo1TWV4MFovcUE9UEVU^M
+	Accept-Language: en-us^M
+	Content-Type: application/json; charset=utf-8^M
+	X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+ruy3Y45vpgp4qHYpB3kNCkwFwm3Bsl/laowBDtoqwyN8rEUiE80nVbL^M
+	X-Apple-Find-API-Ver: 3.0^M
+	X-Apple-I-Client-Time: 2017-02-27T22:07:55Z^M
+	X-Apple-I-MD: AAAABQAAABCFxYNU3vZPGrVfv45UmYsXAAAAAw==^M
+	X-Apple-AuthScheme: UserIdGuest^M
+	User-Agent: FindMyiPhone/500 CFNetwork/808.3 Darwin/16.3.0^M
+	Content-length: 370^M
+	Host: fmipmobile.icloud.com^M
+	Accept-Encoding: gzip, deflate^M
+	{
+	  "serverContext": {},
+	  "clientContext": {
+		"clientTimestamp": 509926075067,
+		"osBuild": "14D27", 
+		"buildVersion": "517",
+		"lastSllTimestamp": 0, 
+		"geoCountryCode": "US",
+		"appVersion": "5.0",
+		"push": true, 
+		"showSllCount": 0, 
+		"inactiveTime": 509926075067,
+		"fmly": true,  
+		"productType": "iPhone8,2", 
+		"deviceUDID": "87cda23a7230769ef6aa1ded8a99a5d3e65b9d42",
+		"osVersion": "10.2.1"
+	  }
+	}
+
+
 ## NOTE: with fmipmobile, the 'mobile seems to indicate the client app. Similar with fmfmobile (find my family) client app.
 
 ## In the json request body with URL https://fmipmobile.icloud.com/fmipservice/device/$(DSID)/refreshClient:

@@ -48,6 +48,46 @@ BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1
 ### p62-sharedstreams.icloud.com (pXX-sharedstreams.icloud.com):
 x-apple-mme-sharedstreams-client-token: bd05858d4974aa81d9bf04725437fafca19f1b705994c4e239f223f4cc41c0e1
 
+### p15-streams.icloud.com (pXX-streams.icloud.com):
+x-apple-mme-streams-client-token: 98e265e6326d5bc040566ccb2d9a07c88d0937125d44937ead4dfcdb4e3c690f^M
+
+this is very interesting since the client-token is the apns for my iphone 6s+ (from pXX-streams.icloud.com):
+	<plist version="1.0">
+	<dict>
+                <key>streamid</key>
+                <string>280584859</string>
+
+                <key>devices</key>
+                <array>
+                        <dict>
+                                <key>client-info</key>
+                                <string>&lt;iPhone8,2&gt;&lt;iOS;10.2.1;14D27&gt;&lt;com.apple.CoreMediaStream/2.0 (com.apple.mediastream.mstreamd/2.0)&gt;</string>
+
+                                <key>apiversion</key>
+                                <string>kfjVrXr0t5Dl</string>
+
+                                <key>deviceid</key>
+                                <string>934a4ff7c85b80d7c92cf7790eec4f6c0d207560</string>
+
+                                <key>client-token</key>
+                                <string>5d62dd1296e36fa52ed26cb36a746bbbe205e9b00c2fca3bfc400f527adb5be8</string>
+
+                                <key>timestamp</key>
+                                <string>1486619895069</string>
+
+                        </dict>
+                </array>
+
+                <key>ctag</key>
+                <string>FT=-@RU=31757d0e-5b89-4155-8b52-7b99bb8aded6@S=4381</string>
+
+                <key>parttype</key>
+                <string>stream-metadata-begin</string>
+
+	</dict>
+	</plist>
+
+
 ## APNS token shows up in syslog as:
 
 "publicToken" => <data: 0x10043add0>: { length = 32 bytes, contents = 0xf88298e7b3deac94e84a7eb2ce98476f7764f65d6c657dae... }

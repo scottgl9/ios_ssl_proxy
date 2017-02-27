@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>aps-token</key>
+	<string>E13FE0FBAA3E3E0DF21D772DD34846A662A9F0E4E63D5306671D31D4F6C838BD</string>
+	<key>fmipVersion</key>
+	<string>517</string>
+	<key>fmipBuildVersion</key>
+	<string>5.0</string>
+	<key>passcodeConstraint</key>
+	<string>fullKeyboard</string>
 	<key>ActivationRandomness</key>
 	<string>2228038D-BA2D-4CB8-8567-F62AB565C39D</string>
 	<key>BasebandActivationTicketVersion</key>
