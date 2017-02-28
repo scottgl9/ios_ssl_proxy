@@ -1,5 +1,25 @@
 # Analysis of setup.icloud.com packets:
 
+## Login reason types for registerDevice:
+
+on post to https://setup.icloud.com/setup/account/registerDevice, the format of the body is as follows:
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+                <key>cause</key>
+                <string>LOGIN_REASON</string>
+                <key>deviceInfo</key>
+                <dict>
+	....
+	</dict>
+	</plist>
+
+LOGIN\_REASON can be any of the following:
+- login
+- pushTokenChange
+
+
 ## Analysis of changes in X-Mme-Nas-Qualify header field (always base64 encoded):
 
 - The shorter X-Mme-Nas-Qualify header field occurs in the following URLs:
@@ -25,3 +45,50 @@ https://setup.icloud.com/setup/account/registerDevice
 ##in this "footer" binary data, the first three bytes are constant, and the next 20 bytes are constantly different between requests (could be an SHA1 hash). Then the following 4 bytes are constant, and the following 
 
 	DAB7DC6BB68209B9F92252F973FFB705BF43FDDB
+
+
+## deRegister device (NOTE: backupDeviceUUID also used when communicating with pXX-quota.icloud.com where it is passed in as header field X-Client-Backup-UUID. Also occurs in body as deviceUdid="D:d9614827b8f0bfd998267f638bccff0acb597f8f"):
+
+	POST https://setup.icloud.com/setup/account/deregisterDevice
+	X-Apple-I-MD-RINFO: 17106176^M
+	X-Mme-Nas-Qualify: Atol8yrv8AwY0oUG0IQ9INcjqyhhXmO4zYC2MLkSy/6bAAADsAYAAAAAAAAAgGmVRKIq5/JjzpWLRy9GwCT0xFwe7VbURJbDlBpOabG0TVPM61gA9/yYYY50+/jIsH4nUJXhhLL4NTWJRErpogGV/PF/wNFzlXSqPAlSYJrxKmKgCyRZb0SeSZDhHItswsyAAULGdInZGI6MBbkfh3aXRK8tL0HuPigxibpDG+dHAAACwjw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04Ij8+CjwhRE9DVFlQRSBwbGlzdCBQVUJMSUMgIi0vL0FwcGxlLy9EVEQgUExJU1QgMS4wLy9FTiIgImh0dHA6Ly93d3cuYXBwbGUuY29tL0RURHMvUHJvcGVydHlMaXN0LTEuMC5kdGQiPgo8cGxpc3QgdmVyc2lvbj0iMS4wIj4KPGRpY3Q+Cgk8a2V5PmRldmljZUluZm88L2tleT4KCTxkaWN0PgoJCTxrZXk+YXBwbGVJZDwva2V5PgoJCTxzdHJpbmc+c2NvdHRnbEBnbWFpbC5jb208L3N0cmluZz4KCQk8a2V5PmJhY2t1cERldmljZVVVSUQ8L2tleT4KCQk8c3RyaW5nPkQ6ZDk2MTQ4MjdiOGYwYmZkOTk4MjY3ZjYzOGJjY2ZmMGFjYjU5N2Y4Zjwvc3RyaW5nPgoJCTxrZXk+ZHNpZDwva2V5PgoJCTxzdHJpbmc+MjgwNTg0ODU5PC9zdHJpbmc+CgkJPGtleT5wdXNoVG9rZW48L2tleT4KCQk8c3RyaW5nPjVENjJERDEyOTZFMzZGQTUyRUQyNkNCMzZBNzQ2QkJCRTIwNUU5QjAwQzJGQ0EzQkZDNDAwRjUyN0FEQjVCRTg8L3N0cmluZz4KCQk8a2V5PnNlcmlhbE51bWJlcjwva2V5PgoJCTxzdHJpbmc+RjJMUzQ3WjlIRk0yPC9zdHJpbmc+CgkJPGtleT51ZGlkPC9rZXk+CgkJPHN0cmluZz44N2NkYTIzYTcyMzA3NjllZjZhYTFkZWQ4YTk5YTVkM2U2NWI5ZDQyPC9zdHJpbmc+Cgk8L2RpY3Q+Cgk8a2V5PmlzUHJpbWFyeUFjY291bnQ8L2tleT4KCTx0cnVlLz4KPC9kaWN0Pgo8L3BsaXN0PgoAAABPASetR1YnpdTEZG6gwFEIzCPOchIFAAAANgADu+iGT58/2r5K6jHiYSAuSFijVREaMg3HQXPtSSrxyw20bKmfw3i95kec2Bl15FAC1x/OnwAAAAAAAAAAAAAAAAAA^M
+	Accept: */*^M
+	Authorization: Basic MjgwNTg0ODU5OkFRQUFBQUJZbzFQMXlLZUJ6UnFyN3dobnBYZytpaHFobldBWFJlST0=^M
+	X-MMe-Country: US^M
+	X-MMe-Client-Info: <iPhone8,2> <iPhone OS;10.2.1;14D27> <com.apple.AppleAccount/1.0 (com.apple.ind/113)>^M
+	X-MMe-Language: en-US^M
+	Accept-Language: en-us^M
+	Content-Length: 706^M
+	User-Agent: Settings/1.0 CFNetwork/672.1.10 Darwin/14.0.0^M
+	X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+ruy3Y45vpgp4qHYpB3kNCkwFwm3Bsl/laowBDtoqwyN8rEUiE80nVbL^M
+	X-Apple-ADSID: 000919-05-b45534a8-fa23-4dfa-9ff7-0fcfa37c3d34^M
+	X-Apple-I-Client-Time: 2017-02-14T19:05:53Z^M
+	X-Apple-I-MD: AAAABQAAABAGdzN00TYBtVwMrNL5Fal9AAAAAw==^M
+	Content-Type: application/xml^M
+	Host: setup.icloud.com^M
+	Accept-Encoding: gzip, deflate^M
+	X-Mme-Nas-Qualify-Decoded:
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+	<plist version="1.0">
+	<dict>
+			<key>deviceInfo</key>
+			<dict>
+					<key>appleId</key>
+					<string>scottgl@gmail.com</string>
+					<key>backupDeviceUUID</key>
+					<string>D:d9614827b8f0bfd998267f638bccff0acb597f8f</string>
+					<key>dsid</key>
+					<string>280584859</string>
+					<key>pushToken</key>
+					<string>5D62DD1296E36FA52ED26CB36A746BBBE205E9B00C2FCA3BFC400F527ADB5BE8</string>
+					<key>serialNumber</key>
+					<string>F2LS47Z9HFM2</string>
+					<key>udid</key>
+					<string>87cda23a7230769ef6aa1ded8a99a5d3e65b9d42</string>
+			</dict>
+			<key>isPrimaryAccount</key>
+			<true/>
+	</dict>
+	</plist>
+

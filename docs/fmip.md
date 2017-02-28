@@ -2,12 +2,17 @@
 
 ## In the json request body for URL https://p15-fmip.icloud.com/fmipservice/findme/$(UDID)/qc, the 'mid' field under 'deviceInfo' seems to be very similar to the header field value of X-Apple-I-MD-M:
 
-MID:
-"mid":         "7uFG2/ZgB6SmF5r93yaqedoq+ruKOeHFqlr+/g8GIhJv84akWFicotj46AtB6A+Svt7ks4Nh+E0/GAeW"
-X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+rugYFfglwmtO8rZlzO2ICtyDYMjk28WsJ7Ao7BMiPcwfupM8nF8zW87
+### MID:
+	"mid":         "7uFG2/ZgB6SmF5r93yaqedoq+ruKOeHFqlr+/g8GIhJv84akWFicotj46AtB6A+Svt7ks4Nh+E0/GAeW"
+	X-Apple-MD-M for gsa.apple.com seems to match mid:
+	X-Apple-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+ruKOeHFqlr+/g8GIhJv84akWFicotj46AtB6A+Svt7ks4Nh+E0/GAeW
 
-## I still have no idea what 'mid' indicates or how it is generated.
 
+## deviceContext cause list
+Here is a list of possible cause strings under deviceContext json for pXX-fmip.icloud.com:
+- AccountChange
+- locationServiceAuthorizationChanged
+- LowBatteryLocateChange
 
 aps-token:
 	"aps-token": "F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2"

@@ -1,3 +1,11 @@
+## deviceContext cause list
+Here is a list of possible cause strings under deviceContext json for pXX-fmf.icloud.com:
+- DeviceRestart
+- FMFLocationServicesStateChanged
+- Forced-RegisterCommand
+- Restart
+
+
 ## Example register device with fmf server:
 
 	POST https://p62-fmf.icloud.com/fmipservice/fmf/10730014885/87cda23a7230769ef6aa1ded8a99a5d3e65b9d42/register
