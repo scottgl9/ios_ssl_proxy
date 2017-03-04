@@ -38,6 +38,21 @@ class iCloud:
             p = plistlib.readPlistFromString(r.text)
             self.aDsID = p['appleAccountInfo']['aDsID']
             print("aDsID=%s" % self.aDsID)
+            print("Updating mmeAuthToken from %s to %s" % (self.mmeAuthToken, p['tokens']['mmeAuthToken']))
+            self.mmeAuthToken = p['tokens']['mmeAuthToken']
+
+    def getInitSettings(self):
+        headers = {'X-MMe-Client-Info': '<iPhone2,1> <iPhone OS;6.1.6;10B500> <com.apple.AppleAccount/1.0 (com.apple.Preferences/1.0)>'}
+        r = requests.get('https://setup.icloud.com/configurations/init?context=settings', headers=headers)
+        if r.status_code == 200:
+            print(r.status_code)
+            print(r.text)
+
+    def getBackupId(self):
+        headers = {'Authorization': 'Basic %s' % iCloud.encode(self.dsPrsID, self.mmeAuthToken)}
+        r = requests.get('https://p15-mobilebackup.icloud.com/mbs/%s' % self.dsPrsID, headers=headers)
+        print(r.status_code)
+        print(r.text)
 
 if sys.argv[2:]:
     appleid = sys.argv[1]
@@ -45,3 +60,6 @@ if sys.argv[2:]:
 
 icloud = iCloud(appleid, password)
 icloud.getAccountSettings()
+icloud.getInitSettings()
+icloud.getAccountSettings()
+icloud.getBackupId()
