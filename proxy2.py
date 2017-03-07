@@ -1193,7 +1193,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def response_handler(self, req, req_body, res, res_body):
         # rewrite response status
         #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
-        pass
+        if 'setup.icloud.com/configurations/init?context=settings' in self.path:
+            # Attempt to replace gsa.apple.com to use a different server
+            res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
+            print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
+
+        return res_body
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -1283,7 +1288,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
 
-    if 'ap3' in iflist: server_address = (get_ip_address('ap3'), port)
+    if 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
     elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)

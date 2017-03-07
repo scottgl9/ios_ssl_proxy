@@ -5,14 +5,14 @@
 import sys
 import os
 
-if sys.argv[2:]:
+if sys.argv[3:]:
     hashmap = sys.argv[1]
     path = sys.argv[2]
+    dpath = sys.argv[3]
 
 else:
-    print("Usage: %s <hashmap> <backup path>" % sys.argv[0])
+    print("Usage: %s <hashmap> <backup path> <destination path>" % sys.argv[0])
     exit(0)
-
     
 def traverse(a, hashdict):
     for item in os.listdir(a):
@@ -32,5 +32,4 @@ def load_hashmap(path):
     return hashdict
 
 hashdict = load_hashmap(hashmap)
-print(hashdict)
 traverse(path, hashdict)
