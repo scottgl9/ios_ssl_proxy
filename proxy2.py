@@ -103,7 +103,7 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -490,24 +490,55 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_headers(headers, path):
-        if 'X-Mme-Nas-Qualify' in headers:
-            attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
-            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-                attribs = ("%s,%s" % (attribs, 'aps-token'))
+        hostname = None
+        if 'Host' in headers:
+            hostname = headers['Host']
+            hostname = hostname.replace(':443','')
+        else:
+            hostname = path.split(':')[0]
+            hostname = hostname.replace(':443','')
+
+        if 'setup.icloud.com' in hostname or 'gsa.apple.com' in hostname:
+            if 'X-Mme-Nas-Qualify' in headers:
+                attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
+                if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+                if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                    attribs = ("%s,%s" % (attribs, 'aps-token'))
             headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
-        elif 'x-mme-nas-qualify' in headers:
-            attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
-            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-                attribs = ("%s,%s" % (attribs, 'aps-token'))
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
+            elif 'x-mme-nas-qualify' in headers:
+                attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
+                if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+                if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                    attribs = ("%s,%s" % (attribs, 'aps-token'))
+                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
+        elif 'quota.icloud.com' in hostname:
+            if 'X-Client-UDID' in headers:
+                headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
+            elif 'x-client-udid' in headers:
+                headers = ProxyRewrite.replace_header_field(headers, 'x-client-udid', 'UniqueDeviceID')
+        elif 'caldav.icloud.com' in hostname:
+            if 'X-Apple-DAV-Pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
+            elif 'x-apple-dav-pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
+        elif 'sharedstreams.icloud.com' in hostname:
+            if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
+                if 'aps-token' in headers:
+                    headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
+                else:
+                    headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'UniqueDeviceID,UniqueDeviceID')
+            elif 'x-apple-mme-sharedstreams-client-token' in headers:
+                if 'aps-token' in headers:
+                    headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
+                else:
+                    headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
+
 
         if 'User-Agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductType2,ProductVersion,ProductVersion2,DeviceClass')
@@ -518,11 +549,6 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
         elif 'x-mme-client-info' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
-
-        if 'X-Client-UDID' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
-        elif 'x-client-udid' in headers:
-            headers = ProxyRewrite.replace_header_field(headers, 'x-client-udid', 'UniqueDeviceID')
 
         if 'X-Mme-Device-Id' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Mme-Device-Id', 'UniqueDeviceID')
@@ -557,11 +583,6 @@ class ProxyRewrite:
             if 'X-Client-Device-Enclosure-Color' not in headers and 'EnclosureColor' in ProxyRewrite.dev2info:
                 headers['X-Client-Device-Enclosure-Color'] = ProxyRewrite.dev2info['EnclosureColor']
 
-        if 'X-Apple-DAV-Pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
-        elif 'x-apple-dav-pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-            headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
-
         if 'x-apple-translated-wo-url' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-translated-wo-url', 'BuildVersion,ProductType,ProductVersion,UniqueDeviceID')
 
@@ -572,17 +593,6 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-MBS-Lock', 'UniqueDeviceID,UniqueDeviceID')
         elif 'x-apple-mbs-lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
-
-        if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
-            if 'aps-token' in headers:
-                headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
-            else:
-                headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'UniqueDeviceID,UniqueDeviceID')
-        elif 'x-apple-mme-sharedstreams-client-token' in headers:
-            if 'aps-token' in headers:
-                headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
-            else:
-                headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'X-Apple-Ubiquity-Device-Id' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Ubiquity-Device-Id', 'UniqueDeviceID,UniqueDeviceID')

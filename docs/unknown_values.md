@@ -4,13 +4,13 @@
 Description: Apple Push Service Notification device token
 Changes on software version update: YES
 Changes on sign-in of an alternate icloud ID: NO
-Changes on factory reset: unknown
+Changes on factory reset: YES
 
 ### ADSID - advertising Identifier (used by ASIdentifierManager class)
 Description: value which seems to be static UUID per account, appears to be same for any iOS device
 Changes on software version update: NO
 Changes on sign-in of an alternate icloud ID: YES
-Changes on factory reset: unknown
+Changes on factory reset: NO
 NOTE: occurs in HomeDomain/System/Library/Accounts/Accounts3.sqlite
 Example from setup.icloud.com from my iPhone 6s+ (scottgl@gmail.com): X-Apple-ADSID: 000919-05-b45534a8-fa23-4dfa-9ff7-0fcfa37c3d3
 From iPhone 3gs (scottgl@gmail.com):
@@ -18,12 +18,16 @@ From iPhone 3gs (scottgl@gmail.com):
 	<key>aDsID</key>
 	<string>000919-05-b45534a8-fa23-4dfa-9ff7-0fcfa37c3d34</string>
 
+### X-Apple-AL-ID
+Header from tbsc.apple.com:
+X-Apple-AL-ID: 0F885791-FBCE-4269-A7B3-A84F24F895E7
+Also sent as header in request for host pXX-fmip.icloud.com: https://p15-fmip.icloud.com/fmipservice/findme/280584859/87cda23a7230769ef6aa1ded8a99a5d3e65b9d42/identityV3Session
 
 ### backupDeviceUUID
 Description: Used to associate an account's iCloud backup system to a given device. Value seems to be unique per device for all iCloud accounts
 Changes on software version update: unknown
-Changes on sign-in of an alternate icloud ID: NO
-Changes on factory reset: unknown
+Changes on sign-in of an alternate icloud ID: YES
+Changes on factory reset: NO
 Example from setup.icloud.com from my iPhone 6s+:
 
 	<key>backupDeviceUUID</key>
@@ -31,6 +35,7 @@ Example from setup.icloud.com from my iPhone 6s+:
 
 ### client-id
 Description: Seems to be unique account identifier UUID per device, unsure if it changes per account (used on setup.icloud.com)
+Changes on factory reset: YES
 Example from setup.icloud.com from my iPhone 6s+:
 
 	<?xml version="1.0" encoding="UTF-8"?>
