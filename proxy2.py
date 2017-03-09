@@ -28,6 +28,7 @@ import struct
 import binascii
 import netifaces
 import hashlib
+import requests
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -101,9 +102,9 @@ class ProxyRewrite:
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
         if 'spcsdns.net' in hostname: return True
-        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        #if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -193,6 +194,11 @@ class ProxyRewrite:
                 p['FairPlayCertChain'] = ProxyRewrite.dev2info['FairPlayCertChain']
             if 'FairPlaySignature' in ProxyRewrite.dev2info:
                 p['FairPlaySignature'] = ProxyRewrite.dev2info['FairPlaySignature']
+            del p['RKCertification']
+            del p['RKSignature']
+            del p['serverKP']
+            del p['signActRequest']
+
         else:
             attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -234,8 +240,9 @@ class ProxyRewrite:
                 headers[field] = headers[field].replace(ProxyRewrite.dev1info['ProductVersion'].replace('.','_'), ProxyRewrite.dev2info['ProductVersion'].replace('.','_'))
             else:
                 headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
-            if headers[field] != oldval:
-                print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
+
+        if headers[field] != oldval:
+            print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
 
     @staticmethod
@@ -271,6 +278,7 @@ class ProxyRewrite:
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info
             if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
+            if str(ProxyRewrite.dev1info[attrib]) not in val: continue
             val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
                 print("%s: %s Replacing %s: %s -> %s" % (headers["Host"], field, attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
@@ -413,6 +421,7 @@ class ProxyRewrite:
                 d1apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev1info['aps-token']))
                 d2apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev2info['aps-token']))
                 body = body.replace(d1apns_encoded, d2apns_encoded)
+                print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
         elif 'quota.icloud.com' in hostname:
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
@@ -507,7 +516,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
+                    headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
                 if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -1192,6 +1201,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
              req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
+        #elif 'captive.apple.com' in req.path:
+        #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+        #        req.headers['Host'] = 'ui.icloudbypass.com'
+
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
@@ -1201,13 +1214,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
+        #if 'captive.apple.com' in req.path:
+        #    if 'hotspot-detect.html' in req.path:
+        #        r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
+        #        res_body = r.text
+        #        res.headers['Content-Length'] = str(len(r.text))
+
         # rewrite response status
         #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
         if 'setup.icloud.com/configurations/init?context=settings' in self.path:
             # Attempt to replace gsa.apple.com to use a different server
             res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
-
+        #if 'setup.icloud.com/setup/get_account_settings' in self.path:
         return res_body
 
     def save_handler(self, req, req_body, res, res_body):
