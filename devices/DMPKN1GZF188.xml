@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>aps-token</key>
+	<string>DE974F6002844EC55ACBF692E3418080C234439C9F1F02C7AC8C2725A70DB081</string>
 	<key>ActivationState</key>
 	<string>Activated</string>
 	<key>ActivationStateAcknowledged</key>
@@ -89,6 +91,8 @@
 	<string>Ryan’s iPad</string>
 	<key>DieID</key>
 	<integer>2601463544214082272</integer>
+	<key>EnclosureColor</key>
+	<string>unknown</string>
 	<key>EthernetAddress</key>
 	<string>a8:96:8a:82:b3:49</string>
 	<key>FirmwareVersion</key>

@@ -103,7 +103,7 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
-        if hostname == "gsa.apple.com": return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -193,6 +193,11 @@ class ProxyRewrite:
                 p['FairPlayCertChain'] = ProxyRewrite.dev2info['FairPlayCertChain']
             if 'FairPlaySignature' in ProxyRewrite.dev2info:
                 p['FairPlaySignature'] = ProxyRewrite.dev2info['FairPlaySignature']
+            del p['RKCertification']
+            del p['RKSignature']
+            del p['serverKP']
+            del p['signActRequest']
+
         else:
             attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -234,8 +239,9 @@ class ProxyRewrite:
                 headers[field] = headers[field].replace(ProxyRewrite.dev1info['ProductVersion'].replace('.','_'), ProxyRewrite.dev2info['ProductVersion'].replace('.','_'))
             else:
                 headers[field] = headers[field].replace(ProxyRewrite.dev1info[attrib], ProxyRewrite.dev2info[attrib])
-            if headers[field] != oldval:
-                print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
+
+        if headers[field] != oldval:
+            print("%s: Replacing field %s: %s -> %s" % (headers['Host'], field, oldval, headers[field]))
         return headers
 
     @staticmethod
@@ -271,6 +277,7 @@ class ProxyRewrite:
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info
             if attrib not in ProxyRewrite.dev1info.keys() or attrib not in ProxyRewrite.dev2info.keys(): continue
+            if str(ProxyRewrite.dev1info[attrib]) not in val: continue
             val = val.replace(str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib]))
             if headers[field] != oldval:
                 print("%s: %s Replacing %s: %s -> %s" % (headers["Host"], field, attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
@@ -413,6 +420,7 @@ class ProxyRewrite:
                 d1apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev1info['aps-token']))
                 d2apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev2info['aps-token']))
                 body = body.replace(d1apns_encoded, d2apns_encoded)
+                print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
         elif 'quota.icloud.com' in hostname:
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
@@ -507,7 +515,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-            headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
+                    headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
                 if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -1207,7 +1215,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             # Attempt to replace gsa.apple.com to use a different server
             res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
-
+        #if 'setup.icloud.com/setup/get_account_settings' in self.path:
         return res_body
 
     def save_handler(self, req, req_body, res, res_body):
