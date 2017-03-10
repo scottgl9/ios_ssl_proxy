@@ -87,6 +87,16 @@ this is very interesting since the client-token is the apns for my iphone 6s+ (f
 	</dict>
 	</plist>
 
+## All occurrences of APNS token in syslog output:
+
+	"publicToken" => <data: 0x100730650>: { length = 32 bytes, contents = 0xa3fb33840076736deb790d05a45c49ff26cd1e3e75411bbf... } 
+	"<HMDDevice, Identifier = 0990CEE0-3C71-5EE0-A0D9-57B361417A5F, Name = Scott's iPhone, Version = 3.1.0, Keychain Sync = YES, Cloud Data Sync = YES, Resident Capable = NO, RemoteGateway = NO, Destination = token:A3FB33840076736DEB790D05A45C49FF26CD1E3E75411BBF6CFDD0DFFF66BE8F/mailto:scottgl@gmail.com>" 
+	Mar  9 21:31:05 Scotts-iPhone homed(HomeKitDaemon)[147] <Info>: Updated current device: <HMDDevice, Identifier = 0990CEE0-3C71-5EE0-A0D9-57B361417A5F, Name = Scott's iPhone, Version = 3.1.0, Keychain Sync = YES, Cloud Data Sync = YES, Resident Capable = NO, RemoteGateway = NO, Destination = token:A3FB33840076736DEB790D05A45C49FF26CD1E3E75411BBF6CFDD0DFFF66BE8F/mailto:scottgl@gmail.com> 
+	APSProtocolToken = <a3fb3384 0076736d eb790d05 a45c49ff 26cd1e3e 75411bbf 6cfdd0df ff66be8f>; 
+	APSProtocolBaseToken = <a3fb3384 0076736d eb790d05 a45c49ff 26cd1e3e 75411bbf 6cfdd0df ff66be8f>;
+	Mar  9 21:40:32 Scotts-iPhone wcd[56] <Notice>: connection: <APSConnection: 0x113e1e8a0>, publicToken: <a3fb3384 0076736d eb790d05 a45c49ff 26cd1e3e 75411bbf 6cfdd0df ff66be8f> 
+	Mar  9 21:40:19 Scotts-iPhone watchlistd[140] <Notice>: [WLDPushNotificationController] didReceivePublicToken: <a3fb3384 0076736d eb790d05 a45c49ff 26cd1e3e 75411bbf 6cfdd0df ff66be8f> 
+	Mar  9 21:40:35 Scotts-iPhone limitadtrackingd[147] <Notice>: DPID Received public token "<a3fb3384 0076736d eb790d05 a45c49ff 26cd1e3e 75411bbf 6cfdd0df ff66be8f>" on connection <APSConnection: 0x100209070> 
 
 ## APNS token shows up in syslog as:
 

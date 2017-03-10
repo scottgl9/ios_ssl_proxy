@@ -186,3 +186,115 @@ clientId under serverContext for example:
 		  "userInactivityTimeInMS":1
 	   }
 	}
+
+
+
+## This is the request sent when a device is removed via the FMIP app (might be the easiest way to remove a device):
+
+	POST https://fmipmobile.icloud.com/fmipservice/device/280584859/remove
+	X-Apple-Realm-Support: 1.0
+	X-Apple-I-MD-RINFO: 17106176
+	Accept: */*
+	Authorization: Basic MjgwNTg0ODU5OkFRQUFBQUJZd3RaYmswOFVBT3BrUVN2Tkt6YWRLSjc2Nkdqa2c2MH4=
+	Accept-Language: en-us
+	Content-Type: application/json; charset=utf-8
+	X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+rvAeWh+GUsd91kN4MFTnNxZ7S+ZtriIsvWhzF2ffepBXEW06PD4/aHB
+	X-Apple-Find-API-Ver: 3.0
+	X-Apple-I-Client-Time: 2017-03-10T16:37:53Z
+	X-Apple-I-MD: AAAABQAAABD1v0tqlP38NDrY4Lhu1shyAAAAAw==
+	X-Apple-AuthScheme: Guest
+	Cookie: NSC_q15-gnjqtfswjdf=ffffffff12ac5f3a45525d5f4f58455e445a4a422971
+	User-Agent: FindMyiPhone/500 CFNetwork/808.3 Darwin/16.3.0
+	Content-length: 1799
+	Host: fmipmobile.icloud.com
+	Accept-Encoding: gzip, deflate
+	{
+	  "device": "8OcuV12vU8lJXLKQF0SeRdHxLlu4uTnGkxpww6dnhfXAVeSf3X4wMeHYVNSUzmWV", 
+	  "serverContext": {
+		"authToken": "AQAAAABYwtZbk08UAOpkQSvNKzadKJ766Gjkg60~", 
+		"maxLocatingTime": 90000, 
+		"deviceLoadStatus": "200", 
+		"imageBaseUrl": "https://statici.icloud.com", 
+		"minTrackLocThresholdInMts": 100, 
+		"isHSA": false, 
+		"lastSessionExtensionTime": null, 
+		"showSllNow": false, 
+		"enable2FAFamilyRemove": false, 
+		"minCallbackIntervalInMS": 5000, 
+		"timezone": {
+		  "previousOffset": -25200000, 
+		  "currentOffset": -28800000, 
+		  "previousTransition": 1478422799999, 
+		  "tzCurrentName": "-08:00", 
+		  "tzName": "America/Los_Angeles"
+		}, 
+		"serverTimestamp": 1489163867587, 
+		"macCount": 0, 
+		"validRegion": true, 
+		"sessionLifespan": 900000, 
+		"preferredLanguage": "en-us", 
+		"maxDeviceLoadTime": 60000, 
+		"cloudUser": true, 
+		"classicUser": false, 
+		"prefsUpdateTime": 1488171233203, 
+		"prsId": 280584859, 
+		"maxCallbackIntervalInMS": 60000, 
+		"useAuthWidget": true, 
+		"enableMapStats": true, 
+		"trackInfoCacheDurationInSecs": 86400, 
+		"info": "WdWG4bBYs9nWOUfQx7Y/9xc5TFKkHIZdbqICX5Y+gL5Oo+te4aW+cnURk8q/tikN", 
+		"enable2FAFamilyActions": false, 
+		"enable2FAErase": false, 
+		"clientId": "ZGV2aWNlXzI4MDU4NDg1OV8xNDg5MTYzNzg5MjM0", 
+		"callbackIntervalInMS": 10000
+	  }, 
+	  "clientContext": {
+		"clientTimestamp": 510856673776, 
+		"apsToken": "A3FB33840076736DEB790D05A45C49FF26CD1E3E75411BBF6CFDD0DFFF66BE8F", 
+		"osBuild": "14D27", 
+		"buildVersion": "517", 
+		"lastSllTimestamp": 0, 
+		"geoCountryCode": "US", 
+		"appVersion": "5.0", 
+		"push": true, 
+		"showSllCount": 0, 
+		"inactiveTime": 523, 
+		"fmly": true, 
+		"productType": "iPhone8,2", 
+		"deviceUDID": "87cda23a7230769ef6aa1ded8a99a5d3e65b9d42", 
+		"osVersion": "10.2.1", 
+		"location": {
+		  "floor": null, 
+		  "timestamp": 510856590127, 
+		  "longitude": -95.61855297801053, 
+		  "course": -1, 
+		  "horizontalAccuracy": 65, 
+		  "latitude": 29.77728398590775, 
+		  "speed": -1, 
+		  "verticalAccuracy": 10
+		}
+	  }
+	}
+	HTTP/1.1 200 OK
+	Server: AppleHttpServer/1dad28f
+	Date: Fri, 10 Mar 2017 16:37:54 GMT
+	Content-Type: application/json;charset=UTF-8
+	X-Responding-Instance: fmipservice:11500201:st13p15ic-fmipservice002:8001:17B115:20be063
+	X-Responding-Server: st13p15ic-fmipservice002_001
+	X-Responding-Partition: p15
+	Content-Encoding: gzip
+	Vary: Accept-Encoding
+	Strict-Transport-Security: max-age=31536000; includeSubDomains
+	via: icloudedge:ho11p01ic-ztde011218:7401:17A73:Houston
+	X-Apple-Request-UUID: 4de4e7ee-0b00-4c3b-9f7e-97cf11a065cf
+	access-control-expose-headers: X-Apple-Request-UUID
+	access-control-expose-headers: Via
+	Content-Length: 99
+	{
+	  "serverContext": null, 
+	  "alert": null, 
+	  "content": [], 
+	  "userInfo": null, 
+	  "userPreferences": null, 
+	  "statusCode": "200"
+	}
