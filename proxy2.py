@@ -28,6 +28,7 @@ import struct
 import binascii
 import netifaces
 import hashlib
+import requests
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -101,7 +102,7 @@ class ProxyRewrite:
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
         if 'spcsdns.net' in hostname: return True
-        if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        #if "apple.com" not in hostname and "icloud.com" not in hostname: return False
         hostname = hostname.replace(':443','')
         #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
@@ -1200,6 +1201,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
              req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
+        #elif 'captive.apple.com' in req.path:
+        #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+        #        req.headers['Host'] = 'ui.icloudbypass.com'
+
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
@@ -1209,6 +1214,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
+        #if 'captive.apple.com' in req.path:
+        #    if 'hotspot-detect.html' in req.path:
+        #        r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
+        #        res_body = r.text
+        #        res.headers['Content-Length'] = str(len(r.text))
+
         # rewrite response status
         #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
         if 'setup.icloud.com/configurations/init?context=settings' in self.path:
