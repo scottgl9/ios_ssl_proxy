@@ -19,7 +19,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from HTMLParser import HTMLParser
-from OpenSSL import crypto
+from OpenSSL import crypto, SSL
 from pyasn1.type import univ, constraint, char, namedtype, tag
 from pyasn1.codec.der.decoder import decode
 from pyasn1.error import PyAsn1Error
@@ -101,10 +101,11 @@ class ProxyRewrite:
         # always intercept IP addresses
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
-        if 'spcsdns.net' in hostname: return True
-        #if "apple.com" not in hostname and "icloud.com" not in hostname: return False
+        if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
+        if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if hostname == "gsa.apple.com": return False
+        if 'fmip.icloud.com' in hostname: return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -268,8 +269,9 @@ class ProxyRewrite:
         if "hasCellularCapability</key>\n\t\t<false/>" in val:
             val = val.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
             print(val)
-        elif "\"hasCellularCapability\":false" in val:
+        if "hasCellularCapability" in val:
             val = val.replace( "\"hasCellularCapability\":false",  "\"hasCellularCapability\":true")
+            val = val.replace( "\"hasCellularCapability\": false",  "\"hasCellularCapability\": true")
             print("hasCellularCapability:true")
         #if 'enclosureColor' not in val and 'EnclosureColor' in ProxyRewrite.dev2info:
         #    val = val.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
@@ -332,7 +334,7 @@ class ProxyRewrite:
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
                 print(body)
-            elif "\"hasCellularCapability\":false" in body:
+            if "hasCellularCapability" in body:
                 body = body.replace( "\"hasCellularCapability\":false", "\"hasCellularCapability\":true,\"imei\":\"%s\"" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity']))
                 print(body)
             return body
@@ -408,9 +410,10 @@ class ProxyRewrite:
             if "hasCellularCapability</key>\n\t\t<false/>" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
                 body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>")
-            elif "\"hasCellularCapability\":false" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
+            if "hasCellularCapability" in body and 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev2info:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
                 body = body.replace("\"hasCellularCapability\":false", "\"hasCellularCapability\":true")
+                body = body.replace("\"hasCellularCapability\": false", "\"hasCellularCapability\": true")
             return body
         elif 'keyvalueservice.icloud.com' in hostname:
             # replace apns-token
@@ -775,7 +778,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 return
             mname = 'do_' + self.command
             if not hasattr(self, mname):
-                do_GET()
+                self.do_GET()
             else:
                 method = getattr(self, mname)
                 method()
@@ -817,52 +820,52 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         srvcert=None
         altnames=None
 
-	if os.path.isfile(srvcertname):
-		st_cert=open(srvcertname, 'rt').read()
-		srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-		altnames = ProxyRewrite.altnames(srvcert)
-	req = crypto.X509Req()
-	if srvcert:
-		subject = srvcert.get_subject()
-		req.get_subject().CN = subject.CN
-		req.get_subject().O = subject.O
-		req.get_subject().C = subject.C
-		req.get_subject().OU = subject.OU
-	else:
-		req.get_subject().CN = hostname
-	req.set_pubkey(self.certKey)
-	req.sign(self.certKey, "sha1")
-	cert = crypto.X509()
-	try:
-		cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
-	except OpenSSL.SSL.Error:
-		epoch = int(time.time() * 1000)
-		cert.set_serial_number(epoch)
+        if os.path.isfile(srvcertname):
+                st_cert=open(srvcertname, 'rt').read()
+                srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+        altnames = ProxyRewrite.altnames(srvcert)
+        req = crypto.X509Req()
+        if srvcert:
+            subject = srvcert.get_subject()
+            req.get_subject().CN = subject.CN
+            req.get_subject().O = subject.O
+            req.get_subject().C = subject.C
+            req.get_subject().OU = subject.OU
+        else:
+            req.get_subject().CN = hostname
+        req.set_pubkey(self.certKey)
+        req.sign(self.certKey, "sha1")
+        cert = crypto.X509()
+        try:
+            cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
+        except SSL.Error:
+            epoch = int(time.time() * 1000)
+            cert.set_serial_number(epoch)
 
-	cert.gmtime_adj_notBefore(0)
-	cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
-	cert.set_issuer(self.issuerCert.get_subject())
-	cert.set_subject(req.get_subject())
-	cert.set_pubkey(req.get_pubkey())
-	#cert.set_version(2)
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
+        cert.set_issuer(self.issuerCert.get_subject())
+        cert.set_subject(req.get_subject())
+        cert.set_pubkey(req.get_pubkey())
+        #cert.set_version(2)
 
-	cert.add_extensions([
-		crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
-		#crypto.X509Extension("nsCertType", True, "sslCA"),
-		crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-		crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
-		crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
-	])
+        cert.add_extensions([
+            crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+            #crypto.X509Extension("nsCertType", True, "sslCA"),
+            crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+            crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
+        ])
 
-	if srvcert:
-		cert.set_serial_number(int(srvcert.get_serial_number()))
-		if altnames:
-			print("ALTNAMES: %s\n" % altnames)
-			cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
-	cert.sign(self.issuerKey, "sha256")
-	with open(certpath, "w") as cert_file:
-		cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-	return certpath
+        if srvcert:
+            cert.set_serial_number(int(srvcert.get_serial_number()))
+            if altnames:
+                print("ALTNAMES: %s\n" % altnames)
+                cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+        cert.sign(self.issuerKey, "sha256")
+        with open(certpath, "w") as cert_file:
+            cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        return certpath
 
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
