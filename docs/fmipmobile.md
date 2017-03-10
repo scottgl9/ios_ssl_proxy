@@ -190,6 +190,7 @@ clientId under serverContext for example:
 
 
 ## This is the request sent when a device is removed via the FMIP app (might be the easiest way to remove a device):
+## NOTE: the header field Authorization base64 decoded is 280584859:AQAAAABYwtZbk08UAOpkQSvNKzadKJ766Gjkg60~ (prsId:authToken)
 
 	POST https://fmipmobile.icloud.com/fmipservice/device/280584859/remove
 	X-Apple-Realm-Support: 1.0
