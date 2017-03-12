@@ -85,3 +85,76 @@ aps-token:
 	"secureElement":true
 	"supportsLostModeV2":true
 	"smlLS":true
+
+
+## unregister device iphone 3gs:
+
+	POST https://p15-fmip.icloud.com/fmipservice/findme/280584859/a14f66f0c87e01571e3d1193e2a716809b811380/unregister HTTP/1.1
+	Accept-Language: en-us
+	X-Apple-PrsId: 280584859
+	Accept: */*
+	Content-Type: application/json
+	X-Apple-Find-API-Ver: 5.0
+	Cookie: NSC_q15-gnjqtfswjdf=ffffffff12ac5ed345525d5f4f58455e445a4a422d6a
+	Authorization: Basic MjgwNTg0ODU5OkFRQUFBQUJZeEwzV0dHa1BQRDZXTzNEX19HNTRTYWxDbC1iZDhQUX4=
+	X-Apple-Realm-Support: 1.0
+	User-Agent: MobileMeNotificationClient/5.0 iPhone2,1/10B500
+	Content-length: 779
+	Host: p15-fmip.icloud.com
+	Accept-Encoding: gzip, deflate
+
+	==== COOKIE ====
+	NSC_q15-gnjqtfswjdf  ffffffff12ac5ed345525d5f4f58455e445a4a422d6a
+
+	==== BASIC AUTH ====
+	280584859:AQAAAABYxL3WGGkPPD6WO3D__G54SalCl-bd8PQ~
+
+	==== REQUEST BODY ====
+	{
+	  "deviceContext": {
+		"deviceTS": "2017-03-12T03:30:20.938Z"
+	  }, 
+	  "deviceInfo": {
+		"deviceName": "iPhone", 
+		"trackNotifyEnabled": false, 
+		"locale": "en_US", 
+		"isInternal": false, 
+		"deviceClass": "iPhone", 
+		"timezone": "America/Chicago", 
+		"locationServicesEnabled": true, 
+		"findMyiPhone": false, 
+		"fmipBuildVersion": "2.0.3", 
+		"fmipVersion": "325", 
+		"productVersion": "6.1.6", 
+		"isChargerConnected": true, 
+		"batteryLevel": 0.5360624, 
+		"lang": "en", 
+		"passcodeIsSet": true, 
+		"buildVersion": "10B500", 
+		"lostModeEnabled": false, 
+		"trackingStatus": 400, 
+		"batteryStatus": "Charging", 
+		"aps-token": "e29d46504faadf07f13d53232cc59ad834b8a1ebf5849f2b2088a8a22831f12a", 
+		"udid": "a14f66f0c87e01571e3d1193e2a716809b811380", 
+		"passcodeConstraint": "fullKeyboard", 
+		"deviceColor": "unknown", 
+		"productType": "iPhone2,1"
+	  }
+	}
+
+	HTTP/1.1 200 OK
+	Server: AppleHttpServer/1dad28f
+	Date: Sun, 12 Mar 2017 03:30:24 GMT
+	Content-Type: application/json;charset=UTF-8
+	X-Responding-Instance: fmipservice:11500602:st13p15ic-hpaa022244:7002:17B115:20be063
+	X-Responding-Server: st13p15ic-hpaa022244_002
+	X-Responding-Partition: p15
+	Content-Encoding: gzip
+	Vary: Accept-Encoding
+	Strict-Transport-Security: max-age=31536000; includeSubDomains
+	via: icloudedge:da06p00ic-ztde010309:7401:17A73:Dallas
+	X-Apple-Request-UUID: 94d63334-ac71-40e0-b967-e217b0c83ddb
+	access-control-expose-headers: X-Apple-Request-UUID
+	access-control-expose-headers: Via
+	Content-Length: 20
+

@@ -104,8 +104,8 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        if 'fmip.icloud.com' in hostname: return False
-        if hostname == "gsa.apple.com": return False
+        #if 'fmip.icloud.com' in hostname: return False
+        #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -823,7 +823,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if os.path.isfile(srvcertname):
                 st_cert=open(srvcertname, 'rt').read()
                 srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-        altnames = ProxyRewrite.altnames(srvcert)
+                altnames = ProxyRewrite.altnames(srvcert)
         req = crypto.X509Req()
         if srvcert:
             subject = srvcert.get_subject()
