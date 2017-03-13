@@ -4,6 +4,16 @@
 <dict>
 	<key>aps-token</key>
 	<string>DE974F6002844EC55ACBF692E3418080C234439C9F1F02C7AC8C2725A70DB081</string>
+	<key>ADSID</key>
+	<string>000080-08-42e1d2b9-eade-48ec-9403-d35203ffbc38</string>
+	<key>dsPrsID</key>
+	<string>10714568019</string>
+	<key>client-id</key>
+	<string>4B602CEE-6CBA-4804-92C4-8F978B8E7DF9</string>
+	<key>mmeAuthToken</key>
+	<string>AQAAAABYUnOGxIFCdHxsS33H6NsLaBBpI7sRs5c=</string>
+	<key>mmeFMIPToken</key>
+	<string>AQAAAABYxNKLyCY-B_XJwtqFwib4QoaR1BGOMIE~</string>
 	<key>ActivationState</key>
 	<string>Activated</string>
 	<key>ActivationStateAcknowledged</key>

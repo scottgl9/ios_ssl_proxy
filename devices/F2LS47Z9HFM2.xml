@@ -3,7 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>aps-token</key>
-	<string>E13FE0FBAA3E3E0DF21D772DD34846A662A9F0E4E63D5306671D31D4F6C838BD</string>
+	<string>A3FB33840076736DEB790D05A45C49FF26CD1E3E75411BBF6CFDD0DFFF66BE8F</string>
+        <key>ADSID</key>
+        <string>000919-05-b45534a8-fa23-4dfa-9ff7-0fcfa37c3d34</string>
+        <key>dsPrsID</key>
+        <string>280584859</string>
+	<key>client-id</key>
+	<string>ECB173C4-71CE-4A15-86A1-4F88D9719B10</string>
+        <key>mmeAuthToken</key>
+        <string>AQAAAABYozmtoXVH5oZmHpxHLWXFTojcY2D+omI=</string>
+        <key>mmeFMIPToken</key>
+        <string>AQAAAABYo1Nu9YTyBcazkHDOPBdBKOwqcpzMcB0~</string>
 	<key>fmipVersion</key>
 	<string>517</string>
 	<key>fmipBuildVersion</key>

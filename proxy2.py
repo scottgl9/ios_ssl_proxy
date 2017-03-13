@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7
+
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -104,8 +105,8 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if 'fmip.icloud.com' in hostname: return False
-        #if hostname == "gsa.apple.com": return False
+        if 'fmip.icloud.com' in hostname: return False
+        if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
@@ -195,10 +196,10 @@ class ProxyRewrite:
                 p['FairPlayCertChain'] = ProxyRewrite.dev2info['FairPlayCertChain']
             if 'FairPlaySignature' in ProxyRewrite.dev2info:
                 p['FairPlaySignature'] = ProxyRewrite.dev2info['FairPlaySignature']
-            del p['RKCertification']
-            del p['RKSignature']
-            del p['serverKP']
-            del p['signActRequest']
+            #if 'RKCertification' in text: del p['RKCertification']
+            #if 'RKSignature' in text: del p['RKSignature']
+            #if 'serverKP' in text: del p['serverKP']
+            #if 'signActRequest' in text: del p['signActRequest']
 
         else:
             attribs = 'BluetoothAddress,BuildVersion,EthernetAddress,ModelNumber,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
@@ -330,6 +331,8 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
+            #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+            #    attribs = ("%s,%s" % (attribs, 'client-id'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
@@ -426,6 +429,17 @@ class ProxyRewrite:
                 body = body.replace(d1apns_encoded, d2apns_encoded)
                 print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
+        elif 'service.gc.apple.com' in hostname:
+            # replace apns-token
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
+                d2apns_encoded = base64.b64encode(str(ProxyRewrite.dev2info['aps-token']).encode())
+                body = body.replace(d1apns_encoded, d2apns_encoded)
+                d1apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev1info['aps-token']))
+                d2apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev2info['aps-token']))
+                body = body.replace(d1apns_encoded, d2apns_encoded)
+                print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
+            return body
         elif 'quota.icloud.com' in hostname:
             attribs = 'BuildVersion,DeviceColor,EnclosureColor,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -448,10 +462,13 @@ class ProxyRewrite:
         elif hostname == 'sse-ws.apple.com':
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,DeviceClass,SerialNumber,ProductType,ProductVersion', hostname)
             return body
-        elif 'gs-loc.apple.com' in hostname:
+        elif hostname == 'gs-loc.apple.com':
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
             return body
         elif hostname == 'gsp-ssl.ls.apple.com':
+            body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
+            return body
+        elif hostname == 'gsp64-ssl.ls.apple.com':
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
             return body
         elif hostname == 'tbsc.apple.com':
@@ -510,7 +527,21 @@ class ProxyRewrite:
             hostname = path.split(':')[0]
             hostname = hostname.replace(':443','')
 
+        #if 'fmipmobile.icloud.com' in hostname:
+        #        headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
+        #if 'fmfmobile.icloud.com' in hostname and 'Authorization' in headers and 'Basic' in headers['Authorization']:
+        #        headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
+        #if 'keyvalueservice.icloud.com' in hostname and 'Authorization' in headers and 'X-MobileMe-AuthToken' in headers['Authorization']:
+        #        headers['Authorization'] = 'X-MobileMe-AuthToken %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
+
+        #if 'quota.icloud.com' in hostname:
+        #        headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
+
+
+
         if 'setup.icloud.com' in hostname or 'gsa.apple.com' in hostname:
+            #if ('getFamilyDetails' in path or 'get_account_settings' in path) and 'dsPrsID' in ProxyRewrite.dev2info and 'mmeAuthToken' in ProxyRewrite.dev2info:
+            #    headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
             if 'X-Mme-Nas-Qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
                 if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -519,7 +550,9 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-                    headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
+                #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'client-id'))
+                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
                 if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -528,6 +561,8 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
+                #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
         elif 'quota.icloud.com' in hostname:
             if 'X-Client-UDID' in headers:
@@ -551,6 +586,8 @@ class ProxyRewrite:
                 else:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
 
+        #if 'X-Apple-ADSID' in headers and 'ADSID' in ProxyRewrite.dev1info and 'ADSID' in ProxyRewrite.dev2info:
+        #    headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-ADSID', 'ADSID')
 
         if 'User-Agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'User-Agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductType2,ProductVersion,ProductVersion2,DeviceClass')
@@ -558,9 +595,9 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'user-agent', 'BuildVersion,HardwarePlatform,ProductName,ProductType,ProductType2,ProductVersion,ProductVersion2,DeviceClass')
 
         if 'X-MMe-Client-Info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'X-MMe-Client-Info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel') #,DeviceClass')
         elif 'x-mme-client-info' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel,DeviceClass')
+            headers = ProxyRewrite.rewrite_header_field(headers, 'x-mme-client-info', 'BuildVersion,ProductName,ProductType,ProductVersion,HardwareModel') #,DeviceClass')
 
         if 'X-Mme-Device-Id' in headers:
             headers = ProxyRewrite.replace_header_field(headers, 'X-Mme-Device-Id', 'UniqueDeviceID')
@@ -633,10 +670,14 @@ class ProxyRewrite:
             hostname = path.split(':')[0]
 
         old_path = path
-                
+        if 'dsPrsID' in ProxyRewrite.dev1info and 'dsPrsID' in ProxyRewrite.dev2info:
+            path = path.replace(ProxyRewrite.dev1info['dsPrsID'], ProxyRewrite.dev2info['dsPrsID']) 
+
         if 'fmip.icloud.com' in hostname:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        #elif 'fmipmobile.icloud.com' in hostname:
+        #        path = path.replace('ryrobinson1987@icloud.com', 'scottgl@gmail.com')
         elif 'fmf.icloud.com' in hostname:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
@@ -667,9 +708,12 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_status(path, status):
-        if 'appleid.apple.com' in path and status == 401:
-                status = 200
-                print("replace status 401 -> 200\n")
+        #if 'appleid.apple.com' in path and status == 401:
+        #        status = 200
+        #        print("replace status 401 -> 200\n")
+        #elif 'setup.icloud.com' in path and status == 401:
+        #        status = 200
+        #        print("replace status 401 -> 200\n")
         return status
 
     @staticmethod
@@ -1144,7 +1188,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 try:
                     json_obj = json.loads(req_body)
                     json_str = json.dumps(json_obj, indent=2)
-                    if json_str.count('\n') < 50 or 'fmip.icloud.com' in req.path or 'fmf.icloud.com' in req.path:
+                    if json_str.count('\n') < 50 or 'fmip.icloud.com' in req.path or 'fmf.icloud.com' in req.path or 'fmipmobile.icloud.com' in req.path:
                         req_body_text = json_str
                     else:
                         lines = json_str.splitlines()
@@ -1222,15 +1266,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
         #        res_body = r.text
         #        res.headers['Content-Length'] = str(len(r.text))
-
+        pass
         # rewrite response status
-        #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
-        if 'setup.icloud.com/configurations/init?context=settings' in self.path:
+        res.status = ProxyRewrite.rewrite_status(req.path, res.status)
+        #if 'setup.icloud.com/configurations/init?context=settings' in self.path:
             # Attempt to replace gsa.apple.com to use a different server
-            res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
-            print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
+            #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
+            #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
-        return res_body
+        #return res_body
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -1255,8 +1299,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
             #print with_color(33, req_header_text)
             #print with_color(32, res_header_text)
-            ProxyRewrite.logger.write(req_header_text)
-            ProxyRewrite.logger.write(res_header_text)
+            #ProxyRewrite.logger.write(req_header_text)
+            #ProxyRewrite.logger.write(res_header_text)
 
             logname = hostname
             # remove 'pXX-' from hostname for log filename
@@ -1265,6 +1309,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger = open("logs/"+logname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
+
+            ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
+            ProxyRewrite.logger.write(str(req.headers))
 
             # format json request before writing to log file
             if req_body and 'Content-Type' in req.headers and req.headers['Content-Type'].startswith('application/json'):
@@ -1275,9 +1322,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     req_body = req_body_orig
 
-            if req_body: logger.write(str(req_body))
+            if req_body:
+                logger.write(str(req_body))
+                ProxyRewrite.logger.write(str(req_body))
+
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             logger.write(str(res.headers))
+
+            ProxyRewrite.logger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
+            ProxyRewrite.logger.write(str(res.headers))
 
             # format json response before writing to log file
             if res_body and 'Content-Type' in res.headers and res.headers['Content-Type'].startswith('application/json'):
@@ -1288,7 +1341,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     res_body = res_body_orig
 
-            if res_body: logger.write(str(res_body))
+            if res_body:
+                logger.write(str(res_body))
+                ProxyRewrite.logger.write(str(res_body))
+
+            ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
             logger.close()
 
@@ -1321,7 +1378,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     server_address = ('', port)
 
     if 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
-    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
+    #elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
@@ -1349,7 +1406,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         httpd.allow_reuse_address = True
         httpd.request_queue_size = 256
 
-        ProxyRewrite.logger = open("requests.log", "w")
+        ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
 
         sa = httpd.socket.getsockname()
         print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."

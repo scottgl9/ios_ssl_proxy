@@ -280,7 +280,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 return
             mname = 'do_' + self.command
             if not hasattr(self, mname):
-                do_GET()
+                self.do_GET()
             else:
                 method = getattr(self, mname)
                 method()
@@ -319,130 +319,73 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         srvcert=None
         altnames=None
 
-	if os.path.isfile(srvcertname):
-		st_cert=open(srvcertname, 'rt').read()
-		srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-		altnames = ProxyRewrite.altnames(srvcert)
-	req = crypto.X509Req()
-	if srvcert:
-		subject = srvcert.get_subject()
-		req.get_subject().CN = subject.CN
-		req.get_subject().O = subject.O
-		req.get_subject().C = subject.C
-		req.get_subject().OU = subject.OU
-	else:
-		req.get_subject().CN = hostname
-	req.set_pubkey(self.certKey)
-	req.sign(self.certKey, "sha1")
-	cert = crypto.X509()
-	try:
-		cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
-	except OpenSSL.SSL.Error:
-		epoch = int(time.time() * 1000)
-		cert.set_serial_number(epoch)
+        if os.path.isfile(srvcertname):
+                st_cert=open(srvcertname, 'rt').read()
+                srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+                altnames = ProxyRewrite.altnames(srvcert)
+        req = crypto.X509Req()
+        if srvcert:
+            subject = srvcert.get_subject()
+            req.get_subject().CN = subject.CN
+            req.get_subject().O = subject.O
+            req.get_subject().C = subject.C
+            req.get_subject().OU = subject.OU
+        else:
+            req.get_subject().CN = hostname
+        req.set_pubkey(self.certKey)
+        req.sign(self.certKey, "sha1")
+        cert = crypto.X509()
+        try:
+            cert.set_serial_number(int(hashlib.md5(req.get_subject().CN.encode('utf-8')).hexdigest(), 16))
+        except SSL.Error:
+            epoch = int(time.time() * 1000)
+            cert.set_serial_number(epoch)
 
-	cert.gmtime_adj_notBefore(0)
-	cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
-	cert.set_issuer(self.issuerCert.get_subject())
-	cert.set_subject(req.get_subject())
-	cert.set_pubkey(req.get_pubkey())
-	#cert.set_version(2)
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
+        cert.set_issuer(self.issuerCert.get_subject())
+        cert.set_subject(req.get_subject())
+        cert.set_pubkey(req.get_pubkey())
+        #cert.set_version(2)
 
-	cert.add_extensions([
-		crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
-		#crypto.X509Extension("nsCertType", True, "sslCA"),
-		crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-		crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
-		crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
-	])
+        cert.add_extensions([
+            crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+            #crypto.X509Extension("nsCertType", True, "sslCA"),
+            crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+            crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
+        ])
 
-	if srvcert:
-		cert.set_serial_number(int(srvcert.get_serial_number()))
-		if altnames:
-			print("ALTNAMES: %s\n" % altnames)
-			cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
-	cert.sign(self.issuerKey, "sha256")
-	with open(certpath, "w") as cert_file:
-		cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-	return certpath
+        if srvcert:
+            cert.set_serial_number(int(srvcert.get_serial_number()))
+            if altnames:
+                print("ALTNAMES: %s\n" % altnames)
+                cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+        cert.sign(self.issuerKey, "sha256")
+        with open(certpath, "w") as cert_file:
+            cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        return certpath
 
     def connect_intercept(self):
         hostname = self.path.split(':')[0]
-        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
-        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
-        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
-            srvcertname = "server_certs/icloud.com.crt"
-        elif 'fmip.icloud.com' in hostname:
-            srvcertname = "server_certs/fmip.icloud.com.crt"
-        elif 'itunes.apple.com' in hostname:
-            srvcertname = "server_certs/itunes.apple.com.crt"
-        else:
-            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
-        srvcert=None
-        altnames=None
 
-        with self.lock:
-            if not os.path.isfile(certpath):
-                if os.path.isfile(srvcertname):
-                    st_cert=open(srvcertname, 'rt').read()
-                    srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-                    altnames = ProxyRewrite.altnames(srvcert)
-                req = crypto.X509Req()
-                if srvcert:
-                    subject = srvcert.get_subject()
-                    req.get_subject().CN = subject.CN
-                    req.get_subject().O = subject.O
-                    req.get_subject().C = subject.C
-                    req.get_subject().OU = subject.OU
-                    if subject.L: req.get_subject().L = subject.L
-                    if subject.ST: req.get_subject().ST = subject.ST
-                else:
-                    req.get_subject().CN = hostname
-                req.set_pubkey(self.certKey)
-                req.sign(self.certKey, "sha1")
-                epoch = int(time.time() * 1000)
-                cert = crypto.X509()
-                cert.set_serial_number(epoch)
-                cert.gmtime_adj_notBefore(0)
-                cert.gmtime_adj_notAfter(60 * 60 * 24 * 3650)
-                cert.set_issuer(self.issuerCert.get_subject())
-                cert.set_subject(req.get_subject())
-                cert.set_pubkey(req.get_pubkey())
-
-                # for adding subjectAltName such as the case is with gsa.apple.com
-                #cert.set_version(2)
-                cert.add_extensions([crypto.X509Extension('extendedKeyUsage', True, 'serverAuth'),crypto.X509Extension('basicConstraints', True, 'CA:false')])
-
-                if srvcert:
-                    cert.set_serial_number(int(srvcert.get_serial_number()))
-                    if altnames:
-                        print("ALTNAMES: %s\n" % altnames)
-                        cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
-
-                cert.sign(self.issuerKey, "sha256")
-                with open(certpath, "w") as cert_file:
-                    cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-
-
+        certpath = self.generate_cert(hostname)
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
 
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True) #suppress_ragged_eofs=True)
-        except ssl.SSLEOFError as e:
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+        except ssl.SSLError as e:
             try:
                 ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-            except ssl.SSLEOFError as e:
-                print("SSLEOFError occurred on "+self.path)
+            except ssl.SSLError as e:
+                print("SSLError occurred on %s: %r" % (self.path,e))
                 self.finish()
 
-        try:
-            self.rfile = self.connection.makefile("rb", self.rbufsize)
-            self.wfile = self.connection.makefile("wb", self.wbufsize)
-        except Exception as e:
-            self.log_error("connect_intercept() Exception: %r", e)
+        self.rfile = self.connection.makefile("rb", self.rbufsize)
+        self.wfile = self.connection.makefile("wb", self.wbufsize)
 
         conntype = self.headers.get('Connection', '')
         if self.protocol_version == "HTTP/1.1" and conntype.lower() != 'close':
@@ -479,9 +422,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if self.path == 'http://proxy2.test/':
             self.send_cacert()
             return
-
-        if 'Proxy-Connection' in self.headers:
-            del self.headers['Proxy-Connection']
 
         req = self
         content_length = int(req.headers.get('Content-Length', 0))
@@ -696,7 +636,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 try:
                     json_obj = json.loads(req_body)
                     json_str = json.dumps(json_obj, indent=2)
-                    if json_str.count('\n') < 50:
+                    if json_str.count('\n') < 50 or 'fmip.icloud.com' in req.path or 'fmf.icloud.com' in req.path:
                         req_body_text = json_str
                     else:
                         lines = json_str.splitlines()
@@ -861,12 +801,31 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 naslog.close()
                 ProxyRewrite.nascount = ProxyRewrite.nascount + 1
 
-            if req_body_plain: logger.write(str(req_body_plain))
+
+            # format json request before writing to log file
+            if req_body and 'Content-Type' in req.headers and req.headers['Content-Type'].startswith('application/json'):
+                req_body_orig = req_body
+                try:
+                    json_obj = json.loads(req_body)
+                    req_body = json.dumps(json_obj, indent=2)
+                except ValueError:
+                    req_body = req_body_orig
+
+            if req_body: logger.write(str(req_body))
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             logger.write(str(res.headers))
-            if res_body:
-                logger.write(str(res_body))
-                logger.write("\n")
+
+            # format json response before writing to log file
+            if res_body and 'Content-Type' in res.headers and res.headers['Content-Type'].startswith('application/json'):
+                res_body_orig = res_body
+                try:
+                    json_obj = json.loads(res_body)
+                    res_body = json.dumps(json_obj, indent=2)
+                except ValueError:
+                    res_body = res_body_orig
+
+            if res_body: logger.write(str(res_body))
+            logger.write(str("\n"))
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):

@@ -1,8 +1,7 @@
 #!/bin/sh
 
 #killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld
-rm -f /var/Keychains/*.db*
-rm -f /var/Keychains/*.sqlite*
+rm -f /var/Keychains/*
 rm -f /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
 rm -f /var/mobile/Library/AccountNotifications/*.sqlite*
 rm -f /var/mobile/Library/Accounts/*.sqlite*
@@ -17,8 +16,8 @@ rm -rf var/mobile/Library/Caches/com.apple.dataaccess.dataaccessd/*
 rm -rf /var/mobile/Library/Caches/com.apple.imfoundation.IMRemoteURLConnectionAgent/*
 rm -rf /var/mobile/Library/Caches/com.apple.Preferences/*
 rm -rf /var/mobile/Library/Caches/com.apple.purplebuddy/*
-rm -rf /var/mobile/Library/Caches/PassKit/*
-
+rm -rf /var/mobile/Library/Caches/*
+#rm -rf /var/mobile/Library/Caches/PassKit/*
 rm -f /var/mobile/Library/ApplePushService/aps.*
 rm -rf /var/mobile/Library/DataAccess/*
 rm -f /var/mobile/Library/Health/*.sqlite*
@@ -48,6 +47,8 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
+rm -rf /var/log/*
+rm -rf /var/logs/*
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 rm -rf /var/root/Library/Lockdown
 reboot

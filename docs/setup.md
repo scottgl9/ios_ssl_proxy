@@ -19,8 +19,37 @@ LOGIN\_REASON can be any of the following:
 - login
 - pushTokenChange
 
+### NOTE: https://setup.icloud.com/setup/account/registerDevice is what actually adds a device to an iCloud account. A device can actually still have FMIP turned on without being registered on an account.
+
+
+## Analysis of Authorization header field usage for setup.icloud.com:
+
+The response body for https://setup.icloud.com/setup/get_account_settings contains all account tokens.
+
+The Authorization header field looks like the following:
+	Authorization: Basic MjgwNTg0ODU5OkFRQUFBQUJZeFZXZTVUTzBEN0lML1ByUFVSdndCaGJiU01BbXl6ND0=^M
+Base64 decoding the above gives: 280584859:AQAAAABYxVWe5TO0D7IL/PrPURvwBhbbSMAmyz4=
+The above is just PrsID:mmeAuthToken
+
 
 ## Analysis of changes in X-Mme-Nas-Qualify header field (always base64 encoded):
+
+### NOTE: the following is from syslog when posting to setup.icloud.com with X-Mme-Nas-Qualify in headers:
+
+	Mar 13 13:51:20 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Returning cached config bag" 
+	Mar 13 13:51:20 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Fetching absinthe cert" 
+	Mar 13 13:51:21 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: @"Got Absinthe cert: 2385 bytes" 
+	Mar 13 13:51:21 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: @"Initializing absinthe session" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: @"Initialized absinthe session, establishing key" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Returning cached config bag" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Request URL: <private>" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Client Info Header: <private>" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "<private>" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "Using token auth" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: @"Absinthe signing data" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "X-Mme-Nas-Qualify: <private>" 
+	Mar 13 13:51:22 scottgls-iPhone Preferences(AppleAccount)[788] <Notice>: "<private>" 
+
 
 - The shorter X-Mme-Nas-Qualify header field occurs in the following URLs:
 https://setup.icloud.com/setup/get\_account\_settings
