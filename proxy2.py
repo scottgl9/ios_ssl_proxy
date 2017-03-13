@@ -105,7 +105,7 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        if 'fmip.icloud.com' in hostname: return False
+        #if 'fmip.icloud.com' in hostname: return False
         if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
@@ -113,6 +113,13 @@ class ProxyRewrite:
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
         return True
+
+    @staticmethod
+    def replace_hostname_body(text, oldhost, newhost):
+        if oldhost in text:
+            text = text.replace(oldhost, newhost)
+            print("Replaced %s with %s" % (oldhost, newhost))
+        return text
 
     @staticmethod
     def replace_json_fields(text, fields, value):
@@ -773,7 +780,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             with self.lock:
                 certpath = self.generate_cert(dst_ip)
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 try:
                     ssl._https_verify_certificates(enable=False)
@@ -835,6 +842,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
+        print("CONNECT %s" % hostname)
+        print(self.headers)
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
 
@@ -853,12 +862,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
-        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname:
+        if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname and 'escrowproxy.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
             srvcertname = "server_certs/fmip.icloud.com.crt"
         elif 'itunes.apple.com' in hostname:
             srvcertname = "server_certs/itunes.apple.com.crt"
+        elif 'escrowproxy.icloud.com' in hostname:
+            srvcertname = "server_certs/escrowproxy.icloud.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
@@ -874,7 +885,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             req.get_subject().CN = subject.CN
             req.get_subject().O = subject.O
             req.get_subject().C = subject.C
-            req.get_subject().OU = subject.OU
+            if subject.OU != None: req.get_subject().OU = subject.OU
         else:
             req.get_subject().CN = hostname
         req.set_pubkey(self.certKey)
@@ -922,6 +933,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
         except ssl.SSLError as e:
+            print("SSLError occurred on %s: %r" % (self.path,e))
             try:
                 ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
@@ -967,8 +979,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if self.path == 'http://proxy2.test/':
             self.send_cacert(self.cacert)
             return
-        elif self.path == 'http://proxy2.gsa/':
+        elif self.path == 'http://proxy2.test/gsa':
             self.send_cacert('certs/gsa.apple.com.crt')
+        elif self.path == 'http://proxy2.test/fmip':
+            self.send_cacert('certs/p15-fmip.icloud.com.crt')
+
         #elif 'captive.apple.com' in self.path:
         #    self.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
 
@@ -1266,15 +1281,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
         #        res_body = r.text
         #        res.headers['Content-Length'] = str(len(r.text))
-        pass
         # rewrite response status
         res.status = ProxyRewrite.rewrite_status(req.path, res.status)
-        #if 'setup.icloud.com/configurations/init?context=settings' in self.path:
+        #if 'setup.icloud.com/configurations/init?context=settings' in self.path or 'setup.icloud.com/setup/get_account_settings' in self.path:
+            #res_body = ProxyRewrite.replace_hostname_body(res_body, 'fmip.icloud.com', 'fmiptest.icloud.com')
             # Attempt to replace gsa.apple.com to use a different server
             #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
-        #return res_body
+        return res_body
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -1377,8 +1392,9 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
 
+    #if 'enp0s25' in iflist: server_address = (get_ip_address('enp0s25'), port)
     if 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
-    #elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
+    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)

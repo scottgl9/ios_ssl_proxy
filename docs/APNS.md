@@ -4,6 +4,9 @@
 
 /var/mobile/Library/Preferences/com.apple.seld.plist
 
+### NOTE: The APN token is 32 bytes in length, so might be a SHA256 checksum of some unknown data (HMAC-SHA256)
+### APNs generates device token using the unique device certificate (may be using provisioning profile)
+
 ## In the case of my iphone 6s plus, the APNS token is:
 
 F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2

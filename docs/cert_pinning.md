@@ -2,6 +2,7 @@
 
 
 ### pXX-escrowproxy.icloud.com (syslog output when using proxy):
+### The process com.apple.sbd is used to sync the iCloud Keychain
 
 	Mar 13 13:51:20 scottgls-iPhone com.apple.sbd[284] <Notice>: escrowService getAccountInfoWithInfo: returned Error Domain=CloudServicesErrorDomain Code=310 "Certificate pinning error" UserInfo={NSLocalizedDescription=Certificate pinning error, NSUnderlyingError=0x100216ed0 {Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLKey=https://p15-escrowproxy.icloud.com:443/escrowproxy/api/get_records, NSLocalizedDescription=cancelled, NSErrorFailingURLStringKey=https://p15-escrowproxy.icloud.com:443/escrowproxy/api/get_records}}} 
 
