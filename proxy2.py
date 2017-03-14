@@ -30,6 +30,7 @@ import binascii
 import netifaces
 import hashlib
 import requests
+import uuid
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -120,6 +121,22 @@ class ProxyRewrite:
             text = text.replace(oldhost, newhost)
             print("Replaced %s with %s" % (oldhost, newhost))
         return text
+
+    @staticmethod
+    def generate_new_clientid():
+        return str(uuid.uuid4()).upper()
+
+    @staticmethod
+    def save_plist_body_attrib(text, attrname, subname):
+        p = plistlib.readPlistFromString(text)
+        if subname != '' and subname in p:
+            psub = p[subname]
+        else:
+            psub = p
+        if attrname in psub:
+            print("found %s in body: %s" % (attrname, psub[attrname]))
+            return psub[attrname]
+        return ''
 
     @staticmethod
     def replace_json_fields(text, fields, value):
@@ -338,8 +355,20 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
-            #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
-            #    attribs = ("%s,%s" % (attribs, 'client-id'))
+
+            if 'login_or_create_account' in path:
+                clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
+                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+            elif 'get_account_settings' in path:
+                clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
+                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+            elif 'loginDelegates' in path:
+                clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
+                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+
+            if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'client-id'))
+
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             if "hasCellularCapability</key>\n\t\t<false/>" in body:
                 body = body.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
@@ -557,8 +586,8 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-                #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
-                #    attribs = ("%s,%s" % (attribs, 'client-id'))
+                if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                    attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
@@ -568,8 +597,8 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-                #if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
-                #    attribs = ("%s,%s" % (attribs, 'client-id'))
+                if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                    attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
         elif 'quota.icloud.com' in hostname:
             if 'X-Client-UDID' in headers:
@@ -843,7 +872,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
         print("CONNECT %s" % hostname)
-        print(self.headers)
+
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
 
@@ -1282,14 +1311,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        res_body = r.text
         #        res.headers['Content-Length'] = str(len(r.text))
         # rewrite response status
-        res.status = ProxyRewrite.rewrite_status(req.path, res.status)
+        #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
         #if 'setup.icloud.com/configurations/init?context=settings' in self.path or 'setup.icloud.com/setup/get_account_settings' in self.path:
             #res_body = ProxyRewrite.replace_hostname_body(res_body, 'fmip.icloud.com', 'fmiptest.icloud.com')
             # Attempt to replace gsa.apple.com to use a different server
             #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
-        return res_body
+        #return res_body
+        pass
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -1385,6 +1415,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         print("Proxy set to rewrite device %s with device %s" % (device1, device2))
         ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
         ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
+        ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
+        print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
     else:
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
