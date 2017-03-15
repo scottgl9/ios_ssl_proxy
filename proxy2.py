@@ -88,6 +88,7 @@ class ProxyRewrite:
     dev2info = dict()
     logger = None
     transparent = False
+    changeClientID = False
     apnscnt = 0
 
     @staticmethod
@@ -106,7 +107,8 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if 'fmip.icloud.com' in hostname: return False
+        if 'fmip.icloud.com' in hostname: return False
+        if 'itunes.apple.com' in hostname: return False
         if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
@@ -366,7 +368,7 @@ class ProxyRewrite:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
 
-            if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+            if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
 
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
@@ -586,7 +588,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-                if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
@@ -597,7 +599,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
-                if 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
         elif 'quota.icloud.com' in hostname:
@@ -809,7 +811,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             with self.lock:
                 certpath = self.generate_cert(dst_ip)
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 try:
                     ssl._https_verify_certificates(enable=False)
@@ -937,15 +939,22 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
             #crypto.X509Extension("nsCertType", True, "sslCA"),
             crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"),
+            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign, digitalSignature"),
             crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
         ])
+
+        #cert.add_extensions([crypto.X509Extension("authorityKeyIdentifier", critical=False, value="keyid:always", issuer=cert)])
 
         if srvcert:
             cert.set_serial_number(int(srvcert.get_serial_number()))
             if altnames:
-                print("ALTNAMES: %s\n" % altnames)
+                #print("ALTNAMES: %s\n" % altnames)
                 cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+
+                for i in range(srvcert.get_extension_count()):
+                     ext = srvcert.get_extension(i)
+                     if len(ext.get_data()) == 2: cert.add_extensions([ext])
+
         cert.sign(self.issuerKey, "sha256")
         with open(certpath, "w") as cert_file:
             cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
@@ -1197,7 +1206,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def print_info(self, req, req_body, res, res_body):
-        if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path: return
+        #if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: return
 
         def parse_qsl(s):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
