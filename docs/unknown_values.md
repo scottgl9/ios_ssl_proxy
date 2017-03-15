@@ -33,6 +33,17 @@ Example from setup.icloud.com from my iPhone 6s+:
 	<key>backupDeviceUUID</key>
 	<string>D:d9614827b8f0bfd998267f638bccff0acb597f8f</string>
 
+### NOTE: backupDeviceUUID is 20 bytes in length, and is a SHA1 hash of the following:
+
+	v2 = self;
+	v3 = objc_msgSend(self->_deviceClass, "hash");
+	v4 = (unsigned int)v3 ^ (unsigned int)objc_msgSend(v2->_productType, "hash");
+	v5 = v4 ^ (unsigned int)objc_msgSend(v2->_serialNumber, "hash");
+	v6 = v5 ^ (unsigned int)objc_msgSend(v2->_deviceColor, "hash");
+	v7 = v6 ^ (unsigned int)objc_msgSend(v2->_hardwareModel, "hash");
+	v8 = v7 ^ (unsigned int)objc_msgSend(v2->_marketingName, "hash");
+	return (unsigned int)objc_msgSend(v2->_deviceEnclosureColor, "hash") ^ v8;
+
 ### client-id
 Description: Seems to be unique account identifier UUID per device, unsure if it changes per account (used on setup.icloud.com)
 Changes on factory reset: YES
