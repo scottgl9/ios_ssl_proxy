@@ -37,8 +37,10 @@ print('{:x}'.format(backupuuid))
 backupuuid = xor(backupuuid, int(hashlib.sha1(devinfo['EnclosureColor']).hexdigest(), 16))
 print('{:x}'.format(backupuuid))
 
-print(hashlib.sha1(("\x01%s\x01\x01%s\x02\x01%s\x03\x01%s\x04\x01%s\x05\x01%s\x06\x01%s\x07" % (devinfo['DeviceClass'], devinfo['ProductType'], devinfo['SerialNumber'], devinfo['DeviceColor'], devinfo['HardwareModel'], 'iPhone 6s Plus', devinfo['EnclosureColor']))).hexdigest())
 
-print(hashlib.sha1(("\x01%s\x01\x01%s\x02\x01%s\x03\x01%s\x04\x01%s\x05\x01%s\x06" % (devinfo['DeviceClass'], devinfo['ProductType'], devinfo['SerialNumber'], devinfo['DeviceColor'], devinfo['HardwareModel'], 'iPhone 6s Plus'))).hexdigest())
-print(hashlib.sha1(("\x01%s\x01\x01%s\x02\x01%s\x03\x01%s\x04\x01%s\x05\x01%s\x06" % (devinfo['DeviceClass'], devinfo['ProductType'], devinfo['SerialNumber'], devinfo['DeviceColor'], devinfo['HardwareModel'], devinfo['EnclosureColor']))).hexdigest())
+# calculate FMD hash:
+#  v3 = objc_msgSend(self->_dsid, "hash");
+#  v4 = (unsigned int)v3 ^ (unsigned int)objc_msgSend(v2->_udid, "hash");
+#  v5 = v4 ^ (unsigned int)objc_msgSend(v2->_serialNumber, "hash");
+#  return (unsigned int)objc_msgSend(v2->_productType, "hash") ^ v5;
 

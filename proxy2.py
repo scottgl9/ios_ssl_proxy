@@ -90,6 +90,7 @@ class ProxyRewrite:
     transparent = False
     changeClientID = False
     apnscnt = 0
+    server_address = None
 
     @staticmethod
     def load_device_info(sn):
@@ -358,13 +359,13 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
 
-            if 'login_or_create_account' in path:
+            if 'login_or_create_account' in path and ProxyRewrite.changeClientID == True:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif 'get_account_settings' in path:
+            elif 'get_account_settings' in path and ProxyRewrite.changeClientID == True:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif 'loginDelegates' in path:
+            elif 'loginDelegates' in path and ProxyRewrite.changeClientID == True:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
 
@@ -814,6 +815,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
         # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+            with self.lock:
+                certpath = self.generate_cert(dst_ip)
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            except ssl.SSLError as e:
+                try:
+                    ssl._https_verify_certificates(enable=False)
+                    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                except ssl.SSLError as e:
+                    print("SSLError occurred on %s: %r" % (dst_ip,e))
+                    #self.finish()
+        elif ProxyRewrite.server_address != dst_ip and dst_port == 443:
+            print("Handling %s:%s" % (dst_ip, dst_port))
             with self.lock:
                 certpath = self.generate_cert(dst_ip)
             try:
@@ -1354,11 +1368,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-            self.print_info(req, req_body_plain, res, res_body)
+            #self.print_info(req, req_body_plain, res, res_body)
             req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
             res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
-            #print with_color(33, req_header_text)
-            #print with_color(32, res_header_text)
+            print with_color(33, req_header_text)
+            print with_color(32, res_header_text)
             #ProxyRewrite.logger.write(req_header_text)
             #ProxyRewrite.logger.write(res_header_text)
 
@@ -1417,11 +1431,13 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         if sys.argv[3] == '-T':
             print("Setting transparent mode")
             ProxyRewrite.transparent = True
+        elif sys.argv[3] == '-C':
+            print("Enabling client-id rewrite")
+            ProxyRewrite.changeClientID = True
     elif sys.argv[2:]:
         port = int('8080') #sys.argv[1])
         device1 = sys.argv[1]
         device2 = sys.argv[2]
-
     else:
         print("Usage: %s <device1> <device2>" % sys.argv[0])
         return 0
@@ -1430,21 +1446,22 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         print("Proxy set to rewrite device %s with device %s" % (device1, device2))
         ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
         ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
-        ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
-        print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
+        if ProxyRewrite.changeClientID == True:
+            ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
+            print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
     else:
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
     iflist = netifaces.interfaces()
-    server_address = ('', port)
+    ProxyRewrite.server_address = ('', port)
 
-    if 'enp0s25' in iflist: server_address = (get_ip_address('enp0s25'), port)
-    elif 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
-    elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
-    elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
-    elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
-    elif 'wlo1' in iflist: server_address = (get_ip_address('wlo1'), port)
+    #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
+    if 'ap4' in iflist: ProxyRewrite.server_address = (get_ip_address('ap4'), port)
+    elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
+    elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
+    elif 'wlo1' in iflist: ProxyRewrite.server_address = (get_ip_address('wlo1'), port)
 
     os.putenv('LANG', 'en_US.UTF-8')
     os.putenv('LC_ALL', 'en_US.UTF-8')
@@ -1465,7 +1482,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     try:
         ssl._https_verify_certificates(enable=False)
         HandlerClass.protocol_version = protocol
-        httpd = ServerClass(server_address, HandlerClass)
+        httpd = ServerClass(ProxyRewrite.server_address, HandlerClass)
         httpd.allow_reuse_address = True
         httpd.request_queue_size = 256
 
