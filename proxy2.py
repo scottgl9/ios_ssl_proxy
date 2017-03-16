@@ -107,8 +107,8 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        if 'fmip.icloud.com' in hostname: return False
-        if 'itunes.apple.com' in hostname: return False
+        #if 'fmip.icloud.com' in hostname: return False
+        #if 'itunes.apple.com' in hostname: return False
         if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
@@ -728,6 +728,12 @@ class ProxyRewrite:
         elif 'quota.icloud.com' in hostname:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        elif 'contacts.icloud.com' in hostname and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                path = path.replace(ProxyRewrite.dev1info['aps-token'], ProxyRewrite.dev2info['aps-token'])
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        elif 'caldav.icloud.com' in hostname and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                path = path.replace(ProxyRewrite.dev1info['aps-token'], ProxyRewrite.dev2info['aps-token'])
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
                 path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
@@ -1164,7 +1170,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def encode_content_body(self, text, encoding):
         if encoding == 'identity':
             data = text
-        elif encoding in ('gzip', 'x-gzip'):
+        elif encoding in ('gzip', 'x-gzip', 'x-compress'):
             io = StringIO()
             with gzip.GzipFile(fileobj=io, mode='wb') as f:
                 f.write(text)
@@ -1178,7 +1184,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def decode_content_body(self, data, encoding):
         if encoding == 'identity':
             text = data
-        elif encoding in ('gzip', 'x-gzip'):
+        elif encoding in ('gzip', 'x-gzip', 'x-compress'):
             try:
                 io = StringIO(data)
                 with gzip.GzipFile(fileobj=io) as f:
@@ -1433,8 +1439,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     server_address = ('', port)
 
-    #if 'enp0s25' in iflist: server_address = (get_ip_address('enp0s25'), port)
-    if 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
+    if 'enp0s25' in iflist: server_address = (get_ip_address('enp0s25'), port)
+    elif 'ap4' in iflist: server_address = (get_ip_address('ap4'), port)
     elif 'ap0' in iflist: server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: server_address = (get_ip_address('wlp61s0'), port)
