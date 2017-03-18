@@ -108,10 +108,10 @@ class ProxyRewrite:
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
         if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if 'fmip.icloud.com' in hostname: return False
+        if 'fmip.icloud.com' in hostname: return False
         #if 'itunes.apple.com' in hostname: return False
         if hostname == "gsa.apple.com": return False
-        #if hostname == "gsas.apple.com": return False
+        if hostname == "gsas.apple.com": return False
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
@@ -959,7 +959,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
             #crypto.X509Extension("nsCertType", True, "sslCA"),
             crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign, digitalSignature"),
+            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"), #, digitalSignature"),
             crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
         ])
 
@@ -968,12 +968,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if srvcert:
             cert.set_serial_number(int(srvcert.get_serial_number()))
             if altnames:
-                #print("ALTNAMES: %s\n" % altnames)
+                print("ALTNAMES: %s\n" % altnames)
                 cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
 
-                for i in range(srvcert.get_extension_count()):
-                     ext = srvcert.get_extension(i)
-                     if len(ext.get_data()) == 2: cert.add_extensions([ext])
+                #for i in range(srvcert.get_extension_count()):
+                #     ext = srvcert.get_extension(i)
+                #     if len(ext.get_data()) == 2: cert.add_extensions([ext])
 
         cert.sign(self.issuerKey, "sha256")
         with open(certpath, "w") as cert_file:
@@ -989,12 +989,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         try:
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            ssl._https_verify_certificates(enable=False)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
         except ssl.SSLError as e:
             print("SSLError occurred on %s: %r" % (self.path,e))
             try:
                 ssl._https_verify_certificates(enable=False)
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 print("SSLError occurred on %s: %r" % (self.path,e))
                 self.finish()
@@ -1319,8 +1320,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-        if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
-             req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
+        #if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
+        #     req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
         #elif 'captive.apple.com' in req.path:
         #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
         #        req.headers['Host'] = 'ui.icloudbypass.com'
