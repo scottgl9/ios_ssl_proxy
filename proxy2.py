@@ -844,14 +844,27 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
         if dst_port == 5223:
-            print("APNS connection (%s, %s)" % (dst_ip, dst_port))
-            #logger = open("logs/apns%d.log" % ProxyRewrite.apnscnt, "wb")
-            #ProxyRewrite.apnscnt = ProxyRewrite.apnscnt + 1
-            #logger.write(self.rfile.read(128))
-            #logger.write(self.rfile.read(32))
-            #logger.write(self.rfile.read(32))
-            #logger.close()
-            #self.rfile.seek(0)
+            apnheader = bytearray(self.rfile.readline(9))
+            apntype = str(apnheader[5]).encode('hex')
+            apnheader[5] = '\x00'
+            apnlen = struct.unpack('!L', apnheader[5:9])[0] + 5
+            apntype = str(apnheader[5]).encode('hex')
+            print("APNS connection (%s, %s, %s, %d)" % (dst_ip, dst_port,apntype, apnlen))
+            #apndata = self.rfile.readline(apnlen)
+            #self.wfile.write(apnheader)
+            #self.wfile.write(apndata)
+            #self.wfile.flush()
+            self.path = ("%s:%s" % (dst_ip, dst_port))
+            self.connect_relay()
+            return
+
+            #certpath = self.generate_cert(dst_ip)
+            #try:
+            #    ssl._https_verify_certificates(enable=False)
+            #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+            #except ssl.SSLError as e:
+            #    print("SSLError occurred on %s: %r" % (dst_ip,e))
+            #    #self.finish()
 
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
@@ -921,6 +934,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             srvcertname = "server_certs/itunes.apple.com.crt"
         elif 'escrowproxy.icloud.com' in hostname:
             srvcertname = "server_certs/escrowproxy.icloud.com.crt"
+        elif hostname == '17.188.167.212':
+            srvcertname = "server_certs/courier.push.apple.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
@@ -1458,8 +1473,9 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.server_address = ('', port)
 
     #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
-    if 'ap4' in iflist: ProxyRewrite.server_address = (get_ip_address('ap4'), port)
+    if 'ap2' in iflist: ProxyRewrite.server_address = (get_ip_address('ap2'), port)
     elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: ProxyRewrite.server_address = (get_ip_address('wlo1'), port)
