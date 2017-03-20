@@ -31,6 +31,7 @@ import netifaces
 import hashlib
 import requests
 import uuid
+import ConfigParser
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -359,13 +360,13 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
 
-            if 'login_or_create_account' in path and ProxyRewrite.changeClientID == True:
+            if ProxyRewrite.changeClientID == True and 'login_or_create_account' in path:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif 'get_account_settings' in path and ProxyRewrite.changeClientID == True:
+            elif ProxyRewrite.changeClientID == True and 'get_account_settings' in path:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif 'loginDelegates' in path and ProxyRewrite.changeClientID == True:
+            elif ProxyRewrite.changeClientID == True and 'loginDelegates' in path:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
 
@@ -624,6 +625,11 @@ class ProxyRewrite:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
                 else:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
+        elif 'ubiquity.icloud.com' in hostname:
+            if 'X-APPLE-UB-PUSHTOKEN' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                headers = ProxyRewrite.replace_header_field(headers, 'X-APPLE-UB-PUSHTOKEN', 'aps-token')
+            if 'X-Apple-Ubiquity-Device-Id' in headers:
+                headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Ubiquity-Device-Id', 'UniqueDeviceID,UniqueDeviceID')
 
         #if 'X-Apple-ADSID' in headers and 'ADSID' in ProxyRewrite.dev1info and 'ADSID' in ProxyRewrite.dev2info:
         #    headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-ADSID', 'ADSID')
@@ -682,14 +688,8 @@ class ProxyRewrite:
         elif 'x-apple-mbs-lock' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
-        if 'X-Apple-Ubiquity-Device-Id' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Ubiquity-Device-Id', 'UniqueDeviceID,UniqueDeviceID')
-
         if 'X-iTunes-User-Agent' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'X-iTunes-User-Agent', 'BuildVersion,HardwareModel,ProductName,ProductType,ProductVersion,DeviceClass')
-
-        if 'X-APPLE-UB-PUSHTOKEN' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-            headers = ProxyRewrite.replace_header_field(headers, 'X-APPLE-UB-PUSHTOKEN', 'aps-token')
 
         if 'X-Apple-ATS-Cache-Key' in headers:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,ProductType,ProductVersion')
@@ -825,7 +825,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
                 except ssl.SSLError as e:
                     print("SSLError occurred on %s: %r" % (dst_ip,e))
-                    #self.finish()
+                    self.finish()
         elif ProxyRewrite.server_address != dst_ip and dst_port == 443:
             print("Handling %s:%s" % (dst_ip, dst_port))
             with self.lock:
@@ -838,18 +838,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
                 except ssl.SSLError as e:
                     print("SSLError occurred on %s: %r" % (dst_ip,e))
-                    #self.finish()
+                    self.finish()
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
         if dst_port == 5223:
-            apnheader = bytearray(self.rfile.readline(9))
-            apntype = str(apnheader[5]).encode('hex')
-            apnheader[5] = '\x00'
-            apnlen = struct.unpack('!L', apnheader[5:9])[0] + 5
-            apntype = str(apnheader[5]).encode('hex')
-            print("APNS connection (%s, %s, %s, %d)" % (dst_ip, dst_port,apntype, apnlen))
+            #apnheader = bytearray(self.rfile.readline(9))
+            #apntype = str(apnheader[5]).encode('hex')
+            #apnheader[5] = '\x00'
+            #apnlen = struct.unpack('!L', apnheader[5:9])[0] + 5
+            #apntype = str(apnheader[5]).encode('hex')
+            print("APNS connection (%s, %s)" % (dst_ip, dst_port)) #,apntype, apnlen))
             #apndata = self.rfile.readline(apnlen)
             #self.wfile.write(apnheader)
             #self.wfile.write(apndata)
@@ -926,6 +926,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
+
+        #if '17.249.60.9' in hostname or '17.188.167.212' in hostname:
+        #    hostname = "courier.push.apple.com"
+
         if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname and 'escrowproxy.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
@@ -934,7 +938,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             srvcertname = "server_certs/itunes.apple.com.crt"
         elif 'escrowproxy.icloud.com' in hostname:
             srvcertname = "server_certs/escrowproxy.icloud.com.crt"
-        elif hostname == '17.188.167.212':
+        elif hostname == "courier.push.apple.com":
             srvcertname = "server_certs/courier.push.apple.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
@@ -942,9 +946,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         altnames=None
 
         if os.path.isfile(srvcertname):
-                st_cert=open(srvcertname, 'rt').read()
-                srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-                altnames = ProxyRewrite.altnames(srvcert)
+            st_cert=open(srvcertname, 'rt').read()
+            srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+            altnames = ProxyRewrite.altnames(srvcert)
+        elif re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
+            st_cert = ssl.get_server_certificate((hostname, 443),  ssl_version=ssl.PROTOCOL_TLSv1_2)
+            srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+            altnames = ProxyRewrite.altnames(srvcert)
+
         req = crypto.X509Req()
         if srvcert:
             subject = srvcert.get_subject()
@@ -996,7 +1005,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return certpath
 
     def connect_intercept(self):
-        hostname = self.path.split(':')[0]
+        hostname = None
+        if 'Host' in self.headers:
+            hostname = self.headers['Host']
+        else:
+            hostname = self.path.split(':')[0]
 
         certpath = self.generate_cert(hostname)
 
@@ -1440,18 +1453,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
-    if sys.argv[3:]:
-        port = int('8080') #sys.argv[1])
-        device1 = sys.argv[1]
-        device2 = sys.argv[2]
-        if sys.argv[3] == '-T':
-            print("Setting transparent mode")
-            ProxyRewrite.transparent = True
-        elif sys.argv[3] == '-C':
-            print("Enabling client-id rewrite")
-            ProxyRewrite.changeClientID = True
-    elif sys.argv[2:]:
-        port = int('8080') #sys.argv[1])
+    if sys.argv[2:]:
         device1 = sys.argv[1]
         device2 = sys.argv[2]
     else:
@@ -1462,12 +1464,22 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         print("Proxy set to rewrite device %s with device %s" % (device1, device2))
         ProxyRewrite.dev1info = ProxyRewrite.load_device_info(device1)
         ProxyRewrite.dev2info = ProxyRewrite.load_device_info(device2)
-        if ProxyRewrite.changeClientID == True:
-            ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
-            print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
     else:
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
+
+    config = ConfigParser.ConfigParser()
+    config.read('proxy2.cfg')
+    port = config.getint('proxy2', 'port')
+    ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
+    ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
+
+    if ProxyRewrite.transparent == True:
+        print("Setting transparent mode")
+
+    if ProxyRewrite.changeClientID == True:
+        ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
+        print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
 
     iflist = netifaces.interfaces()
     ProxyRewrite.server_address = ('', port)
