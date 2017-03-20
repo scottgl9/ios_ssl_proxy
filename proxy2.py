@@ -90,6 +90,7 @@ class ProxyRewrite:
     logger = None
     transparent = False
     changeClientID = False
+    changePushToken = False
     apnscnt = 0
     server_address = None
 
@@ -360,6 +361,7 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
 
+            # save client-id so we can replace it with our new generated UUID
             if ProxyRewrite.changeClientID == True and 'login_or_create_account' in path:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
@@ -369,6 +371,11 @@ class ProxyRewrite:
             elif ProxyRewrite.changeClientID == True and 'loginDelegates' in path:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
                 if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+
+            # save the push token
+            if ProxyRewrite.changePushToken == True and 'registerDevice' in path:
+                pushToken = ProxyRewrite.save_plist_body_attrib(body, 'pushToken', 'deviceInfo')
+                if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
 
             if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
@@ -459,6 +466,10 @@ class ProxyRewrite:
                 body = body.replace("\"hasCellularCapability\": false", "\"hasCellularCapability\": true")
             return body
         elif 'keyvalueservice.icloud.com' in hostname:
+            if ProxyRewrite.changePushToken == True and 'setAPNSToken' in path:
+                pushToken = ProxyRewrite.save_plist_body_attrib(body, 'apns-token', '')
+                if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
+
             # replace apns-token
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
@@ -816,7 +827,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
             with self.lock:
-                certpath = self.generate_cert(dst_ip)
+                certpath = self.generate_cert(dst_ip, dst_port)
             try:
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
@@ -829,7 +840,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         elif ProxyRewrite.server_address != dst_ip and dst_port == 443:
             print("Handling %s:%s" % (dst_ip, dst_port))
             with self.lock:
-                certpath = self.generate_cert(dst_ip)
+                certpath = self.generate_cert(dst_ip, dst_port)
             try:
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
@@ -854,17 +865,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #self.wfile.write(apnheader)
             #self.wfile.write(apndata)
             #self.wfile.flush()
-            self.path = ("%s:%s" % (dst_ip, dst_port))
-            self.connect_relay()
+            certpath = self.generate_cert(dst_ip, dst_port)
+            try:
+                ssl._https_verify_certificates(enable=False)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                print("established SSL APN connection (%s, %s)" % (dst_ip, dst_port))
+            except ssl.SSLError as e:
+                print("SSLError occurred on %s: %r" % (dst_ip,e))
+                #self.finish()
+            self.raw_requestline = self.rfile.readline(65537)
+            print("length=%d" % len(self.raw_requestline))
+            self.wfile.flush()
             return
-
-            #certpath = self.generate_cert(dst_ip)
-            #try:
-            #    ssl._https_verify_certificates(enable=False)
-            #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-            #except ssl.SSLError as e:
-            #    print("SSLError occurred on %s: %r" % (dst_ip,e))
-            #    #self.finish()
 
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
@@ -922,7 +934,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             self.connect_relay()
 
-    def generate_cert(self, hostname):
+    def generate_cert(self, hostname, port):
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
@@ -950,7 +962,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
             altnames = ProxyRewrite.altnames(srvcert)
         elif re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
-            st_cert = ssl.get_server_certificate((hostname, 443),  ssl_version=ssl.PROTOCOL_TLSv1_2)
+            st_cert = ssl.get_server_certificate((hostname, port),  ssl_version=ssl.PROTOCOL_TLSv1_2)
             srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
             altnames = ProxyRewrite.altnames(srvcert)
 
@@ -1011,7 +1023,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
-        certpath = self.generate_cert(hostname)
+        certpath = self.generate_cert(hostname, 443)
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
@@ -1363,6 +1375,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
+        if 'Host' in req.headers and 'init-p01st.push.apple.com' in req.headers['Host']:
+            # handle setting certs so we can use our own keybag
+            p = plistlib.readPlistFromString(res_body)
+            print("Certs for %s" % req.headers['Host'])
+            print(p['certs'])
+            if os.path.isfile("certs/init-p01st.push.apple.com.crt"):
+                st_cert=open("certs/init-p01st.push.apple.com.crt", 'rt').read()
+                p['certs'][0] = ssl.PEM_cert_to_DER_cert(st_cert)
+
         #if 'captive.apple.com' in req.path:
         #    if 'hotspot-detect.html' in req.path:
         #        r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
@@ -1377,7 +1398,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
         #return res_body
-        pass
+        #pass
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
