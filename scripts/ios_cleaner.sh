@@ -12,7 +12,7 @@ rm -rf /var/mobile/Library/Caches/CloudKit/*
 rm -f /var/mobile/Library/Caches/FamilyCircle/*
 rm -rf /var/mobile/Library/Caches/com.apple.accountsd/*
 rm -rf /var/mobile/Library/Caches/com.apple.akd/*
-rm -rf /var/mobile/Library/Caches/com.apple.dataaccess.dataaccessd/*
+rm -rf var/mobile/Library/Caches/com.apple.dataaccess.dataaccessd/*
 rm -rf /var/mobile/Library/Caches/com.apple.imfoundation.IMRemoteURLConnectionAgent/*
 rm -rf /var/mobile/Library/Caches/com.apple.passd/fsCachedData/*
 rm -rf /var/mobile/Library/Caches/com.apple.Preferences/*
@@ -33,7 +33,7 @@ rm -rf /var/mobile/Library/Mobile\ Documents/*
 rm -rf /var/mobile/Library/MusicLibrary/*
 rm -rf /var/mobile/Library/Safari/*
 rm -f /var/mobile/Library/Preferences/com.apple.AOS*
-rm -f /var/mobile/Library/Preferences/com.apple.apsd.plist
+#rm -f /var/mobile/Library/Preferences/com.apple.apsd.plist
 rm -f /var/mobile/Library/Preferences/com.apple.accounts*
 rm -f /var/mobile/Library/Preferences/com.apple.assistant*
 rm -f /var/mobile/Library/Preferences/com.apple.coreduet*
@@ -57,6 +57,7 @@ rm -rf /var/log/*
 rm -rf /var/logs/*
 rm -f /var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
-rm -rf /var/root/Library/Lockdown
+#rm -rf /var/root/Library/Lockdown
 killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd backboardd SpringBoard
-reboot
+#reboot
+

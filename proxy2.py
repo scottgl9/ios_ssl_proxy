@@ -312,16 +312,6 @@ class ProxyRewrite:
         val = bytearray(base64.b64decode(headers[field]))
         oldval = val
 
-        #if "hasCellularCapability</key>\n\t\t<false/>" in val:
-        #    val = val.replace("hasCellularCapability</key>\n\t\t<false/>", "hasCellularCapability</key>\n\t\t<true/>\n\t\t<key>imei</key>\n\t\t<string>%s</string>\n\t\t<key>imei</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['InternationalMobileEquipmentIdentity'], ProxyRewrite.dev2info['MobileEquipmentIdentifier']))
-        #    print(val)
-        #if "hasCellularCapability" in val:
-        #    val = val.replace( "\"hasCellularCapability\":false",  "\"hasCellularCapability\":true")
-        #    val = val.replace( "\"hasCellularCapability\": false",  "\"hasCellularCapability\": true")
-        #    print("hasCellularCapability:true")
-        #if 'enclosureColor' not in val and 'EnclosureColor' in ProxyRewrite.dev2info:
-        #    val = val.replace("deviceColor</key>\n\t\t<string>unknown</string>", "deviceColor</key>\n\t\t<string>%s</string>\n\t\t<key>enclosureColor</key>\n\t\t<string>%s</string>" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
-        #    print("deviceColor:unknown -> deviceColor:%s, enclosureColor:%s\n" % (ProxyRewrite.dev2info['DeviceColor'], ProxyRewrite.dev2info['EnclosureColor']))
         attriblist = attribs.split(',')
         for attrib in attriblist:
             # skip if attribute not in dev1info or dev2info
@@ -347,8 +337,8 @@ class ProxyRewrite:
             if str(ProxyRewrite.dev1info[attrib]).lower() in body:
                 body = body.replace(str(ProxyRewrite.dev1info[attrib]).lower(), str(ProxyRewrite.dev2info[attrib]).lower())
 
-            if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
-                print("%s: Replacing body value %s -> %s" % (hostname, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
+            #if body != oldbody and ProxyRewrite.dev1info[attrib] != ProxyRewrite.dev2info[attrib]:
+            print("%s: Replacing body value %s -> %s" % (hostname, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
         return body
 
     @staticmethod
@@ -365,7 +355,7 @@ class ProxyRewrite:
 
         old_body = body
 
-        if 'xp.apple.com' in hostname:
+        if hostname == 'xp.apple.com':
             attribs = 'ProductType,HardwareModel,HardwarePlatform,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -403,7 +393,7 @@ class ProxyRewrite:
 
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'fmf.icloud.com' in hostname:
+        elif hostname.endswith('fmf.icloud.com'):
             attribs = 'DeviceColor,EnclosureColor,HardwareModel,HardwarePlatform,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -415,7 +405,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'fmfmobile.icloud.com' in hostname:
+        elif hostname.endswith('fmfmobile.icloud.com'):
             attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -431,7 +421,7 @@ class ProxyRewrite:
             d2udid_encoded = base64.b64encode(ProxyRewrite.dev2info['UniqueDeviceID'])
             body = body.replace(d1udid_encoded, d2udid_encoded)
             return body
-        elif 'fmipmobile.icloud.com' in hostname:
+        elif hostname.endswith('fmipmobile.icloud.com'):
             attribs = 'DeviceColor,EnclosureColor,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -485,7 +475,7 @@ class ProxyRewrite:
             if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipVersion' in body and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in body:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"fmipVersion":"fmipVersion", "fmipBuildVersion":"fmipBuildVersion"}, 'deviceInfo')
             return body
-        elif 'keyvalueservice.icloud.com' in hostname:
+        elif hostname.endswith('keyvalueservice.icloud.com'):
             if ProxyRewrite.changePushToken == True and 'setAPNSToken' in path:
                 pushToken = ProxyRewrite.save_plist_body_attrib(body, 'apns-token', '')
                 if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
@@ -500,7 +490,7 @@ class ProxyRewrite:
                 body = body.replace(d1apns_encoded, d2apns_encoded)
                 print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
-        elif 'service.gc.apple.com' in hostname:
+        elif hostname.endswith('service.gc.apple.com'):
             # replace apns-token
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 d1apns_encoded = base64.b64encode(str(ProxyRewrite.dev1info['aps-token']).encode())
@@ -511,7 +501,7 @@ class ProxyRewrite:
                 body = body.replace(d1apns_encoded, d2apns_encoded)
                 print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
-        elif 'quota.icloud.com' in hostname:
+        elif hostname.endswith('quota.icloud.com'):
             attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -523,13 +513,13 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'ckdevice.icloud.com' in hostname:
+        elif hostname.endswith('ckdevice.icloud.com'):
             if ProxyRewrite.rewriteOSVersion == True:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
             else:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'ProductType,ProductType', hostname)
             return body
-        elif 'ckdatabase.icloud.com' in hostname:
+        elif hostname.endswith('ckdatabase.icloud.com'):
             if ProxyRewrite.rewriteOSVersion == True:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
             else:
@@ -571,7 +561,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'gsa.apple.com' in hostname:
+        elif hostname == 'gsa.apple.com':
             attribs = 'DeviceColor,EnclosureColor,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,HardwareModel,HardwarePlatform,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -583,7 +573,7 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'gsas.apple.com' in hostname:
+        elif hostname == 'gsas.apple.com':
             # save the push token
             if ProxyRewrite.changePushToken == True and 'GsService2/postdata' in path:
                 pushToken = ProxyRewrite.save_plist_body_attrib(body, 'ptkn', 'Request')
@@ -600,16 +590,16 @@ class ProxyRewrite:
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
             return body
-        elif 'buy.itunes.apple.com' in hostname:
-            attribs = 'BuildVersion,ProductType,ProductVersion,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,DeviceClass'
+        elif hostname.endswith('buy.itunes.apple.com'):
+            attribs = 'ProductType,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
-        elif 'identity.apple.com' in hostname and ProxyRewrite.rewriteOSVersion == True:
+        elif hostname.endswith('identity.apple.com') and ProxyRewrite.rewriteOSVersion == True:
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductVersion', hostname)
             return body
-        elif 'albert.apple.com' in hostname:
+        elif hostname == 'albert.apple.com':
             attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,UniqueDeviceID'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
@@ -640,7 +630,7 @@ class ProxyRewrite:
         #if 'quota.icloud.com' in hostname:
         #        headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
 
-        if 'setup.icloud.com' in hostname or 'gsa.apple.com' in hostname:
+        if hostname == 'setup.icloud.com' or hostname == 'gsa.apple.com':
             #if ('getFamilyDetails' in path or 'get_account_settings' in path) and 'dsPrsID' in ProxyRewrite.dev2info and 'mmeAuthToken' in ProxyRewrite.dev2info:
             #    headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
             if 'X-Mme-Nas-Qualify' in headers:
@@ -668,19 +658,19 @@ class ProxyRewrite:
                 if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'client-id'))
                 headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
-        elif 'quota.icloud.com' in hostname:
+        elif hostname.endswith('quota.icloud.com'):
             if 'X-Client-UDID' in headers:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
             elif 'x-client-udid' in headers:
                 headers = ProxyRewrite.replace_header_field(headers, 'x-client-udid', 'UniqueDeviceID')
-        elif 'caldav.icloud.com' in hostname:
+        elif hostname.endswith('caldav.icloud.com'):
             if ProxyRewrite.changePushToken == True and'X-Apple-DAV-Pushtoken' in headers:
                 ProxyRewrite.dev1info['aps-token'] = headers['X-Apple-DAV-Pushtoken']
                 if 'X-Apple-DAV-Pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-DAV-Pushtoken', 'aps-token')
                 elif 'x-apple-dav-pushtoken' in headers and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     headers = ProxyRewrite.replace_header_field(headers, 'x-apple-dav-pushtoken', 'aps-token')
-        elif 'sharedstreams.icloud.com' in hostname:
+        elif hostname.endswith('sharedstreams.icloud.com'):
             if 'X-Apple-Mme-Sharedstreams-Client-Token' in headers:
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Mme-Sharedstreams-Client-Token', 'aps-token,UniqueDeviceID')
@@ -691,7 +681,7 @@ class ProxyRewrite:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'aps-token,UniqueDeviceID')
                 else:
                     headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mme-sharedstreams-client-token', 'UniqueDeviceID,UniqueDeviceID')
-        elif 'ubiquity.icloud.com' in hostname:
+        elif hostname.endswith('ubiquity.icloud.com'):
             if ProxyRewrite.changePushToken == True and 'X-APPLE-UB-PUSHTOKEN' in headers:
                 if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                     headers = ProxyRewrite.replace_header_field(headers, 'X-APPLE-UB-PUSHTOKEN', 'aps-token')
@@ -798,27 +788,27 @@ class ProxyRewrite:
         if 'dsPrsID' in ProxyRewrite.dev1info and 'dsPrsID' in ProxyRewrite.dev2info:
             path = path.replace(ProxyRewrite.dev1info['dsPrsID'], ProxyRewrite.dev2info['dsPrsID']) 
 
-        if 'fmip.icloud.com' in hostname:
+        if hostname.endswith('fmip.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         #elif 'fmipmobile.icloud.com' in hostname:
         #        path = path.replace('ryrobinson1987@icloud.com', 'scottgl@gmail.com')
-        elif 'fmf.icloud.com' in hostname:
+        elif hostname.endswith('fmf.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'fmfmobile.icloud.com' in hostname:
+        elif hostname.endswith('fmfmobile.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'mobilebackup.icloud.com' in hostname:
+        elif hostname.endswith('mobilebackup.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'quota.icloud.com' in hostname:
+        elif hostname.endswith('quota.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'contacts.icloud.com' in hostname and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+        elif hostname.endswith('contacts.icloud.com') and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 path = path.replace(ProxyRewrite.dev1info['aps-token'], ProxyRewrite.dev2info['aps-token'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'caldav.icloud.com' in hostname and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+        elif hostname.endswith('caldav.icloud.com')  and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 path = path.replace(ProxyRewrite.dev1info['aps-token'], ProxyRewrite.dev2info['aps-token'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
@@ -826,7 +816,7 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        elif 'buy.itunes.apple.com' in hostname:
+        elif hostname.endswith('buy.itunes.apple.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'configuration.apple.com':
@@ -1488,6 +1478,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'setup.icloud.com/setup/qualify/cert' in self.path: return
         if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
         if 'bookmarks.icloud.com' in hostname: return
+        if self.path.endswith(".png"): return
+        if self.path.endswith(".jpeg"): return
 
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
@@ -1595,9 +1587,9 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     #if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
-    #if 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    if 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
-    if 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
+    elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: ProxyRewrite.server_address = (get_ip_address('wlo1'), port)
 
