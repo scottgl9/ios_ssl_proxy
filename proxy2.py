@@ -224,9 +224,10 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_plist_body_activation(headers, text):
-        text = text[text.find('<?xml'):text.find('</plist>')+8]
         print(headers)
         if headers['Content-Type'] == 'application/x-plist': return
+        elif headers['Content-Type'] == 'application/xml': return
+        text = text[text.find('<?xml'):text.find('</plist>')+8]
         boundary = headers['Content-Type'].split('=')[1]
         print("Boundary = %s" % boundary)
         p = plistlib.readPlistFromString(text)
@@ -1527,8 +1528,15 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         print("Setting transparent mode")
 
     if ProxyRewrite.changeClientID == True:
-        ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
-        print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
+        if config.has_option('proxy2', 'clientid') == False:
+            ProxyRewrite.dev2info['client-id'] = ProxyRewrite.generate_new_clientid()
+            config.set('proxy2', 'clientid', ProxyRewrite.dev2info['client-id'])
+            print("Generated new client-id %s for device %s" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
+            with open('proxy2.cfg', 'wb') as configfile:
+                 config.write(configfile)
+        else:
+            ProxyRewrite.dev2info['client-id'] = config.get('proxy2', 'clientid')
+            print("Retrieved new client-id %s for device %s from proxy2.cfg" % (ProxyRewrite.dev2info['client-id'], ProxyRewrite.dev2info['SerialNumber']))
 
     iflist = netifaces.interfaces()
     ProxyRewrite.server_address = ('', port)
