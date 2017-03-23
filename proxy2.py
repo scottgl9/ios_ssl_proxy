@@ -820,7 +820,7 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'configuration.apple.com':
-                path = path.replace("9.0.plist", "10.1.plist")
+                #path = path.replace("9.0.plist", "10.1.plist")
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gsa.apple.com':
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
@@ -1586,8 +1586,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.server_address = ('', port)
 
     #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
-    #if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
-    if 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
+    elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)

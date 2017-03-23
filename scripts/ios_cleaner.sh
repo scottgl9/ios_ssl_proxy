@@ -1,6 +1,6 @@
 #!/bin/sh
 
-killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd
+killall -9 akd apsd cloudd accountsd securityd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd
 rm -f /var/Keychains/keychain-2.db*
 rm -f /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
 rm -f /var/mobile/Library/AccountNotifications/*.sqlite*
@@ -58,6 +58,6 @@ rm -rf /var/logs/*
 rm -f /var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 #rm -rf /var/root/Library/Lockdown
-killall -9 akd apsd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd backboardd SpringBoard
+killall -9 akd apsd cloudd accountsd securityd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd backboardd SpringBoard
 #reboot
 
