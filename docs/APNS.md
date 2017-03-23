@@ -1,5 +1,17 @@
 # Device Apple Push Service Notification Token research (APNS):
 
+## Attempting to intercept APNs on port 5223:
+
+syslog output when generating cert default method:
+Mar 23 17:26:09 Scott-Glovers-iPhone UserEventAgent[23] <Error>: Probe message failed 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Error>:  SecTrustEvaluate  [leaf SSLHostname] 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Error>:  SecTrustEvaluate  [leaf AnchorApple CheckIntermediateMarkerOid CheckLeafMarkerOid SSLHostname] 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Warning>: 2017-03-23 17:26:09 -0500 apsd[870]: Failed to validate certificate chain for courier.push.apple.com. 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Notice>: 2017-03-23 17:26:09 -0500 apsd[870]: Failed to validate certificate chain for courier.push.apple.com. 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Warning>: 2017-03-23 17:26:09 -0500 apsd[870]: Untrusted peer, closing connection immediately 
+Mar 23 17:26:09 Scott-Glovers-iPhone apsd[870] <Notice>: 2017-03-23 17:26:09 -0500 apsd[870]: Untrusted peer, closing connection immediately 
+
+
 ## APNS token can be found on device at:
 
 /var/mobile/Library/Preferences/com.apple.seld.plist

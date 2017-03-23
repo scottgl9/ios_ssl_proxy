@@ -15,3 +15,7 @@ iptables -t nat -A PREROUTING -p tcp --destination-port 5223 -j REDIRECT --to-po
 iptables -t nat -A PREROUTING -p tcp --destination-port 2195 -j REDIRECT --to-ports 8080
 iptables -t nat -A PREROUTING -p tcp --destination-port 2196 -j REDIRECT --to-ports 8080
 #iptables -t nat -A PREROUTING -p tcp --destination-port 2336 -j REDIRECT --to-ports 8080
+iptables -t nat -A PREROUTING -p tcp --destination-port 4398 -j REDIRECT --to-ports 8080
+iptables -t nat -A PREROUTING -p tcp --destination-port 16384 -j REDIRECT --to-ports 8080
+iptables -t nat -A PREROUTING -p tcp --destination-port 16385 -j REDIRECT --to-ports 8080
+iptables -t nat -A PREROUTING -p tcp --destination-port 16386 -j REDIRECT --to-ports 8080
