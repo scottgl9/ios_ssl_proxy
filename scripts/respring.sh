@@ -1,2 +1,2 @@
 #!/bin/sh
-killall -9 backboardd akd dataaccessd apsd identityservicesd SpringBoard
+killall -9 akd pkd apsd configd fmfd aosnotifyd cloudd dataaccessd findmydeviced identityservicesd ind securityd backboardd SpringBoard

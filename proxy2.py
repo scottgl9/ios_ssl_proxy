@@ -115,7 +115,7 @@ class ProxyRewrite:
         #if 'itunes.apple.com' in hostname: return False
         #if hostname == "gsa.apple.com": return False
         #if hostname == "gsas.apple.com": return False
-        #if hostname == "ppq.apple.com": return False
+        if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
@@ -147,7 +147,7 @@ class ProxyRewrite:
     @staticmethod
     def save_json_body_attrib(text, attrname, subname):
         json_obj = json.loads(text)
-        if subname != '' and subname in p:
+        if subname != '' and subname in json_obj:
             jsub = json_obj[subname]
         else:
             jsub = json_obj
@@ -939,8 +939,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print("SSLError occurred on %s: %r" % (dst_ip,e))
                 #self.finish()
             self.raw_requestline = self.rfile.readline(65537)
+            self.requestline = self.raw_requestline
             print("length=%d" % len(self.raw_requestline))
+            print(str(self.raw_requestline))
             self.wfile.flush()
+            self.path = ('%s:%s' % (dst_ip,dst_port))
+            self.connect_apn_relay()
             return
 
         #    """Handle multiple requests if necessary."""
@@ -1028,10 +1032,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             st_cert=open(srvcertname, 'rt').read()
             srvcert=crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
             altnames = ProxyRewrite.altnames(srvcert)
-        #elif re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
-        #    st_cert = ssl.get_server_certificate((hostname, port),  ssl_version=ssl.PROTOCOL_TLSv1_2)
-        #    srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-        #    altnames = ProxyRewrite.altnames(srvcert)
+        elif re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
+            st_cert = ssl.get_server_certificate((hostname, port),  ssl_version=ssl.PROTOCOL_TLSv1_2)
+            srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+            altnames = ProxyRewrite.altnames(srvcert)
 
         req = crypto.X509Req()
         if srvcert:
@@ -1126,6 +1130,31 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
         self.send_response(200, 'Connection Established')
         self.end_headers()
+
+        conns = [self.connection, s]
+        self.close_connection = 0
+        while not self.close_connection:
+            rlist, wlist, xlist = select.select(conns, [], conns, self.timeout)
+            if xlist or not rlist:
+                break
+            for r in rlist:
+                other = conns[1] if r is conns[0] else conns[0]
+                data = r.recv(8192)
+                if not data:
+                    self.close_connection = 1
+                    break
+                other.sendall(data)
+
+    def connect_apn_relay(self):
+        address = self.path.split(':', 1)
+        address[1] = int(address[1]) or 443
+        #try:
+        s = socket.create_connection(address, timeout=self.timeout)
+        #except Exception as e:
+        #    self.send_error(502)
+        #    return
+        #self.send_response(200, 'Connection Established')
+        #self.end_headers()
 
         conns = [self.connection, s]
         self.close_connection = 0
