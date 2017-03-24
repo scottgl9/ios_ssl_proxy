@@ -449,7 +449,7 @@ class ProxyRewrite:
                 pushToken = ProxyRewrite.save_json_body_attrib(body, 'aps-token', 'deviceInfo')
                 if pushToken != '' and pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
 
-            attribs = 'DeviceColor,EnclosureColor,HardwarePlatform2,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
+            attribs = 'DeviceColor,EnclosureColor,HardwarePlatform,HardwarePlatform2,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,WiFiAddress,BluetoothAddress,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
             if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -548,6 +548,12 @@ class ProxyRewrite:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
             else:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'ProductType', hostname)
+            return body
+        elif hostname == 'gsp10-ssl.ls.apple.com':
+            if ProxyRewrite.rewriteOSVersion == True:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
+            else:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'HardwareModel,ProductType', hostname)
             return body
         elif hostname == 'gsp64-ssl.ls.apple.com':
             if ProxyRewrite.rewriteOSVersion == True:
@@ -920,31 +926,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile = self.connection.makefile("wb", self.wbufsize)
 
         if dst_port == 5223:
-            #apnheader = bytearray(self.rfile.readline(9))
-            #apntype = str(apnheader[5]).encode('hex')
-            #apnheader[5] = '\x00'
-            #apnlen = struct.unpack('!L', apnheader[5:9])[0] + 5
-            #apntype = str(apnheader[5]).encode('hex')
-            print("APNS connection (%s, %s)" % (dst_ip, dst_port)) #,apntype, apnlen))
-            #apndata = self.rfile.readline(apnlen)
-            #self.wfile.write(apnheader)
-            #self.wfile.write(apndata)
-            #self.wfile.flush()
-            certpath = self.generate_cert(dst_ip, dst_port)
+            data = self.connection.recv(4096)
+            print(str(data))
+            self.connection.sendall(data)
+            with self.lock:
+                certpath = self.generate_cert(dst_ip, dst_port)
             try:
-                ssl._https_verify_certificates(enable=False)
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-                print("established SSL APN connection (%s, %s)" % (dst_ip, dst_port))
             except ssl.SSLError as e:
                 print("SSLError occurred on %s: %r" % (dst_ip,e))
-                #self.finish()
-            self.raw_requestline = self.rfile.readline(65537)
-            self.requestline = self.raw_requestline
-            print("length=%d" % len(self.raw_requestline))
-            print(str(self.raw_requestline))
-            self.wfile.flush()
-            self.path = ('%s:%s' % (dst_ip,dst_port))
-            self.connect_apn_relay()
+            #self.wfile.flush()
+            #self.finish()
             return
 
         #    """Handle multiple requests if necessary."""
@@ -1008,8 +1000,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
 
-        #if '17.249.60.9' in hostname or '17.188.167.212' in hostname:
-        #    hostname = "courier.push.apple.com"
+        if '17.249.60.9' in hostname or '17.188.167.212' in hostname or '17.188.162.92' in hostname:
+            hostname = "courier.push.apple.com"
 
         if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname and 'escrowproxy.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
@@ -1021,8 +1013,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             srvcertname = "server_certs/escrowproxy.icloud.com.crt"
         elif 'ess.apple.com' in hostname:
             srvcertname = "server_certs/ess.apple.com.crt"
-        #elif hostname == "courier.push.apple.com":
-        #    srvcertname = "server_certs/courier.push.apple.com.crt"
+        elif hostname == "courier.push.apple.com":
+            srvcertname = "server_certs/courier.push.apple.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None

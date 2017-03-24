@@ -17,7 +17,8 @@ rm -rf /var/mobile/Library/Caches/com.apple.imfoundation.IMRemoteURLConnectionAg
 rm -rf /var/mobile/Library/Caches/com.apple.passd/fsCachedData/*
 rm -rf /var/mobile/Library/Caches/com.apple.Preferences/*
 rm -rf /var/mobile/Library/Caches/com.apple.purplebuddy/*
-rm -rf /var/mobile/Library/Caches/com.apple*
+#rm -rf /var/mobile/Library/Caches/com.apple*
+rm -f /var/mobile/Library/Logs/CrashReporter/DiagnosticLogs/Accounts/cdp*
 #rm -rf /var/mobile/Library/Caches/PassKit/*
 rm -f /var/mobile/Library/ApplePushService/aps.*
 rm -rf /var/mobile/Library/DataAccess/*
@@ -37,6 +38,7 @@ rm -f /var/mobile/Library/Preferences/com.apple.AOS*
 rm -f /var/mobile/Library/Preferences/com.apple.accounts*
 rm -f /var/mobile/Library/Preferences/com.apple.assistant*
 rm -f /var/mobile/Library/Preferences/com.apple.coreduet*
+rm -f /var/mobile/Library/Preferences/com.apple.corerecents.recentsd.plist
 rm -f /var/mobile/Library/Preferences/com.apple.dataaccess*.plist
 rm -f /var/mobile/Library/Preferences/com.apple.gamed*.plist
 rm -f /var/mobile/Library/Preferences/com.apple.identityservices*
@@ -53,8 +55,6 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
-rm -rf /var/log/*
-rm -rf /var/logs/*
 rm -f /var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 #rm -rf /var/root/Library/Lockdown

@@ -6,6 +6,16 @@ Changes on software version update: YES
 Changes on sign-in of an alternate icloud ID: NO
 Changes on factory reset: YES
 
+Searching through the filesystem on the iphone 5c for the APN push token came up with these files having it stored:
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.findmydeviced/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.fmfd/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.mediastream.mstreamd/Cache.db matches
+Binary file /var/mobile/Library/Passes/PaymentWebServiceContext.archive matches
+
+
+
 ### ADSID - advertising Identifier (used by ASIdentifierManager class)
 Description: value which seems to be static UUID per account, appears to be same for any iOS device
 Changes on software version update: NO
@@ -18,10 +28,17 @@ From iPhone 3gs (scottgl@gmail.com):
 	<key>aDsID</key>
 	<string>000919-05-b45534a8-fa23-4dfa-9ff7-0fcfa37c3d34</string>
 
+Searching through the filesystem on the iphone 5c for the ADSID came up with these files having it stored:
+Binary file /var/mobile/Library/Accounts/Accounts3.sqlite-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.akd/Cache.db-wal matches
+
 ### X-Apple-AL-ID
 Header from tbsc.apple.com:
 X-Apple-AL-ID: 0F885791-FBCE-4269-A7B3-A84F24F895E7
 Also sent as header in request for host pXX-fmip.icloud.com: https://p15-fmip.icloud.com/fmipservice/findme/280584859/87cda23a7230769ef6aa1ded8a99a5d3e65b9d42/identityV3Session
+
+### AIDVRecordIdentifier
+Appears in requests to identity.apple.com
 
 ### backupDeviceUUID
 Description: Used to associate an account's iCloud backup system to a given device. Value seems to be unique per device for all iCloud accounts
@@ -32,6 +49,11 @@ Example from setup.icloud.com from my iPhone 6s+:
 
 	<key>backupDeviceUUID</key>
 	<string>D:d9614827b8f0bfd998267f638bccff0acb597f8f</string>
+
+Searching through the filesystem on the iphone 5c for the backupDeviceUUID came up with these files having it stored:
+Binary file /var/mobile/Library/Caches/com.apple.Preferences/Cache.db matches
+Binary file /var/mobile/Library/Caches/com.apple.Preferences/Cache.db-wal matches
+
 
 ### NOTE: backupDeviceUUID is 20 bytes in length, and is a SHA1 hash of the following:
 
@@ -111,3 +133,30 @@ An actual login using a given client-id seems occur as follows on post to https:
 	</dict>
 	</plist>
 
+### machineUUID (appears in identity.apple.com), is the same value as AccountUUID:
+
+	<member><name>machineUUID</name><value><string>B831A40E-2238-4F86-BF36-EC85A35D8E01</string></value></member>
+
+
+### Searching through the iphone 5c's filesystem for signed out icloud users email address was found in the following files:
+
+Binary file /var/mobile/Containers/Data/Application/1654E2CA-7BAE-41A2-9812-F48A94F8D32B/Library/Preferences/com.apple.MailAccount-ExtProperties.plist matches
+Binary file /var/mobile/Containers/Data/Application/5BA5BFA6-8510-46C9-89DE-4BDF1B233246/Documents/state.sqlite-wal matches
+Binary file /var/mobile/Containers/Data/Application/5BA5BFA6-8510-46C9-89DE-4BDF1B233246/Library/Caches/com.apple.mobileme.fmf1/Cache.db matches
+Binary file /var/mobile/Containers/Data/Application/5BA5BFA6-8510-46C9-89DE-4BDF1B233246/Library/Preferences/com.apple.mobileme.fmf1.plist matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Documents/FMIP.sqlite-wal matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db-wal matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Preferences/com.apple.mobileme.fmip1.plist matches
+Binary file /var/mobile/Library/Accounts/Accounts3.sqlite-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.akd/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.findmydeviced/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.fmfd/Cache.db-wal matches
+Binary file /var/mobile/Library/Mail/Envelope Index matches
+Binary file /var/mobile/Library/Mail/Envelope Index-wal matches
+Binary file /var/mobile/Library/Mail/Protected Index-wal matches
+Binary file /var/mobile/Library/Notes/notes.sqlite-wal matches
+Binary file /var/mobile/Library/Spotlight/CoreSpotlight/NSFileProtectionComplete/index.spotlightV2/dbStr-2.map.data matches
+Binary file /var/mobile/Library/Suggestions/snippets.db-wal matches
+Binary file /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist matches
+Binary file /var/wireless/Library/Preferences/com.apple.commcenter.callservices.plist matches

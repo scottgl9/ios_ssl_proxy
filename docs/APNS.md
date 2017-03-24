@@ -1,5 +1,15 @@
 # Device Apple Push Service Notification Token research (APNS):
 
+## From searching through the filesystem on the iphone 5c for the APS token 0da7f16bce990c4591e054286f071c142db8b8aad665afd552d2e0fbe9497b80, the following files has the token:
+
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db matches
+Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.findmydeviced/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.icloud.fmfd/Cache.db-wal matches
+Binary file /var/mobile/Library/Caches/com.apple.mediastream.mstreamd/Cache.db matches
+Binary file /var/mobile/Library/Passes/PaymentWebServiceContext.archive matches
+
+
 ## Attempting to intercept APNs on port 5223:
 
 syslog output when generating cert default method:

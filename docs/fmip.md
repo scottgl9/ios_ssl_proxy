@@ -11,6 +11,8 @@
 ## deviceContext cause list
 Here is a list of possible cause strings under deviceContext json for pXX-fmip.icloud.com:
 - AccountChange
+- AOSRestart
+- APSTokenReceived
 - locationServiceAuthorizationChanged
 - LowBatteryLocateChange
 

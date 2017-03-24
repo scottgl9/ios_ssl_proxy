@@ -1,8 +1,10 @@
 ## deviceContext cause list
 Here is a list of possible cause strings under deviceContext json for pXX-fmf.icloud.com:
+- AccountChange
 - DeviceRestart
 - FMFLocationServicesStateChanged
 - Forced-RegisterCommand
+- LocationServicesStateChanged
 - Restart
 
 
