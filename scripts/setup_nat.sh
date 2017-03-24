@@ -1,5 +1,7 @@
 #!/bin/sh
 # Redirect SSL traffic from NAT'd clients to iSniff as follows:
+# To delete rule:
+# iptables -t nat -D PREROUTING -p tcp --destination-port 5223 -j REDIRECT --to-ports 8080
 
 sysctl -w net.ipv4.ip_forward=1
 #iptables -t nat -F

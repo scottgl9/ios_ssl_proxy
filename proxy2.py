@@ -1500,7 +1500,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
         if 'bookmarks.icloud.com' in hostname: return
         if self.path.endswith(".png"): return
-        if self.path.endswith(".jpeg"): return
+        elif self.path.endswith(".jpeg"): return
+        elif self.path.endswith(".gz"): return
 
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
@@ -1564,9 +1565,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.close()
 
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
+    config = ConfigParser.ConfigParser()
+    config.read('proxy2.cfg')
+
     if sys.argv[2:]:
         device1 = sys.argv[1]
         device2 = sys.argv[2]
+    elif config.has_option('proxy2', 'device1') and config.has_option('proxy2', 'device2'):
+        device1 = config.get('proxy2', 'device1')
+        device2 = config.get('proxy2', 'device2')
     else:
         print("Usage: %s <device1> <device2>" % sys.argv[0])
         return 0
@@ -1579,8 +1586,6 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev1info = None
         ProxyRewrite.dev2info = None
 
-    config = ConfigParser.ConfigParser()
-    config.read('proxy2.cfg')
     port = config.getint('proxy2', 'port')
     ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')

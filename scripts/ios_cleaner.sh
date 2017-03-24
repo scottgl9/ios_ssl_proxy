@@ -12,6 +12,7 @@
 # /var/root/Library/Preferences
 
 #killall -9 akd apsd cloudd accountsd securityd pkd findmydeviced fmfd fmflocatord identityservicesd seld keybagd
+killall -9 akd accountsd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd assetsd calaccessd configd cloudd CloudKeychainProxy dataaccessd familynotificationd findmydeviced fmfd fmflocatord identityservices identityservicesd ind IDSKeychainSyncingProxy keybagd locationd mapspushd nanoregistryd passd pkd securityd seld tccd Preferences
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1 | grep Caches/com.apple.mobileme.fmip1`/Cache.db*
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1 | grep Caches/com.apple.mobileme.fmf1`/Cache.db*
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1.plist`
@@ -52,9 +53,10 @@ rm -rf /var/mobile/Library/Notes/notes.sqlite*
 rm -rf /var/mobile/Library/Safari/*
 
 rm -f /var/mobile/Library/Preferences/com.apple.AOS*
-#rm -f /var/mobile/Library/Preferences/com.apple.apsd.plist
+rm -f /var/mobile/Library/Preferences/com.apple.apsd.plist
 rm -f /var/mobile/Library/Preferences/com.apple.accounts*
 rm -f /var/mobile/Library/Preferences/com.apple.assistant*
+rm -f /var/mobile/Library/Preferences/com.apple.bird.plist
 rm -f /var/mobile/Library/Preferences/com.apple.coreduet*
 rm -f /var/mobile/Library/Preferences/com.apple.corerecents.recentsd.plist
 rm -f /var/mobile/Library/Preferences/com.apple.dataaccess*.plist
@@ -75,10 +77,12 @@ rm -f /var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 
+rm -f /var/mobile/Media/PhotoData/Photos.sqlite*
+
 rm -f /var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 
-#rm -rf /var/root/Library/Lockdown
-killall -9 akd accountsd AppleIDAuthAgent aosnotifyd apsd assetsd calaccessd configd cloudd CloudKeychainProxy dataaccessd familynotificationd findmydeviced fmfd fmflocatord identityservices identityservicesd ind IDSKeychainSyncingProxy keybagd locationd mapspushd nanoregistryd passd pkd securityd seld tccd Preferences backboardd SpringBoard
-#reboot
+rm -rf /var/root/Library/Lockdown
+killall -9 akd accountsd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd assetsd calaccessd configd cloudd CloudKeychainProxy dataaccessd familynotificationd findmydeviced fmfd fmflocatord identityservices identityservicesd ind IDSKeychainSyncingProxy keybagd locationd mapspushd nanoregistryd passd pkd securityd seld tccd Preferences
+reboot
 
