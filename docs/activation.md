@@ -1,3 +1,6 @@
+/System/Library/PrivateFrameworks/MobileActivation.framework/Support/Certificates
+/System/Library/Security/Certificates.bundle
+
 REQUEST:
 
 	User-Agent: iOS 10.2.1 14D27 iPad Setup Assistant iOS Device Activator (MobileActivation-182.30.16 built on Dec 15 2016 at 22:54:03)^M

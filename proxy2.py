@@ -16,8 +16,9 @@ import json
 import re
 import plistlib
 import base64
+import SocketServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from SocketServer import ThreadingMixIn
+from SocketServer import ThreadingMixIn, BaseRequestHandler
 from cStringIO import StringIO
 from HTMLParser import HTMLParser
 from OpenSSL import crypto, SSL
@@ -32,6 +33,7 @@ import hashlib
 import requests
 import uuid
 import ConfigParser
+import signal
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -818,7 +820,8 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['aps-token'], ProxyRewrite.dev2info['aps-token'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gspe35-ssl.ls.apple.com' or hostname == 'gspe1-ssl.ls.apple.com':
-                path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
+            path = path.replace(ProxyRewrite.dev1info['ProductType'], ProxyRewrite.dev2info['ProductType'])
+            if ProxyRewrite.rewriteOSVersion == True:
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
@@ -857,6 +860,7 @@ class ProxyRewrite:
                 for i in dec[0]:
                     altnames.append("DNS:%s" % i[0].asOctets())
         return altnames
+
 
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
@@ -1463,11 +1467,23 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
-        #if 'Host' in req.headers and 'init-p01st.push.apple.com' in req.headers['Host']:
-        #    # handle setting certs so we can use our own keybag
-        #    p = plistlib.readPlistFromString(res_body)
-        #    print("Certs for %s" % req.headers['Host'])
-        #    print(p['certs'])
+        if 'Host' in req.headers and 'init-p01st.push.apple.com' in req.headers['Host']:
+            # handle setting certs so we can use our own keybag
+            p = plistlib.readPlistFromString(res_body)
+            print("Certs for %s" % req.headers['Host'])
+            print(p['certs'][0])
+            print(p['certs'][1])
+            #st_cert=open(self.cacert, 'rt').read()
+            #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
+            #res_body = plistlib.writePlistToString(p)
+            #print(res_body)
+        elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
+            # handle setting certs so we can intercept profile.ess.apple.com
+            p = plistlib.readPlistFromString(res_body)
+            print("Certs for %s" % req.headers['Host'])
+            print(p['certs'][0])
+            print(p['certs'][1])
+
         #    if os.path.isfile("certs/init-p01st.push.apple.com.crt"):
         #        st_cert=open("certs/init-p01st.push.apple.com.crt", 'rt').read()
         #        p['certs'][0] = ssl.PEM_cert_to_DER_cert(st_cert)
@@ -1485,8 +1501,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
-        #return res_body
-        pass
+        return res_body
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
@@ -1564,6 +1579,64 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.write(str("\n"))
             logger.close()
 
+
+class ProxyAPNHandler(BaseRequestHandler):
+    cakey = 'ca.key'
+    cacert = 'ca.crt'
+    certkey = 'cert.key'
+    certdir = 'certs/'
+    timeout = 5
+    lock = threading.Lock()
+    certKey=None
+    issuerCert=None
+    issuerKey=None
+
+    def __init__(self, *args, **kwargs):
+        self.tls = threading.local()
+        self.tls.conns = {}
+
+        self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
+        self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
+        self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
+
+        BaseRequestHandler.__init__(self, *args, **kwargs)
+
+    def log_error(self, format, *args):
+        # surpress "Request timed out: timeout('timed out',)"
+        if isinstance(args[0], socket.timeout):
+            return
+
+        self.log_message(format, *args)
+
+    def handle(self):
+        SO_ORIGINAL_DST = 80
+        dst = self.request.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
+        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
+        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
+        peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
+        print('ProxyAPNHandler Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        if dst_port == 5223:
+            data = self.request.recv(4096)
+            print(str(data))
+
+def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
+    try:
+        ssl._https_verify_certificates(enable=False)
+        HandlerClass.protocol_version = protocol
+        httpd = ServerClass(ProxyRewrite.server_address, HandlerClass)
+        httpd.allow_reuse_address = True
+        httpd.request_queue_size = 256
+
+        #ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
+
+        sa = httpd.socket.getsockname()
+        print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print '^C received, shutting down proxy'
+        httpd.socket.close()
+
+
 def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     config = ConfigParser.ConfigParser()
     config.read('proxy2.cfg')
@@ -1635,24 +1708,29 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         mimetypes.init()
         sys.setdefaultencoding(oldenc)
 
-    try:
-        ssl._https_verify_certificates(enable=False)
-        HandlerClass.protocol_version = protocol
-        httpd = ServerClass(ProxyRewrite.server_address, HandlerClass)
-        httpd.allow_reuse_address = True
-        httpd.request_queue_size = 256
+    #ssl._https_verify_certificates(enable=False)
+    #HandlerClass.protocol_version = protocol
+    #httpd = ServerClass(ProxyRewrite.server_address, HandlerClass)
+    #httpd.allow_reuse_address = True
+    #httpd.request_queue_size = 256
 
-        ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
+    ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
 
-        sa = httpd.socket.getsockname()
-        print "Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
-        httpd.serve_forever()
+    apsd = SocketServer.TCPServer((ProxyRewrite.server_address[0], 8083), ProxyAPNHandler)
+    sa = apsd.socket.getsockname()
+    print "Serving APNS Proxy on", sa[0], "port", sa[1], "..."
 
-    except KeyboardInterrupt:
-        ProxyRewrite.logger.close()
-        print '^C received, shutting down proxy'
-        httpd.socket.close()
+    t1 = threading.Thread(target=run_http_server)
+    t2 = threading.Thread(target=apsd.serve_forever)
+    t1.daemon = True
+    t2.daemon = True
 
+    for t in t1, t2: t.start()
+    for t in t1, t2: t.join()
+
+    ProxyRewrite.logger.close()
+    #print '^C received, shutting down proxy'
+    #httpd.socket.close()
 
 if __name__ == '__main__':
     test()

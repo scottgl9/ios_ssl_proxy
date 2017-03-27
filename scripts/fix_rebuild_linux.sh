@@ -7,6 +7,12 @@ cd /home/scottgl/build/libimobiledevice
 make uninstall
 cd /home/scottgl/build/libusbmuxd
 make uninstall
+#cd /home/scottgl/build/libplist
+#./autogen
+#make clean
+#make
+#make install
+#cd /home/scottgl/build/libusbmuxd
 ./autogen --prefix=/usr
 make clean
 make
@@ -27,6 +33,6 @@ make uninstall
 make clean
 make
 make install
-service daemon-reload
+systemctl daemon-reload
 service usbmuxd start
 
