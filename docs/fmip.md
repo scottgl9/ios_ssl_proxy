@@ -10,6 +10,7 @@
 
 ## deviceContext cause list
 Here is a list of possible cause strings under deviceContext json for pXX-fmip.icloud.com:
+- AccountAdded
 - AccountChange
 - AOSRestart
 - APSTokenReceived
@@ -159,4 +160,56 @@ aps-token:
 	access-control-expose-headers: X-Apple-Request-UUID
 	access-control-expose-headers: Via
 	Content-Length: 20
+
+## Example of simple unregister from FMIP server (without push token):
+
+POST https://p54-fmip.icloud.com/fmipservice/findme/10973066090/c1ffc3c03997b19d9dcf68fb81f117226539ef6b/unregisterV2
+Accept-Language: en-us^M
+X-Apple-I-MD: AAAABQAAABBkyBSMGoWJOVsc4SKgnC3+AAAAAw==^M
+X-Apple-PrsId: 10973066090^M
+X-Apple-I-MD-M: q89pkBhz0ArKwC5hqosqZlVI3OtHK8ZkB0lXvnixV5ksspqjyq4fw2IPQitzBP+9KUNJ7YGMnPeItnqG^M
+X-Apple-I-Client-Time: 2017-03-27T03:24:26Z^M
+Accept: */*^M
+Content-Type: application/json^M
+X-Apple-Find-API-Ver: 6.0^M
+X-Apple-I-MD-RINFO: 17106176^M
+Authorization: Basic MTA5NzMwNjYwOTA6QVFBQUFBQlkySVhxUjlIek1CU2NMdU8xazlwclpTMjVjVGMxRWtBfg==^M
+X-Apple-Realm-Support: 1.0^M
+User-Agent: FMDClient/6.0 iPhone5,3/13E238^M
+Content-length: 397^M
+Host: p54-fmip.icloud.com^M
+Accept-Encoding: gzip, deflate^M
+{
+  "imei": "357991051309069",
+  "deviceContext": {
+    "deviceTS": "2017-03-27T03:24:26.791Z"
+  }, 
+  "serialNumber": "F78L5D2UFNDD",
+  "deviceInfo": {
+    "fmipDisableReason": 1, 
+    "udid": "c1ffc3c03997b19d9dcf68fb81f117226539ef6b",
+    "buildVersion": "13E238",
+    "deviceColor": "#3b3b3c", 
+    "productVersion": "9.3.1", 
+    "productType": "iPhone5,3",
+    "deviceClass": "iPhone", 
+    "enclosureColor": "#f5f4f7"
+  }, 
+  "meid": "35799105130906"
+}^M
+HTTP/1.1 200 OK^M
+Server: AppleHttpServer/1dad28f^M
+Date: Mon, 27 Mar 2017 03:24:27 GMT^M
+Content-Type: application/json;charset=UTF-8^M
+X-Responding-Instance: fmipservice:35400503:mr90p54ic-zteg03163301:7003:17B115:58016d5^M
+X-Responding-Server: mr90p54ic-zteg03163301_003^M
+X-Responding-Partition: p54^M
+Content-Encoding: gzip^M
+Vary: Accept-Encoding^M
+Strict-Transport-Security: max-age=31536000; includeSubDomains^M
+Set-Cookie: NSC_q54-gnjqtfswjdf=ffffffff1270193245525d5f4f58455e445a4a422d6b;path=/;secure;httponly^M
+via: icloudedge:da06p01ic-ztde010316:7401:17B12:Dallas^M
+X-Apple-Request-UUID: 7a1a6c07-0e0d-4f41-be61-290ac51de4f3^M
+access-control-expose-headers: X-Apple-Request-UUID^M
+access-control-expose-headers: Via^M
 

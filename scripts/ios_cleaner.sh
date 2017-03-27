@@ -17,6 +17,8 @@ rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmi
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1 | grep Caches/com.apple.mobileme.fmf1`/Cache.db*
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1.plist`
 rm -f `find /var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1.plist`
+find /var/mobile/Containers/Data/Application -name "Cache.db*"  -exec rm {} \;
+
 rm -f /var/Keychains/keychain-2.db*
 rm -f /var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
 rm -f /var/mobile/Library/AccountNotifications/*.sqlite*
@@ -46,6 +48,7 @@ rm -rf /var/mobile/Library/com.apple.companionappd/*
 rm -rf /var/mobile/Library/com.apple.nsurlsessiond/*
 rm -rf /var/mobile/Library/Health/*
 rm -rf /var/mobile/Library/locationd/*
+rm -f /var/mobile/Library/Logs/CrashReporter/*.ips*
 rm -rf /var/mobile/Library/Mail/*
 rm -rf /var/mobile/Library/Mobile\ Documents/*
 rm -rf /var/mobile/Library/MusicLibrary/*
