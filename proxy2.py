@@ -861,7 +861,23 @@ class ProxyRewrite:
                     altnames.append("DNS:%s" % i[0].asOctets())
         return altnames
 
+    @staticmethod
+    def extract_certs(data):
+        certs = []
+        index=0
 
+        while 1: 
+            index = data.find("\x30\x82", index)
+            if index < 0: break
+            length = struct.unpack(">h", data[index+2:index+4])[0] + 5
+            if length > len(data):
+                print("Length of %d extends past end" % length)
+                return
+            print("index=%d, length=%d" % (index, length))
+            certdata = data[index:index+length]
+            certs.append(certdata)
+            index = index + length
+        return certs
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -1615,9 +1631,26 @@ class ProxyAPNHandler(BaseRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('ProxyAPNHandler Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        s=None
         if dst_port == 5223:
-            data = self.request.recv(4096)
-            print(str(data))
+            while 1:
+                data = self.request.recv(8192)
+                print("len = %d" % len(data))
+                if not data: break
+                print("received %s from client" % base64.b64encode(data))
+                if s == None:
+                    print("Connecting to %s:%s" % (dst_ip, dst_port))
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((dst_ip, dst_port))
+                s.sendall(data)
+                data = s.recv(8192)
+                print("len = %d" % len(data))
+                if not data: break
+                certs = ProxyRewrite.extract_certs(data)
+                print(certs)
+                print('Received %s from server' % base64.b64encode(data))
+                self.request.sendall(data)
+            if s: s.close()
 
 def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     try:
