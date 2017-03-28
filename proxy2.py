@@ -878,6 +878,24 @@ class ProxyRewrite:
             certs.append(certdata)
             index = index + length
         return certs
+    @staticmethod
+    def rewrite_der_cert(data):
+        cert=crypto.load_certificate(crypto.FILETYPE_ASN1, data)
+        algtype = cert.get_signature_algorithm()
+        keysize = cert.get_pubkey().bits()
+        print(algtype)
+        # create a new key pair
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, keysize)
+        derkey = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+        cert.set_pubkey(key.get_pubkey())
+        if (algtype.startswith('sha256')):
+            cert.sign(key, "sha256")
+        elif (algtype.startswith('sha1')):
+            cert.sign(key, "sha1")
+        dercert = crypto.dump_certificate(crypto.FILETYPE_ASN1, cert)
+        #derkey = crypto.dump_privatekey(crypto.FILETYPE_ASN1, key)
+        return dercert
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -1142,31 +1160,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
         self.send_response(200, 'Connection Established')
         self.end_headers()
-
-        conns = [self.connection, s]
-        self.close_connection = 0
-        while not self.close_connection:
-            rlist, wlist, xlist = select.select(conns, [], conns, self.timeout)
-            if xlist or not rlist:
-                break
-            for r in rlist:
-                other = conns[1] if r is conns[0] else conns[0]
-                data = r.recv(8192)
-                if not data:
-                    self.close_connection = 1
-                    break
-                other.sendall(data)
-
-    def connect_apn_relay(self):
-        address = self.path.split(':', 1)
-        address[1] = int(address[1]) or 443
-        #try:
-        s = socket.create_connection(address, timeout=self.timeout)
-        #except Exception as e:
-        #    self.send_error(502)
-        #    return
-        #self.send_response(200, 'Connection Established')
-        #self.end_headers()
 
         conns = [self.connection, s]
         self.close_connection = 0
@@ -1647,10 +1640,20 @@ class ProxyAPNHandler(BaseRequestHandler):
                 print("len = %d" % len(data))
                 if not data: break
                 certs = ProxyRewrite.extract_certs(data)
-                print(certs)
+                #newcert = ProxyRewrite.rewrite_der_cert(certs[0])
+                print("certlen=%d, newcertlen=%d" % (len(certs[0]), len(newcert)))
+                print("cert1=%s" % base64.b64encode(certs[0]))
+                print("cert2=%s" % base64.b64encode(certs[1]))
                 print('Received %s from server' % base64.b64encode(data))
                 self.request.sendall(data)
             if s: s.close()
+            if self.request:
+                self.close_connection = 1
+                self.request.close()
+                self.finish()
+
+        else:
+            print("Unknown dst_port=%d" % dst_port)
 
 def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     try:
