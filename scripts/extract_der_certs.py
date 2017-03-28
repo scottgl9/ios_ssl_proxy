@@ -25,9 +25,19 @@ def extract_certs(filename):
                 if length > len(st_key):
                     print("Length of %d extends past end" % length)
                     return
+                type = binascii.hexlify(st_key[index+4:index+6])
+                outname = None
+                if type == "3082":
+                    print("Type: certificate")
+                    outname = ("%d.cer" % count)
+                elif type == "0201":
+                    print("Type: private key")
+                    outname = ("%d.key" % count)
+                else:
+                    print("Unknown cert type: %s" % type)
 		print("index=%d, length=%d" % (index, length))
 		certdata = st_key[index:index+length]
-		with open(os.path.join(dirname, "%d.cer" % count), "wb") as f:
+		with open(os.path.join(dirname, outname), "wb") as f:
 			f.write(certdata)
                 count = count + 1
 		st_key = st_key[index+length:]
