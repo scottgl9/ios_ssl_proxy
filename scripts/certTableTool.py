@@ -41,7 +41,6 @@ def extract_certs(filename):
 # block_length determines the offset to the next 8 bytes before the cert.
 # index_length is the actual length of the certificate, and if index_length < block_length,
 # then the rest of the block is padded with 0xFF bytes
-# block_length = index_length & 0x10
 def unpack_certTable(filename):
         st_key=bytearray(open(filename, 'rb').read())
         index=0
@@ -53,10 +52,13 @@ def unpack_certTable(filename):
                 index = st_key.find("\x30\x82", index)
                 if index < 0: break
                 clength = struct.unpack(">h", st_key[index+2:index+4])[0] + 5
-                index_length = struct.unpack("<I", st_key[index-4:index])[0]
-                block = struct.unpack("<I", st_key[index-8:index-4])[0]
-                print("index=%d, index_length=%x, block_length=%x" % (index, index_length, block))
-                certdata = st_key[index:index+clength]
+                ilength = struct.unpack("<I", st_key[index-4:index])[0]
+                blength = struct.unpack("<I", st_key[index-8:index-4])[0]
+                if (ilength + 8) & 7: calclength = ((ilength + 8) & (~7)) + 8
+                else: calclength = ilength + 8
+                if calclength != blength: print("%x != %x" % (calclength, blength))
+                print("index=%d, index_length=%x, block_length=%x, calclength=%x" % (index, ilength, blength, calclength))
+                certdata = st_key[index:index+ilength]
                 cert=crypto.load_certificate(crypto.FILETYPE_ASN1, bytes(certdata))
                 #print(cert.digest('sha1').replace(':',''))
                 #print(cert.get_subject())
@@ -74,9 +76,14 @@ def pack_certTable(path):
            filepath = os.path.join(path, "%d.cer" % count)
            if os.path.isfile(filepath):
                certdata=open(filepath, 'rb').read()
-               certlen = len(certdata)
-               print("loading %s: len=%x" % (filepath, certlen))
+               ilength = len(certdata)
+               calclength = ilength + 8
+               if (ilength + 8) & 7: calclength = ((ilength + 8) & (~7)) + 8
+               print("loading %s: len=%x blen=%x" % (filepath, ilength, calclength))
+               outf.write(struct.pack("<I", calclength))
+               outf.write(struct.pack("<I", ilength))
                outf.write(certdata)
+               outf.write("\xFF" * (calclength - ilength - 8))
            else: break
            count = count + 1
        outf.close()
