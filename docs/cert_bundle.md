@@ -24,14 +24,14 @@ TrustStore.html
 found hash a888eb1220701cd1d849d3d8b33a5ac4d98cb449 with pos=194553 len=52
 found hash a888eb1220701cd1d849d3d8b33a5ac4d98cb449 with pos=194639 len=52
 found hash a888eb1220701cd1d849d3d8b33a5ac4d98cb449 with pos=195078 len=52
-found hash 16ed8643c493898f804c5ed9596c80128348f0b3 with pos=115193 len=55
-found hash 16ed8643c493898f804c5ed9596c80128348f0b3 with pos=115282 len=55
-found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=55 len=56
-found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=145 len=56
-found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=1592 len=56
-found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=1682 len=56
-found hash 136f24a2c8b41164e8e5b1b9e9a4f52d0e2afde0 with pos=73049 len=63
-found hash 136f24a2c8b41164e8e5b1b9e9a4f52d0e2afde0 with pos=73146 len=63
+found hash 16ed8643c493898f804c5ed9596c80128348f0b3 with pos=115193 len=55		O = TeliaSonera, CN = TeliaSonera Root CA v1
+found hash 16ed8643c493898f804c5ed9596c80128348f0b3 with pos=115282 len=55		O = TeliaSonera, CN = TeliaSonera Root CA v1
+found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=55 len=56			C = ES, O = IZENPE S.A., CN = Izenpe.com
+found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=145 len=56			C = ES, O = IZENPE S.A., CN = Izenpe.com
+found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=1592 len=56		C = ES, O = IZENPE S.A., CN = Izenpe.com
+found hash ce7bb519fd2c57b5b56c2ac49174f60a208cd04e with pos=1682 len=56		C = ES, O = IZENPE S.A., CN = Izenpe.com
+found hash 136f24a2c8b41164e8e5b1b9e9a4f52d0e2afde0 with pos=73049 len=63		C = TW, O = Government Root Certification Authority
+found hash 136f24a2c8b41164e8e5b1b9e9a4f52d0e2afde0 with pos=73146 len=63		C = TW, O = Government Root Certification Authority
 found hash 3a2bc436e153c993237a6e7b7f1b1c717831dfce with pos=110816 len=65
 found hash 3a2bc436e153c993237a6e7b7f1b1c717831dfce with pos=110915 len=65
 found hash a0f7e4cb6e7b51b5597be6c42aafbfb100a02ff6 with pos=98464 len=68
@@ -109,10 +109,10 @@ found hash b703986b44026a324a8d3f41af0f6a2fa66910ae with pos=57386 len=190
 found hash b703986b44026a324a8d3f41af0f6a2fa66910ae with pos=57611 len=190
 found hash 2eb089564c2f4d59f8b5f06a0749d9fed0ad345f with pos=52330 len=191
 found hash 2eb089564c2f4d59f8b5f06a0749d9fed0ad345f with pos=52556 len=191
-found hash 215bf2eebec904d49d6072a3894a3ea5948a3688 with pos=61480 len=266
-found hash 215bf2eebec904d49d6072a3894a3ea5948a3688 with pos=61782 len=266
-found hash fc43f2c518e5b0175f254eb9a99c744316047876 with pos=5027 len=299
-found hash fc43f2c518e5b0175f254eb9a99c744316047876 with pos=5362 len=299
+found hash 215bf2eebec904d49d6072a3894a3ea5948a3688 with pos=61480 len=266		C = ES, ST = Barcelona, L = Barcelona (see current address at http://www.anf.es/es/address-direccion.html ), O = ANF Autoridad de Certificacion, OU = ANF Clase 1 CA, emailAddress = info@anf.es, serialNumber = G63287510, CN = ANF Global Root CA
+found hash 215bf2eebec904d49d6072a3894a3ea5948a3688 with pos=61782 len=266		C = ES, ST = Barcelona, L = Barcelona (see current address at http://www.anf.es/es/address-direccion.html ), O = ANF Autoridad de Certificacion, OU = ANF Clase 1 CA, emailAddress = info@anf.es, serialNumber = G63287510, CN = ANF Global Root CA
+found hash fc43f2c518e5b0175f254eb9a99c744316047876 with pos=5027 len=299		C = TR, L = Gebze - Kocaeli, O = T\C3\BCrkiye Bilimsel ve Teknolojik Ara\C5\9Ft\C4\B1rma Kurumu - T\C3\9CB\C4\B0TAK, OU = Ulusal Elektronik ve Kriptoloji Ara\C5\9Ft\C4\B1rma Enstit\C3\BCs\C3\BC - UEKAE, OU = Kamu Sertifikasyon Merkezi, CN = T\C3\9CB\C4\B0TAK UEKAE K\C3\B6k Sertifika Hizmet Sa\C4\9Flay\C4\B1c\C4\B1s\C4\B1 - S\C3\BCr\C3\BCm 3
+found hash fc43f2c518e5b0175f254eb9a99c744316047876 with pos=5362 len=299		C = TR, L = Gebze - Kocaeli, O = T\C3\BCrkiye Bilimsel ve Teknolojik Ara\C5\9Ft\C4\B1rma Kurumu - T\C3\9CB\C4\B0TAK, OU = Ulusal Elektronik ve Kriptoloji Ara\C5\9Ft\C4\B1rma Enstit\C3\BCs\C3\BC - UEKAE, OU = Kamu Sertifikasyon Merkezi, CN = T\C3\9CB\C4\B0TAK UEKAE K\C3\B6k Sertifika Hizmet Sa\C4\9Flay\C4\B1c\C4\B1s\C4\B1 - S\C3\BCr\C3\BCm 3
 
 
 ### From https://opensource.apple.com/source/Security/Security-57740.1.18/OTAPKIAssetTool/OTAServiceApp.m.auto.html:

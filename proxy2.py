@@ -1627,25 +1627,38 @@ class ProxyAPNHandler(BaseRequestHandler):
         s=None
         if dst_port == 5223:
             while 1:
-                data = self.request.recv(8192)
+                try:
+                    data = self.request.recv(8192)
+                except socket.timeout:
+                    break
+                except socket.error as e:
+                    print("ProxyAPNHandler: Socket error occurred: %r" % e)
+                    break
+
                 print("len = %d" % len(data))
-                if not data: break
                 print("received %s from client" % base64.b64encode(data))
                 if s == None:
                     print("Connecting to %s:%s" % (dst_ip, dst_port))
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.connect((dst_ip, dst_port))
-                s.sendall(data)
-                data = s.recv(8192)
+                if data: s.sendall(data)
+                try:
+                    data = s.recv(8192)
+                except socket.timeout:
+                    break
+                except socket.error as e:
+                    print("ProxyAPNHandler: Socket error occurred: %r" % e)
+                    break
+
                 print("len = %d" % len(data))
-                if not data: break
-                certs = ProxyRewrite.extract_certs(data)
-                #newcert = ProxyRewrite.rewrite_der_cert(certs[0])
-                print("certlen=%d, newcertlen=%d" % (len(certs[0]), len(newcert)))
-                print("cert1=%s" % base64.b64encode(certs[0]))
-                print("cert2=%s" % base64.b64encode(certs[1]))
-                print('Received %s from server' % base64.b64encode(data))
-                self.request.sendall(data)
+                if data:
+                    certs = ProxyRewrite.extract_certs(data)
+                    #newcert = ProxyRewrite.rewrite_der_cert(certs[0])
+                    #print("certlen=%d, newcertlen=%d" % (len(certs[0]), len(newcert)))
+                    print("cert1=%s" % base64.b64encode(certs[0]))
+                    print("cert2=%s" % base64.b64encode(certs[1]))
+                    #print('Received %s from server' % base64.b64encode(data))
+                if data: self.request.sendall(data)
             if s: s.close()
             if self.request:
                 self.close_connection = 1
@@ -1653,7 +1666,7 @@ class ProxyAPNHandler(BaseRequestHandler):
                 self.finish()
 
         else:
-            print("Unknown dst_port=%d" % dst_port)
+            print("ProxyAPNHandler: Unknown dst_port=%d" % dst_port)
 
 def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
     try:
