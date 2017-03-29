@@ -1,16 +1,15 @@
 #!/usr/bin/python2.7
 # used to unpack certsTable.data
+# The certsIndex.data file is a Database Index file that contains an array which can be read using NSData,
+# this contains a list of sha1 hashes and offsets. 
+
 
 import binascii
 import struct
 import sys
 import os
 from OpenSSL import crypto, SSL
-
-import binascii
-import struct
-import sys
-import os
+import hashlib
 
 if sys.argv[1:]:
         cmdtype = sys.argv[1]
@@ -60,6 +59,8 @@ def unpack_certTable(filename):
                 print("index=%d, index_length=%x, block_length=%x, calclength=%x" % (index, ilength, blength, calclength))
                 certdata = st_key[index:index+ilength]
                 cert=crypto.load_certificate(crypto.FILETYPE_ASN1, bytes(certdata))
+                certhash = hashlib.sha1(crypto.dump_publickey(crypto.FILETYPE_ASN1, cert.get_pubkey())).hexdigest()
+                print(certhash)
                 #print(cert.digest('sha1').replace(':',''))
                 #print(cert.get_subject())
                 with open(os.path.join(dirname, "%d.cer" % count), "wb") as f:
@@ -88,9 +89,23 @@ def pack_certTable(path):
            count = count + 1
        outf.close()
 
+def unpack_indexTable(filename, path):
+    inf = open(filename, 'rb')
+    outf = open("certsTable/certsIndex.txt", "wb")
+    count=0
+    while 1:
+        hashdata = inf.read(20)
+        if hashdata == None: return
+        if len(hashdata) <= 0: return
+        index = struct.unpack("<I", inf.read(4))[0] + 8
+        filepath = os.path.join(path, "%d.cer" % count)
+        outf.write("%s %s %d\n" % (filepath, binascii.hexlify(hashdata), index))
+        count=count + 1
+
 if cmdtype == 'unpack': 
     print("Unpacking certsTable.data to certsTable directory...")
     unpack_certTable("certsTable.data")
+    unpack_indexTable("certsIndex.data", "certsTable")
 elif cmdtype == 'pack':
     print("Packing certsTable directory to certsTable.data...")
     pack_certTable("./certsTable")
