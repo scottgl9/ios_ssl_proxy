@@ -1034,7 +1034,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.connect_relay()
 
     def generate_cert(self, hostname, port):
-        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), hostname)
+        # remove 'pXX-' from hostname
+        if 'icloud.com' in hostname: chostname = re.sub(r'^p\d\d-', '', hostname)
+        else: chostname = hostname
+        certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), chostname)
+
         # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
 
@@ -1543,7 +1547,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             logname = hostname
             # remove 'pXX-' from hostname for log filename
-            if 'icloud.com' in hostname: logname = re.sub(r'p\d\d-', '', hostname)
+            if 'icloud.com' in hostname: logname = re.sub(r'^p\d\d-', '', hostname)
 
             logger = open("logs/"+logname+".log", "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
