@@ -94,6 +94,7 @@ class ProxyRewrite:
     changeClientID = False
     changePushToken = False
     rewriteOSVersion = True
+    jailbroken = False
     apnscnt = 0
     server_address = None
 
@@ -111,12 +112,16 @@ class ProxyRewrite:
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
-        if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname: return False
+        if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname and 'apple-cdn.com' not in hostname: return False
         hostname = hostname.replace(':443','')
-        #if 'fmip.icloud.com' in hostname: return False
-        #if 'itunes.apple.com' in hostname: return False
-        #if hostname == "gsa.apple.com": return False
-        #if hostname == "gsas.apple.com": return False
+
+        # this means sslkill2 isn't installed
+        if ProxyRewrite.jailbroken == False:
+            if 'fmip.icloud.com' in hostname: return False
+            if 'itunes.apple.com' in hostname: return False
+            if hostname == "gsa.apple.com": return False
+            if hostname == "gsas.apple.com": return False
+
         if hostname == "ppq.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
@@ -799,8 +804,6 @@ class ProxyRewrite:
         if hostname.endswith('fmip.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
-        #elif 'fmipmobile.icloud.com' in hostname:
-        #        path = path.replace('ryrobinson1987@icloud.com', 'scottgl@gmail.com')
         elif hostname.endswith('fmf.icloud.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
@@ -1039,7 +1042,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else: chostname = hostname
         certpath = "%s/%s.crt" % (self.certdir.rstrip('/'), chostname)
 
-        # always use same cert for all *.icloud.com except for *-fmip.icloud.com
         if os.path.isfile(certpath): return certpath
 
         if '17.249.60.9' in hostname or '17.188.167.212' in hostname or '17.188.162.92' in hostname:
@@ -1074,10 +1076,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         req = crypto.X509Req()
         if srvcert:
             subject = srvcert.get_subject()
-            if subject.CN != None: req.get_subject().CN = subject.CN
-            if subject.O != None: req.get_subject().O = subject.O
-            if subject.C != None: req.get_subject().C = subject.C
-            if subject.OU != None: req.get_subject().OU = subject.OU
+            # add in order
+            for i, (a, b) in enumerate(subject.get_components()):
+                if a == 'CN':
+                    req.get_subject().CN = subject.CN
+                elif a == 'C':
+                    req.get_subject().C = subject.C
+                elif a == 'OU':
+                    req.get_subject().OU = subject.OU
+                elif a == 'O':
+                    req.get_subject().O = subject.O
         else:
             req.get_subject().CN = hostname
         req.set_pubkey(self.certKey)
@@ -1716,6 +1724,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')
+    ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
 
     if ProxyRewrite.rewriteOSVersion == False:
         print("Disabled iOS version rewrite")
