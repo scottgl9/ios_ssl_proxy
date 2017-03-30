@@ -18,6 +18,18 @@ manifest.data
 TrustedCTLogs.plist
 TrustStore.html
 
+        cert_index_file_data = SecFrameworkCopyResourceContents(CFSTR("certsIndex"), CFSTR("data"), NULL);
+        table_data_url =  SecFrameworkCopyResourceURL(CFSTR("certsTable"), CFSTR("data"), NULL);
+
+NSMutableArray *certs = [[NSMutableArray alloc] init];
+CFIndex count = SecTrustGetCertificateCount(trustRef);
+//For each certificate in the certificate chain.
+for (CFIndex i = count - 1; i >= 0; i--)
+{
+ //Get a reference to the certificate.
+ SecCertificateRef certRef = SecTrustGetCertificateAtIndex(trustRef, i);
+ [certs addObject:(__bridge id) certRef];
+}
 
 # Hashes found from cerrtsIndex.data in certsTable.data:
 
