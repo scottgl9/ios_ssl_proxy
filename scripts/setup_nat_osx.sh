@@ -1,6 +1,10 @@
 #!/bin/sh
-rm -f pf.conf
-echo "rdr pass on bridge0 inet proto tcp from 192.168.2.0/24 to any port http -> 127.0.0.1 port 8080" > pf.conf
-echo "rdr pass on bridge0 inet proto tcp from 192.168.2.0/24 to any port https -> 127.0.0.1 port 8080" >> pf.conf
-#pfctl -v -n -f ./pf.conf
+echo "
+rdr pass inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080
+rdr pass inet proto tcp from any to any port 443 -> 127.0.0.1 port 8080
+rdr pass inet proto tcp from any to any port 5223 -> 127.0.0.1 port 8083
+" | sudo pfctl -ef -
+pfctl -s nat
 #pfctl -f ./pf.conf
+#networksetup -setsecurewebproxy 'Wi-Fi' 127.0.0.1 8080
+#networksetup -setwebproxy 'Wi-Fi' 127.0.0.1 8080
