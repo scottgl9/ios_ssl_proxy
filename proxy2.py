@@ -440,8 +440,10 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
-            d1uid = str(hex(ProxyRewrite.dev1info['UniqueChipID']))
-            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+            d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[d1lenfix:]
+            d2uid = "0x%s" % str(hex(ProxyRewrite.dev2info['UniqueChipID']))[d2lenfix:]
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
@@ -474,8 +476,10 @@ class ProxyRewrite:
                 json_obj['collectionInfo']['data'] = ProxyRewrite.b64_rewrite_text(json_obj['collectionInfo']['data'], attribs)
                 body = json.dumps(json_obj)
 
-            d1uid = str(hex(ProxyRewrite.dev1info['UniqueChipID']))
-            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+            d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[d1lenfix:]
+            d2uid = "0x%s" % str(hex(ProxyRewrite.dev2info['UniqueChipID']))[d2lenfix:]
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
