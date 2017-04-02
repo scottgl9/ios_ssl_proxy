@@ -888,11 +888,23 @@ class ProxyRewrite:
             altnames = ProxyRewrite.altnames(srvcert)
         elif re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
             try:
-                st_cert = ssl.get_server_certificate((hostname, port),  ssl_version=ssl.PROTOCOL_TLS)
+                st_cert = ssl.get_server_certificate((hostname, port))
                 srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+            except ssl.SSLError, e:
+                print("get_server_certificate() failed")
+                # assume that the cert they want is for courier.push.apple.com
+                srvcertname = "server_certs/courier.push.apple.com.crt"
+                st_cert=open(srvcertname, 'rt').read()
+                srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+            except socket.error, e:
+                print("get_server_certificate() failed")
+                # assume that the cert they want is for courier.push.apple.com
+                srvcertname = "server_certs/courier.push.apple.com.crt"
+                st_cert=open(srvcertname, 'rt').read()
+                srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+
+            if srvcert:
                 altnames = ProxyRewrite.altnames(srvcert)
-            except SSL.Error as e:
-                print("SSLError occurred on %s: %r" % (hostname,e))
 
         req = crypto.X509Req()
         if srvcert:
@@ -1652,7 +1664,7 @@ class ProxyAPNHandler(BaseRequestHandler):
                     with self.lock:
                         certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
                     try:
-                        self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLS, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                        self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
                     except ssl.SSLError as e:
                         print("SSLError occurred on %s: %r" % (dst_ip,e))
 
@@ -1660,8 +1672,9 @@ class ProxyAPNHandler(BaseRequestHandler):
                     data = self.request.recv(8192)
                     if not data: break
                 except socket.timeout:
+                    print("ProxyAPNHandler: Socket timeout occurred")
                     break
-                except socket.error as e:
+                except socket.error, e:
                     print("ProxyAPNHandler: Socket error occurred: %r" % e)
                     break
 
@@ -1671,13 +1684,15 @@ class ProxyAPNHandler(BaseRequestHandler):
                     print("Connecting to %s:%s" % (dst_ip, dst_port))
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.connect((dst_ip, dst_port))
+
                 if data: s.sendall(data)
                 try:
                     data = s.recv(8192)
                     if not data: break
                 except socket.timeout:
+                    print("ProxyAPNHandler: Socket timeout occurred")
                     break
-                except socket.error as e:
+                except socket.error, e:
                     print("ProxyAPNHandler: Socket error occurred: %r" % e)
                     break
 
@@ -1693,7 +1708,7 @@ class ProxyAPNHandler(BaseRequestHandler):
                         with self.lock:
                             certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
                         try:
-                            self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLS, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                            self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
                         except ssl.SSLError as e:
                             print("SSLError occurred on %s: %r" % (dst_ip,e))
                     elif data: self.request.sendall(data)
@@ -1808,13 +1823,12 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     sa = apsd.socket.getsockname()
     print "Serving APNS Proxy on", sa[0], "port", sa[1], "..."
 
-    t1 = threading.Thread(target=run_http_server)
-    t2 = threading.Thread(target=apsd.serve_forever)
+    t1 = threading.Thread(target=apsd.serve_forever)
     t1.daemon = True
-    t2.daemon = True
 
-    for t in t1, t2: t.start()
-    for t in t1, t2: t.join()
+    t1.start()
+    run_http_server()
+    t1.join(2)
 
     ProxyRewrite.logger.close()
     #print '^C received, shutting down proxy'
