@@ -953,9 +953,12 @@ class ProxyRewrite:
                 print("ALTNAMES: %s\n" % altnames)
                 cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
 
-                #for i in range(srvcert.get_extension_count()):
-                #     ext = srvcert.get_extension(i)
-                #     if len(ext.get_data()) == 2: cert.add_extensions([ext])
+                for i in range(srvcert.get_extension_count()):
+                     ext = srvcert.get_extension(i)
+                     print(ext.get_short_name())
+                     if (ext.get_short_name() == 'UNDEF' or ext.get_short_name() == 'ct_precert_scts'):
+                         print("Adding %s to cert" % ext.get_short_name())
+                         cert.add_extensions([ext])
 
         cert.sign(issuerKey, "sha256")
         with open(certpath, "w") as cert_file:
@@ -1157,7 +1160,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
-        certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+        with self.lock:
+            certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
@@ -1509,16 +1513,31 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
-        if 'Host' in req.headers and 'init-p01st.push.apple.com' in req.headers['Host']:
+        if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
             # handle setting certs so we can use our own keybag
             p = plistlib.readPlistFromString(res_body)
-            print("Certs for %s" % req.headers['Host'])
-            print(p['certs'][0])
-            print(p['certs'][1])
-            #st_cert=open(self.cacert, 'rt').read()
+            #print("Certs for %s" % req.headers['Host'])
+            cert0 = base64.b64encode(p['certs'][0].data)
+            cert1 = base64.b64encode(p['certs'][1].data)
+            bag = p['bag'].data
+            origsignature = base64.b64encode(p['signature'].data)
+            #print(cert0)
+            #print(cert1)
+            with self.lock:
+                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, req.headers['Host'], 443)
+            st_cert=open(certpath, 'rt').read()
+            certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
+            res_body = res_body.replace(cert0, certdata)
+            st_cert=open(self.cacert, 'rt').read()
+            certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
+            res_body = res_body.replace(cert1, certdata)
+            newsignature = base64.b64encode(crypto.sign(self.certKey, bag, 'sha1'))
+            res_body = res_body.replace(origsignature, newsignature)
+            print("Replaced %s with %s" % (origsignature, newsignature))
+            #p['certs'][0] = certdata
             #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
             #res_body = plistlib.writePlistToString(p)
-            #print(res_body)
+            print(res_body)
         elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
             p = plistlib.readPlistFromString(res_body)
@@ -1566,11 +1585,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-            self.print_info(req, req_body_plain, res, res_body)
-            req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
-            res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
-            #print with_color(33, req_header_text)
-            #print with_color(32, res_header_text)
+            if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: 
+                req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
+                res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
+                print with_color(33, req_header_text)
+                print with_color(32, res_header_text)
+            else:
+                self.print_info(req, req_body_plain, res, res_body)
             #ProxyRewrite.logger.write(req_header_text)
             #ProxyRewrite.logger.write(res_header_text)
 
