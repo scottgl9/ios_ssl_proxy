@@ -1684,14 +1684,13 @@ class ProxyAPNHandler(BaseRequestHandler):
         s=None
         if dst_port == 5223:
             while 1:
-                if not isinstance(self.request, ssl.SSLSocket):
-                    with self.lock:
-                        certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-                    try:
-                        self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
-                    except ssl.SSLError as e:
-                        print("SSLError occurred on %s: %r" % (dst_ip,e))
-
+                #if not isinstance(self.request, ssl.SSLSocket):
+                #    with self.lock:
+                #        certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                #    try:
+                #        self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                #    except ssl.SSLError as e:
+                #        print("SSLError occurred on %s: %r" % (dst_ip,e))
                 try:
                     data = self.request.recv(8192)
                     if not data: break
@@ -1705,10 +1704,18 @@ class ProxyAPNHandler(BaseRequestHandler):
                 print("len = %d" % len(data))
                 print("received %s from client" % base64.b64encode(data))
                 if s == None:
+                    if not isinstance(self.request, ssl.SSLSocket):
+                        with self.lock:
+                            certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                        try:
+                            self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                        except ssl.SSLError, e:
+                            print("SSLError occurred on %s: %r" % (dst_ip,e))
+                        except socket.error, e:
+                            print("socket.error occurred on %s: %r" % (dst_ip,e))
                     print("Connecting to %s:%s" % (dst_ip, dst_port))
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.connect((dst_ip, dst_port))
-
                 if data: s.sendall(data)
                 try:
                     data = s.recv(8192)
@@ -1722,11 +1729,11 @@ class ProxyAPNHandler(BaseRequestHandler):
 
                 print("len = %d" % len(data))
                 if data:
-                    certs = ProxyRewrite.extract_certs(data)
+                    #certs = ProxyRewrite.extract_certs(data)
                     #newcert = ProxyRewrite.rewrite_der_cert(certs[0])
                     #print("certlen=%d, newcertlen=%d" % (len(certs[0]), len(newcert)))
-                    print("cert1=%s" % base64.b64encode(certs[0]))
-                    print("cert2=%s" % base64.b64encode(certs[1]))
+                    #print("cert1=%s" % base64.b64encode(certs[0]))
+                    #print("cert2=%s" % base64.b64encode(certs[1]))
                     #print('Received %s from server' % base64.b64encode(data))
                     if not isinstance(self.request, ssl.SSLSocket):
                         with self.lock:
