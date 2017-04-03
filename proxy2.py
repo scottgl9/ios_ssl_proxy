@@ -609,9 +609,11 @@ class ProxyRewrite:
             body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
             return body
         elif hostname.endswith('buy.itunes.apple.com'):
-            attribs = 'ProductType,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,DeviceClass'
+            attribs = 'ProductType,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,UniqueDeviceID,DeviceClass'
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
+            if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
             return body
         elif hostname.endswith('identity.apple.com') and ProxyRewrite.rewriteOSVersion == True:
@@ -781,10 +783,14 @@ class ProxyRewrite:
             headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-mbs-lock', 'UniqueDeviceID,UniqueDeviceID')
 
         if 'X-iTunes-User-Agent' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'X-iTunes-User-Agent', 'BuildVersion,HardwareModel,ProductName,ProductType,ProductVersion,DeviceClass')
+            if ProxyRewrite.rewriteOSVersion == True:
+                headers = ProxyRewrite.rewrite_header_field(headers, 'X-iTunes-User-Agent', 'BuildVersion,HardwareModel,ProductName,ProductType,ProductVersion,DeviceClass')
+            else: headers = ProxyRewrite.rewrite_header_field(headers, 'X-iTunes-User-Agent', 'HardwareModel,ProductName,ProductType,DeviceClass')
 
         if 'X-Apple-ATS-Cache-Key' in headers:
-            headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,ProductType,ProductVersion')
+            if ProxyRewrite.rewriteOSVersion == True:
+                headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'BuildVersion,HardwarePlatform,ProductType,ProductVersion')
+            else: headers = ProxyRewrite.rewrite_header_field(headers, 'x-apple-orig-url', 'HardwarePlatform,ProductType')
 
         if 'X-Apple-TA-Device' in headers:
             if ProxyRewrite.rewriteOSVersion == True:
