@@ -95,6 +95,7 @@ class ProxyRewrite:
     changePushToken = False
     rewriteOSVersion = True
     jailbroken = False
+    singlelogfile = False
     apnscnt = 0
     server_address = None
 
@@ -1603,8 +1604,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 
-            ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
-            ProxyRewrite.logger.write(str(req.headers))
+            if ProxyRewrite.singlelogfile:
+                ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
+                ProxyRewrite.logger.write(str(req.headers))
 
             # format json request before writing to log file
             if req_body and 'Content-Type' in req.headers and req.headers['Content-Type'].startswith('application/json'):
@@ -1617,13 +1619,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             if req_body:
                 logger.write(str(req_body))
-                ProxyRewrite.logger.write(str(req_body))
+                if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(req_body))
 
             logger.write("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason))
             logger.write(str(res.headers))
 
-            ProxyRewrite.logger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
-            ProxyRewrite.logger.write(str(res.headers))
+            if ProxyRewrite.singlelogfile:
+                ProxyRewrite.logger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
+                ProxyRewrite.logger.write(str(res.headers))
 
             # format json response before writing to log file
             if res_body and 'Content-Type' in res.headers and res.headers['Content-Type'].startswith('application/json'):
@@ -1636,9 +1639,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             if res_body:
                 logger.write(str(res_body))
-                ProxyRewrite.logger.write(str(res_body))
+                if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(res_body))
 
-            ProxyRewrite.logger.write(str("\n"))
+            if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
             logger.close()
 
@@ -1787,6 +1790,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')
     ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
+    ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
 
     if ProxyRewrite.rewriteOSVersion == False:
         print("Disabled iOS version rewrite")
@@ -1838,7 +1842,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     #httpd.allow_reuse_address = True
     #httpd.request_queue_size = 256
 
-    ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
+    if ProxyRewrite.singlelogfile:
+        ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
 
     apsd = SocketServer.TCPServer((ProxyRewrite.server_address[0], 8083), ProxyAPNHandler)
     sa = apsd.socket.getsockname()
@@ -1851,7 +1856,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     run_http_server()
     t1.join(2)
 
-    ProxyRewrite.logger.close()
+    if ProxyRewrite.singlelogfile:
+        ProxyRewrite.logger.close()
     #print '^C received, shutting down proxy'
     #httpd.socket.close()
 
