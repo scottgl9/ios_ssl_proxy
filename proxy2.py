@@ -130,6 +130,14 @@ class ProxyRewrite:
         return True
 
     @staticmethod
+    def is_courier_push_ip(ipaddr):
+		# from data gathered, this will match the ip address to map to the hostname courier.push.apple.com
+        if re.match(r"^17.188.\b1[2-6][0-9]\b.\d{1,3}$",ipaddr): return True
+        elif re.match(r"^17.249.28.\d{1,3}$",ipaddr): return True
+        elif re.match(r"^17.249.60.\d{1,3}$",ipaddr): return True
+        return False
+    
+    @staticmethod
     def replace_hostname_body(text, oldhost, newhost):
         if oldhost in text:
             text = text.replace(oldhost, newhost)
@@ -869,9 +877,8 @@ class ProxyRewrite:
 
         if os.path.isfile(certpath): return certpath
 
-        if '17.249.60.9' in hostname or '17.188.167.212' in hostname or '17.188.162.92' in hostname:
+        if ProxyRewrite.is_courier_push_ip(hostname):
             hostname = "courier.push.apple.com"
-
         if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname and 'escrowproxy.icloud.com' not in hostname:
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
@@ -1022,6 +1029,45 @@ class ProxyRewrite:
         dercert = crypto.dump_certificate(crypto.FILETYPE_ASN1, cert)
         #derkey = crypto.dump_privatekey(crypto.FILETYPE_ASN1, key)
         return dercert
+
+    @staticmethod
+    def locationdDecode(body):
+        print(repr(body))
+        data = bytes(body)
+        pos = 0
+        instruct = False
+        while pos < len(data):
+            if data[pos] == '\x00':
+                if data[pos+1] == '\x01':
+                    if instruct == False:
+                        instruct = True
+                        print('{')
+                    else:
+                        print('}')
+                        instruct = False
+                elif data[pos+1] == '\x00':
+                    #dont do anything
+                    print("")
+                else:
+                    datalen=ord(data[pos+1])
+                    # this is some kind of substruct 0x12 0x13 0x0A 0x11
+                    if data[pos+2] == '\x12':
+                        print("DATA1_START")
+                        while pos < len(data):
+                            pos = pos + 4
+                            datalen=ord(data[pos+1])
+                            print(str(data[pos+1:pos+1+datalen]))
+                    elif data[pos+2] == '\n':
+                        print("DATA2_START")
+                        pos = pos + 3
+                        datalen=ord(data[pos])
+                        pos = pos + 1
+                        print(binascii.hexlify(data[pos:pos+datalen]))
+                        pos = pos + datalen
+                    else:
+                        print(str(data[pos+2:pos+2+datalen]))
+                        pos = pos + datalen
+                pos = pos + 2
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
     cakey = 'ca.key'
@@ -1442,6 +1488,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_type = req.headers.get('Content-Type', '')
 
             if content_type.startswith('application/x-www-form-urlencoded'):
+                if 'User-Agent' in req.headers and req.headers['User-Agent'].startswith("locationd"):
+                    req_body_text = ProxyRewrite.locationdDecode(req_body)
                 req_body_text = parse_qsl(req_body)
             elif content_type.startswith('application/json'):
                 try:
@@ -1827,7 +1875,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
-    elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    #elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
