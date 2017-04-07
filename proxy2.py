@@ -451,8 +451,8 @@ class ProxyRewrite:
 
             d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
             d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[d1lenfix:]
-            d2uid = "0x%s" % str(hex(ProxyRewrite.dev2info['UniqueChipID']))[d2lenfix:]
+            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
@@ -487,8 +487,8 @@ class ProxyRewrite:
 
             d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
             d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[d1lenfix:]
-            d2uid = "0x%s" % str(hex(ProxyRewrite.dev2info['UniqueChipID']))[d2lenfix:]
+            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
             body = body.replace(d1uid, d2uid)
             print("Replaced %s with %s\n" % (d1uid, d2uid))
 
@@ -1105,8 +1105,62 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
+            s = None
+            print("Connecting to %s:%s" % (dst_ip, dst_port))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((dst_ip, dst_port))
+            ssl._https_verify_certificates(enable=False)
+            s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=False, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            with self.lock:
+                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+            self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+
+            print("%s is %s" % (dst_ip, "courier.push.apple.com"))
+            while 1:
+                try:
+                    data = self.request.recv(8192)
+                    if not data: break
+                except socket.timeout:
+                    print("ProxyAPNHandler: Socket timeout occurred")
+                    break
+                except socket.error, e:
+                    print("ProxyAPNHandler: Socket error occurred: %r" % e)
+                    break
+                print("len = %d" % len(data))
+                print("received %s from client" % base64.b64encode(data))
+                if s == None:
+                    print("Connecting to %s:%s" % (dst_ip, dst_port))
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((dst_ip, dst_port))
+                    if data: s.sendall(data)
+                    ssl._https_verify_certificates(enable=False)
+                    s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=False, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                    with self.lock:
+                        certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    self.request = ssl.wrap_socket(self.request, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                elif data: s.sendall(data)
+                try:
+                    data = s.recv(8192)
+                    if not data: break
+                except socket.timeout:
+                    print("ProxyAPNHandler: Socket timeout occurred")
+                    break
+                except socket.error, e:
+                    print("ProxyAPNHandler: Socket error occurred: %r" % e)
+                    break
+
+                print("len = %d" % len(data))
+                print("received %s from server" % base64.b64encode(data))
+                if data: self.request.sendall(data)
+            if s: s.close()
+            if self.request:
+                self.close_connection = 1
+                self.request.close()
+                self.finish()
+            return
         # use transparent mode
-        if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+        elif ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
@@ -1134,21 +1188,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         self.rfile = self.connection.makefile("rb", self.rbufsize)
         self.wfile = self.connection.makefile("wb", self.wbufsize)
-
-        if dst_port == 5223:
-            data = self.connection.recv(4096)
-            print(str(data))
-            self.connection.sendall(data)
-            with self.lock:
-                certpath = ProxyRewrite.generate_cert(self.certdir, dst_ip, dst_port)
-                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-            try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-            except ssl.SSLError as e:
-                print("SSLError occurred on %s: %r" % (dst_ip,e))
-            #self.wfile.flush()
-            #self.finish()
-            return
 
         #    """Handle multiple requests if necessary."""
         self.close_connection = 1
@@ -1488,8 +1527,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_type = req.headers.get('Content-Type', '')
 
             if content_type.startswith('application/x-www-form-urlencoded'):
-                if 'User-Agent' in req.headers and req.headers['User-Agent'].startswith("locationd"):
-                    req_body_text = ProxyRewrite.locationdDecode(req_body)
+                #if 'User-Agent' in req.headers and req.headers['User-Agent'].startswith("locationd"):
+                #    req_body_text = ProxyRewrite.locationdDecode(req_body)
                 req_body_text = parse_qsl(req_body)
             elif content_type.startswith('application/json'):
                 try:
@@ -1555,9 +1594,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
              req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
-        #elif 'captive.apple.com' in req.path:
-        #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
-        #        req.headers['Host'] = 'ui.icloudbypass.com'
+        elif 'static.ips.apple.com' in req.path:
+                req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+                req.headers['Host'] = 'ui.icloudbypass.com'
 
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
@@ -1578,21 +1617,21 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             origsignature = base64.b64encode(p['signature'].data)
             #print(cert0)
             #print(cert1)
-            with self.lock:
-                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, req.headers['Host'], 443)
-            st_cert=open(certpath, 'rt').read()
-            certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
-            res_body = res_body.replace(cert0, certdata)
-            st_cert=open(self.cacert, 'rt').read()
-            certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
-            res_body = res_body.replace(cert1, certdata)
-            newsignature = base64.b64encode(crypto.sign(self.certKey, bag, 'sha1'))
-            res_body = res_body.replace(origsignature, newsignature)
-            print("Replaced %s with %s" % (origsignature, newsignature))
+            #with self.lock:
+            #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, req.headers['Host'], 443)
+            #st_cert=open(certpath, 'rt').read()
+            #certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
+            #res_body = res_body.replace(cert0, certdata)
+            #st_cert=open(self.cacert, 'rt').read()
+            #certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
+            #res_body = res_body.replace(cert1, certdata)
+            #newsignature = base64.b64encode(crypto.sign(self.certKey, bag, 'sha1'))
+            #res_body = res_body.replace(origsignature, newsignature)
+            #print("Replaced %s with %s" % (origsignature, newsignature))
             #p['certs'][0] = certdata
             #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
             #res_body = plistlib.writePlistToString(p)
-            print(res_body)
+            #print(res_body)
         elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
             p = plistlib.readPlistFromString(res_body)
@@ -1617,6 +1656,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
+        elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host']:
+            #res_body = open('./barney_activation_help_en_us.buddyml', 'rt').read()
+            #res.headers['Content-Length'] = str(len(res_body))        
+            r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
+            res_body = r.text
+            res.headers['Content-Length'] = str(len(r.text))
+
         return res_body
 
     def save_handler(self, req, req_body, res, res_body):
@@ -1875,7 +1921,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
 
     #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
-    #elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
+    elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)

@@ -61,3 +61,51 @@ access-control-expose-headers: X-Apple-Request-UUID
 access-control-expose-headers: Via
 Content-Length: 0
 
+
+Example from my iPhone 6s Plus:
+	<key>UniqueChipID</key>
+	<integer>3404706751931322</integer>
+	
+0xc1890108363ba = 3404706751931322
+
+
+POST https://p15-fmip.icloud.com/fmipservice/findme/280584859/87cda23a7230769ef6aa1ded8a99a5d3e65b9d42/identityV3
+X-Mme-Sign2: AwTROoclOcMFgmjEDjDTLqgPQWYKMKiZelSx5oZho64/qyqOPc5rkwLBc1L9eszlzMGx+2KMipL0npqDYVOwx/IAidyy
+Cookie: NSC_q15-gnjqtfswjdf=ffffffff12ac5ed045525d5f4f58455e445a4a422d6b
+X-Apple-PrsId: 280584859
+X-Mme-Sign1: vcPfSIR8rbojEQjfdy7omw==
+X-Apple-Realm-Support: 1.0
+X-Apple-I-Client-Time: 2017-02-03T18:55:17Z
+X-Apple-Find-API-Ver: 6.0
+Authorization: Basic MjgwNTg0ODU5OkFRQUFBQUJZbE5HODB6Y2dtcnJpNUR1c2NtUW95c1drTTZXT0dsRX4=
+Accept-Language: en-us
+X-Apple-I-MD-RINFO: 17106176
+Accept: */*
+Content-Type: application/json
+X-Apple-AL-ID: 2A4BFD38-994F-4DA5-B3A3-A67E69ECE9F5
+X-Apple-I-MD-M: 7uFG2/ZgB6SmF5r93yaqedoq+rugYFfglwmtO8rZlzO2ICtyDYMjk28WsJ7Ao7BMiPcwfupM8nF8zW87
+X-Apple-I-MD: AAAABQAAABDD4s6at1JUOiIYqphz47gWAAAAAw==
+User-Agent: FMDClient/6.0 iPhone8,2/14C92
+Content-length: 594
+Host: p15-fmip.icloud.com
+Accept-Encoding: gzip, deflate
+{
+   "serialNumber":"F2LS47Z9HFM2",
+   "chipId":"0x8003",
+   "dsid":"280584859",
+   "imei":"355735074445968",
+   "wifiMac":"90:b0:ed:7a:0e:03",
+   "deviceContext":{
+      "deviceTS":"2017-02-03T18:55:10.015Z"
+   },
+   "btMac":"90:b0:ed:7a:0e:04",
+   "ecid":"0xc1890108363ba",
+   "meid":"35573507444596",
+   "deviceInfo":{
+      "aps-token":"E13FE0FBAA3E3E0DF21D772DD34846A662A9F0E4E63D5306671D31D4F6C838BD",
+      "collectionStatus":"Complete-MA",
+      "alCapability":3,
+      "udid":"87cda23a7230769ef6aa1ded8a99a5d3e65b9d42"
+   },
+   "ifcReceipt":"A4NBPICAP8xBx5WkQDULRHpEi7pXMq16DvnriLqZtO8hGe1cQCndZEusy554KxpcSkYjbwHyggYssopnQUsCeien0GhDkglBWDrl92Plpp7Po+MGO2CmxQZvhxc9erP5"
+}
