@@ -1,5 +1,4 @@
 #!/usr/bin/python2.7
-
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -90,14 +89,18 @@ class ProxyRewrite:
     dev1info = dict()
     dev2info = dict()
     logger = None
+    apnproxy = False
     transparent = False
     changeClientID = False
     changePushToken = False
+    rewriteDevice = True
     rewriteOSVersion = True
     jailbroken = False
     singlelogfile = False
     apnscnt = 0
     server_address = None
+    interface = None
+
 
     @staticmethod
     def load_device_info(sn):
@@ -113,7 +116,7 @@ class ProxyRewrite:
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
         if 'spcsdns.net' in hostname or 'sprint.com' in hostname: return True
-        if "apple.com" not in hostname and "icloud.com" not in hostname and 'apple-cloudkit.com' not in hostname and 'apple-cdn.com' not in hostname: return False
+        if "apple.com" not in hostname and "icloud.com" not in hostname and "itunes.com" not in hostname and 'apple-cloudkit.com' not in hostname and 'apple-cdn.com' not in hostname: return False
         hostname = hostname.replace(':443','')
 
         # this means sslkill2 isn't installed
@@ -859,14 +862,15 @@ class ProxyRewrite:
         return path
 
     @staticmethod
-    def rewrite_status(path, status):
-        #if 'appleid.apple.com' in path and status == 401:
-        #        status = 200
-        #        print("replace status 401 -> 200\n")
+    def rewrite_status(path, res):
+        if 'albert.apple.com' in path and res.status == 400:
+                res.status = 200
+                res.reason = 'OK'
+                print("replace status 400 -> 200\n")
         #elif 'setup.icloud.com' in path and status == 401:
         #        status = 200
         #        print("replace status 401 -> 200\n")
-        return status
+        return res
 
     @staticmethod
     def generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, port):
@@ -1105,13 +1109,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
-        if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
-            print("APN on %s:%s" % (dst_ip, dst_port))
-            apsd = ProxyAPNHandler(dst_ip, dst_port)
-            apsd.main_loop()
-            return
+        #if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
+        #    print("APN on %s:%s" % (dst_ip, dst_port))
+        #    apsd = ProxyAPNHandler(dst_ip, dst_port)
+        #    apsd.main_loop()
+        #    return
         # use transparent mode
-        elif ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+        if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
@@ -1317,6 +1321,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             # sets response_version *FIXME* check if this value is None, if so then do not send
             setattr(res, 'response_version', version_table[res.version])
 
+            if 'albert.apple.com' in self.path:
+                res.headers['Content-Length'] = str(0)
+
             # support streaming
             if (not 'Content-Length' in res.headers and res.headers.get('Cache-Control') and 'no-store' in res.headers.get('Cache-Control')):
                 self.response_handler(req, req_body, res, '')
@@ -1352,7 +1359,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         for line in res.headers.headers:
             self.wfile.write(line)
         self.end_headers()
-        self.wfile.write(res_body)
+        if res_body != None: self.wfile.write(bytes(res_body))
         self.wfile.flush()
 
         with self.lock:
@@ -1532,6 +1539,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print with_color(32, "==== RESPONSE BODY ====\n%s\n" % res_body_text)
 
     def request_handler(self, req, req_body):
+        if ProxyRewrite.rewriteDevice == False: return req_body
         # can probably modify headers here:
         req.headers = ProxyRewrite.rewrite_headers(req.headers, req.path)
         # rewrite URL path if needed
@@ -1543,14 +1551,21 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-        if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
-             req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
-        elif 'static.ips.apple.com' in req.path:
-                req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
-                req.headers['Host'] = 'ui.icloudbypass.com'
+        #if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
+        #     req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
+        #elif 'static.ips.apple.com' in req.path:
+        #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
+        #        req.headers['Host'] = 'ui.icloudbypass.com'
 
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
+        if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
+            fdrpl=plistlib.readPlistFromString(open('fdr.plist', 'rt').read())
+            bodypl = plistlib.readPlistFromString(req_body_modified)
+            print("%s: replaced fdrblob: %s -> %s" % (req.path, base64.b64encode(bodypl['FDRBlob'].data), base64.b64encode(fdrpl['FDRBlob'].data)))
+            #bodypl['FDRBlob'] = fdrpl['FDRBlob']
+            #req_body_modified = plistlib.writePlistToString(bodypl)
+            #req.headers['Content-Length'] = str(len(req_body_modified))
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
@@ -1558,6 +1573,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
+        if ProxyRewrite.rewriteDevice == False: return res_body
+        if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
+            res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
+            res.headers['Content-Length'] = str(len(res_body))
+            res.headers['Content-Type'] = 'application/x-buddyml'
+            print("replaced response for %s" % req.headers['Host'])
+            #return res_body
         if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
             # handle setting certs so we can use our own keybag
             p = plistlib.readPlistFromString(res_body)
@@ -1581,14 +1603,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #print("Replaced %s with %s" % (origsignature, newsignature))
             #p['certs'][0] = certdata
             #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
-            #res_body = plistlib.writePlistToString(p)
+            #res_body = plistlib.readPlistFromString(
             #print(res_body)
-        elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
+        #elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
-            p = plistlib.readPlistFromString(res_body)
-            print("Certs for %s" % req.headers['Host'])
-            print(p['certs'][0])
-            print(p['certs'][1])
+            #p = plistlib.readPlistFromString(res_body)
+            #print("Certs for %s" % req.headers['Host'])
+            #print(p['certs'][0])
+            #print(p['certs'][1])
 
         #    if os.path.isfile("certs/init-p01st.push.apple.com.crt"):
         #        st_cert=open("certs/init-p01st.push.apple.com.crt", 'rt').read()
@@ -1600,19 +1622,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        res_body = r.text
         #        res.headers['Content-Length'] = str(len(r.text))
         # rewrite response status
-        #res.status = ProxyRewrite.rewrite_status(req.path, res.status)
+        res = ProxyRewrite.rewrite_status(req.path, res)
         #if 'setup.icloud.com/configurations/init?context=settings' in self.path or 'setup.icloud.com/setup/get_account_settings' in self.path:
             #res_body = ProxyRewrite.replace_hostname_body(res_body, 'fmip.icloud.com', 'fmiptest.icloud.com')
             # Attempt to replace gsa.apple.com to use a different server
             #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
             #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
-        elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host']:
-            #res_body = open('./barney_activation_help_en_us.buddyml', 'rt').read()
-            #res.headers['Content-Length'] = str(len(res_body))        
-            r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
-            res_body = r.text
-            res.headers['Content-Length'] = str(len(r.text))
+        #elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host']:
+        #    #res_body = open('./barney_activation_help_en_us.buddyml', 'rt').read()
+        #    #res.headers['Content-Length'] = str(len(res_body))        
+        #    r = requests.get('http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml')
+        #    res_body = r.text
+        #    res.headers['Content-Length'] = str(len(r.text))
 
         return res_body
 
@@ -1902,13 +1924,18 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
         ProxyRewrite.dev2info = None
 
     port = config.getint('proxy2', 'port')
+    if config.has_option('proxy2', 'interface'): ProxyRewrite.interface = config.get('proxy2', 'interface')
     ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
+    if config.has_option('proxy2', 'apnproxy'): ProxyRewrite.apnproxy = config.getboolean('proxy2', 'apnproxy')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')
+    ProxyRewrite.rewriteDevice = config.getboolean('proxy2', 'rewrite_device')
     ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
     ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
 
-    if ProxyRewrite.rewriteOSVersion == False:
+    if ProxyRewrite.rewriteDevice == False:
+        print("Disabled Device Rewrite")
+    elif ProxyRewrite.rewriteOSVersion == False:
         print("Disabled iOS version rewrite")
 
     if ProxyRewrite.transparent == True:
@@ -1928,10 +1955,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     ProxyRewrite.server_address = ('', port)
 
-    #if 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
     elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
-    #elif 'enp0s25' in iflist: ProxyRewrite.server_address = (get_ip_address('enp0s25'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: ProxyRewrite.server_address = (get_ip_address('wlo1'), port)
@@ -1961,15 +1986,16 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if ProxyRewrite.singlelogfile:
         ProxyRewrite.logger = open("rewrite_%s_%s.log" % (device1, device2), "w")
 
-    apsd = ProxyAPNHandler(ProxyRewrite.server_address[0], 8083)
-    print "Serving APNS Proxy on", ProxyRewrite.server_address[0], "port", 8083, "..."
+    t1 = None
+    if ProxyRewrite.apnproxy:
+        apsd = ProxyAPNHandler(ProxyRewrite.server_address[0], 8083)
+        print "Serving APNS Proxy on", ProxyRewrite.server_address[0], "port", 8083, "..."
+        t1 = threading.Thread(target=apsd.main_loop)
+        t1.daemon = True
+        t1.start()
 
-    t1 = threading.Thread(target=apsd.main_loop)
-    t1.daemon = True
-
-    t1.start()
     run_http_server()
-    t1.join(2)
+    if t1 != None: t1.join(2)
 
     if ProxyRewrite.singlelogfile:
         ProxyRewrite.logger.close()

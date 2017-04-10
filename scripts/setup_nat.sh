@@ -5,7 +5,11 @@
 
 sysctl -w net.ipv4.ip_forward=1
 #iptables -t nat -F
-#for i in $(iptables -t nat --line-numbers -L | grep ^[0-9] | awk '{ print $1 }' | tac ); do iptables -t nat -D PREROUTING $i; done
+iptables -t nat -D PREROUTING -p tcp --destination-port 5223 -j REDIRECT --to-ports 8083
+iptables -t nat -D PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-ports 8080
+iptables -t nat -D PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports 8080
+iptables -t nat -D PREROUTING -p tcp --destination-port 993 -j REDIRECT --to-ports 8080
+
 iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-ports 8080
 #iptables -t nat -A PREROUTING -p tcp --destination-port 389 -j REDIRECT --to-ports 8080
 iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-ports 8080

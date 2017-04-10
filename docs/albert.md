@@ -1,5 +1,27 @@
 ## When performing post to https://albert.apple.com/deviceservices/deviceActivation From the actual device, when performing the activation step, the request body will have a plist containing ActivationInfoXML, FairPlayCertChain, FairPlaySignature, and these fields which I haven't seen before:
 
+# http://static.ips.apple.com/absinthe-cert/certificate.cer
+GET http://static.ips.apple.com/absinthe-cert/certificate.cer HTTP/1.1
+Accept: */*
+Accept-Language: en-us
+User-Agent: Absinthe/2.0 iOS Device Activator (MobileActivation-96.40.36 built on Mar 24 2016 at 08:29:27)
+Host: static.ips.apple.com
+Accept-Encoding: gzip, deflate
+
+HTTP/1.1 200 OK
+Server: Apache/2.4.9 (Unix) OpenSSL/0.9.8e-fips-rhel5
+Last-Modified: Fri, 31 Mar 2017 00:19:10 GMT
+ETag: "951-54bfbc22a9b80"
+Accept-Ranges: bytes
+Pragma: no-cache
+Content-Type: application/pkix-cert
+Cache-Control: no-store
+Expires: Sat, 08 Apr 2017 10:02:34 GMT
+Date: Sat, 08 Apr 2017 10:02:34 GMT
+Content-Length: 2385
+
+
+
         <key>RKCertification</key>
         <data>
         MIICDTCCAbICAQEwGKIWBBQ4OTYwLTViNjhiMTZmNmQ4LWQtMDCB2QIBATAKBggqhkjO
