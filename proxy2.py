@@ -123,6 +123,8 @@ class ProxyRewrite:
         if ProxyRewrite.jailbroken == False:
             if 'fmip.icloud.com' in hostname: return False
             if 'itunes.apple.com' in hostname: return False
+            if 'itunes.com' in hostname: return False
+            if 'xp.apple.com' in hostname: return False
             if hostname == "gsa.apple.com": return False
             if hostname == "gsas.apple.com": return False
 
@@ -887,6 +889,8 @@ class ProxyRewrite:
             srvcertname = "server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
             srvcertname = "server_certs/fmip.icloud.com.crt"
+        elif hostname == 'xp.apple.com':
+            srvcertname = "server_certs/xp.apple.com.crt"
         elif 'itunes.apple.com' in hostname:
             srvcertname = "server_certs/itunes.apple.com.crt"
         elif 'escrowproxy.icloud.com' in hostname:
@@ -895,6 +899,8 @@ class ProxyRewrite:
             srvcertname = "server_certs/ess.apple.com.crt"
         elif hostname == "courier.push.apple.com":
             srvcertname = "server_certs/courier.push.apple.com.crt"
+        elif hostname == 'apps.itunes.com':
+            srvcertname = "server_certs/apps.itunes.com.crt"
         else:
             srvcertname = "%s/%s.crt" % ('server_certs', hostname)
         srvcert=None
@@ -1184,7 +1190,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_CONNECT(self):
         hostname = self.path.split(':')[0]
-        print("CONNECT %s" % hostname)
+        print("CONNECT %s" % self.path)
 
         if 'Proxy-Connection' in self.headers:
             del self.headers['Proxy-Connection']
@@ -1244,6 +1250,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
         self.send_response(200, 'Connection Established')
         self.end_headers()
+
+
+        print("CONNECT %s" % self.path)
+        if 'Proxy-Connection' in self.headers:
+            del self.headers['Proxy-Connection']
+        print(str(self.headers))
 
         conns = [self.connection, s]
         self.close_connection = 0
@@ -1574,20 +1586,30 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def response_handler(self, req, req_body, res, res_body):
         if ProxyRewrite.rewriteDevice == False: return res_body
-        if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
-            res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
-            res.headers['Content-Length'] = str(len(res_body))
-            res.headers['Content-Type'] = 'application/x-buddyml'
-            print("replaced response for %s" % req.headers['Host'])
+        if 'Host' in req.headers and 'setup.icloud.com' in req.headers['Host'] and 'configurations/init?context=buddy' in self.path:
+			p = plistlib.readPlistFromString(res_body)
+			p['setupAssistantServerEnabled'] = False
+			p['doQualification'] = True
+			if 'setupAssistantServerEnabled' in p: print(p['setupAssistantServerEnabled'])
+			res_body = plistlib.writePlistToString(p)
+			res.headers['Content-Length'] = str(len(res_body))
+			return res_body
+        elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host'] and 'absinthe-cert/certificate.cer' in self.path:
+            with open("certificate.crt", "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
+            #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
+            #res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
+            #res.headers['Content-Length'] = str(len(res_body))
+            #res.headers['Content-Type'] = 'application/x-buddyml'
+            #print("replaced response for %s" % req.headers['Host'])
             #return res_body
-        if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
+            #if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
             # handle setting certs so we can use our own keybag
-            p = plistlib.readPlistFromString(res_body)
+            #p = plistlib.readPlistFromString(res_body)
             #print("Certs for %s" % req.headers['Host'])
-            cert0 = base64.b64encode(p['certs'][0].data)
-            cert1 = base64.b64encode(p['certs'][1].data)
-            bag = p['bag'].data
-            origsignature = base64.b64encode(p['signature'].data)
+            #cert0 = base64.b64encode(p['certs'][0].data)
+            #cert1 = base64.b64encode(p['certs'][1].data)
+            #bag = p['bag'].data
+            #origsignature = base64.b64encode(p['signature'].data)
             #print(cert0)
             #print(cert1)
             #with self.lock:
@@ -1622,7 +1644,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        res_body = r.text
         #        res.headers['Content-Length'] = str(len(r.text))
         # rewrite response status
-        res = ProxyRewrite.rewrite_status(req.path, res)
+        #res = ProxyRewrite.rewrite_status(req.path, res)
         #if 'setup.icloud.com/configurations/init?context=settings' in self.path or 'setup.icloud.com/setup/get_account_settings' in self.path:
             #res_body = ProxyRewrite.replace_hostname_body(res_body, 'fmip.icloud.com', 'fmiptest.icloud.com')
             # Attempt to replace gsa.apple.com to use a different server
@@ -1640,26 +1662,26 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def save_handler(self, req, req_body, res, res_body):
         hostname = None
+        headers_only = False
         if 'Host' in req.headers:
             hostname = req.headers['Host']
         else:
             hostname = self.path.split(':')[0]
-
-        # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
-        if 'setup.icloud.com/setup/qualify/cert' in self.path: return
-        if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: return
-        if 'bookmarks.icloud.com' in hostname: return
-        if self.path.endswith(".png"): return
-        elif self.path.endswith(".jpeg"): return
-        elif self.path.endswith(".gz"): return
-
+        
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
             if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
+            # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
+            if 'setup.icloud.com/setup/qualify/cert' in self.path: headers_only = True
+            if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: 
+                headers_only = True
+            if 'bookmarks.icloud.com' in hostname: headers_only = True
+            if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz"): headers_only = True
 
-            if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: 
+            if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: headers_only = True
+            if headers_only == True:
                 req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
                 res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
                 print with_color(33, req_header_text)
