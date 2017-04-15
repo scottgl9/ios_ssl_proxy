@@ -1736,6 +1736,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 logger.write(str(res_body))
                 if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(res_body))
 
+            errlogger = open("logs/errors.log", "ab")
+            if res.status == 404 or res.status == 400 or res.status == 424 or res.status == 500 or res.status == 502:
+                errlogger.write(str(self.command+' '+self.path+"\n"))
+                errlogger.write(str(req.headers))
+                if req_body: errlogger.write(str(req_body))
+                errlogger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
+                errlogger.write(str(res.headers))
+                errlogger.write(str(res_body))
+                errlogger.write(str("\n"))
+
             if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
             logger.close()
