@@ -586,6 +586,12 @@ class ProxyRewrite:
             else:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'ProductType', hostname)
             return body
+        elif hostname == 'lcdn-locator.apple.com':
+            if ProxyRewrite.rewriteOSVersion == True:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
+            else:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'ProductType', hostname)
+            return body
         elif hostname == 'tbsc.apple.com':
             attribs='ProductType,SerialNumber,UniqueDeviceID'
             if ProxyRewrite.rewriteOSVersion == True:
@@ -1115,13 +1121,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
-        #if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
-        #    print("APN on %s:%s" % (dst_ip, dst_port))
-        #    apsd = ProxyAPNHandler(dst_ip, dst_port)
-        #    apsd.main_loop()
-        #    return
-        # use transparent mode
-        if ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+        if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
+            print("APN on %s:%s" % (dst_ip, dst_port))
+            with self.lock:
+                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            #apsd = ProxyAPNHandler(dst_ip, dst_port)
+            #apsd.main_loop()
+            #return
+            # use transparent mode
+        elif ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
@@ -1578,6 +1587,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #bodypl['FDRBlob'] = fdrpl['FDRBlob']
             #req_body_modified = plistlib.writePlistToString(bodypl)
             #req.headers['Content-Length'] = str(len(req_body_modified))
+        #elif 'Host' in req.headers and 'mobilebackup.icloud.com' in req.headers['Host'] and 'vnd.com.apple.mbs+protobuf' in req.headers['Content-Type']:
+        # *TODO* implement protobuf decoder here
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
@@ -1783,11 +1794,10 @@ class Forward:
             #ssl_context.load_cert_chain(certfile="server_certs/courier.push.apple.com.crt") #certpath, keyfile=self.certkey)
             #ssl_context.set_alpn_protocols(["apns-security-v2"])
             ssl._https_verify_certificates(enable=False)
-            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            ssl_context.load_default_certs()
-            self.forward = ssl_context.wrap_socket(self.forward, server_hostname='courier.push.apple.com', server_side=False, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+            #ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
             self.forward.connect((host, port))
-            
+            self.forward = ssl_context.wrap_socket(self.forward, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             return self.forward
         except Exception, e:
             print e
@@ -1869,16 +1879,17 @@ class ProxyAPNHandler:
         ssl._https_verify_certificates(enable=False)
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
-        #ssl_context.set_alpn_protocols(["apns-security-v2"])
+        ssl_context.set_alpn_protocols(["apns-security-v2"])
         #self.forward = ssl_context.wrap_socket(self.forward, server_side=False, do_handshake_on_connect=False, suppress_ragged_eofs=True)
         clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
-        
+ 
         peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
 
         forward = Forward().start(dst_ip, dst_port)
         if forward:
             print clientaddr, "has connected"
+            # now do a wrap_socket on the forwarding port
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
@@ -1905,14 +1916,13 @@ class ProxyAPNHandler:
     def on_recv(self):
         data = self.data
         # here we can parse and/or modify the data before send forward
-        #print(repr(data))
+        print(repr(data))
         print("data len=%d" % len(data))
         #certs = self.extract_certs(data)
         #if certs != None:
         #    print(base64.b64encode(data))
-        print(repr(data))
+        #print(repr(data))
         self.channel[self.s].send(data)
-        
 
 
 def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
