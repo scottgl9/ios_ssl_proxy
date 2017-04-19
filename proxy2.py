@@ -1123,9 +1123,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
         if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
             print("APN on %s:%s" % (dst_ip, dst_port))
+            #data = self.request.recv(4096)
+            #print(repr(data))
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+            ssl._https_verify_certificates(enable=False)
+            try:
+                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
+            except ssl.SSLError as e:
+                print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
             #apsd = ProxyAPNHandler(dst_ip, dst_port)
             #apsd.main_loop()
             #return
@@ -1793,11 +1799,12 @@ class Forward:
             #courierCert=crypto.load_certificate(crypto.FILETYPE_PEM, open('server_certs/courier.push.apple.com.crt', 'rt').read())
             #ssl_context.load_cert_chain(certfile="server_certs/courier.push.apple.com.crt") #certpath, keyfile=self.certkey)
             #ssl_context.set_alpn_protocols(["apns-security-v2"])
-            ssl._https_verify_certificates(enable=False)
             #ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            #ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            #ssl_context.verify_mode = ssl.CERT_REQUIRED
+            #ssl_context.check_hostname = True
+            #self.forward = ssl_context.wrap_socket(self.forward, server_hostname="courier.push.apple.com")
             self.forward.connect((host, port))
-            self.forward = ssl_context.wrap_socket(self.forward, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             return self.forward
         except Exception, e:
             print e
@@ -1846,6 +1853,7 @@ class ProxyAPNHandler:
                     break
                 else:
                     # on_recv() always receives data from server
+                    print("received %d bytes from server" % len(self.data))
                     self.on_recv()
 
     def extract_certs(self, data):
@@ -1873,15 +1881,22 @@ class ProxyAPNHandler:
         dst = clientsock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
         _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
+        #with self.lock:
+        #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+
+
+        # before setting up the SSL connection, receive the request from the client so it wont timeout
+        data = clientsock.recv(buffer_size)
+        print(repr(data))
+
+        ssl._https_verify_certificates(enable=False)
         with self.lock:
             certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
 
-        ssl._https_verify_certificates(enable=False)
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
-        ssl_context.set_alpn_protocols(["apns-security-v2"])
-        #self.forward = ssl_context.wrap_socket(self.forward, server_side=False, do_handshake_on_connect=False, suppress_ragged_eofs=True)
-        clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+        #ssl_context.set_alpn_protocols(["apns-security-v2"])
+        clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
  
         peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
@@ -1918,10 +1933,6 @@ class ProxyAPNHandler:
         # here we can parse and/or modify the data before send forward
         print(repr(data))
         print("data len=%d" % len(data))
-        #certs = self.extract_certs(data)
-        #if certs != None:
-        #    print(base64.b64encode(data))
-        #print(repr(data))
         self.channel[self.s].send(data)
 
 
