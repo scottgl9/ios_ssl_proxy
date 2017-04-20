@@ -1125,16 +1125,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             print("APN on %s:%s" % (dst_ip, dst_port))
             #data = self.request.recv(4096)
             #print(repr(data))
-            with self.lock:
-                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-            ssl._https_verify_certificates(enable=False)
-            try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
-            except ssl.SSLError as e:
-                print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
-            #apsd = ProxyAPNHandler(dst_ip, dst_port)
-            #apsd.main_loop()
-            #return
+            #with self.lock:
+            #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+            #ssl._https_verify_certificates(enable=False)
+            #try:
+            #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
+            #except ssl.SSLError as e:
+            #    print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
+            apsd = ProxyAPNHandler(dst_ip, dst_port)
+            apsd.main_loop()
+            return
             # use transparent mode
         elif ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
             with self.lock:
@@ -1889,14 +1889,14 @@ class ProxyAPNHandler:
         data = clientsock.recv(buffer_size)
         print(repr(data))
 
-        ssl._https_verify_certificates(enable=False)
-        with self.lock:
-            certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+        #ssl._https_verify_certificates(enable=False)
+        #with self.lock:
+        #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
 
-        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
+        #ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        #ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
         #ssl_context.set_alpn_protocols(["apns-security-v2"])
-        clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
+        #clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
  
         peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
