@@ -1,5 +1,8 @@
 # the backup UUID is derrived from the keybag UUID
 
+Note that when I search the root filesystem on the iPhone for the backupDeviceUUID, it appears to be stored here:
+Binary file /User/Library/Caches/com.apple.Preferences/Cache.db-wal matches
+
 // MBSBackupAttributes - (unsigned int)hash
 unsigned int __cdecl -[MBSBackupAttributes hash](struct MBSBackupAttributes *self, SEL a2)
 {

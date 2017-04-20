@@ -1986,6 +1986,11 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
     ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
 
+    if config.has_option('proxy2', 'ProductVersion'):
+        ProxyRewrite.dev2info['ProductVersion'] = config.get('proxy2', 'ProductVersion')
+    if config.has_option('proxy2', 'BuildVersion'):
+        ProxyRewrite.dev2info['BuildVersion'] = config.get('proxy2', 'BuildVersion')
+
     if ProxyRewrite.rewriteDevice == False:
         print("Disabled Device Rewrite")
     elif ProxyRewrite.rewriteOSVersion == False:
