@@ -1,3 +1,5 @@
+# the backup UUID is derrived from the keybag UUID
+
 // MBSBackupAttributes - (unsigned int)hash
 unsigned int __cdecl -[MBSBackupAttributes hash](struct MBSBackupAttributes *self, SEL a2)
 {
