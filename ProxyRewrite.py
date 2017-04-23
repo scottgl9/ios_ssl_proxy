@@ -37,6 +37,23 @@ import signal
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
 
+class _GeneralName(univ.Choice):
+    # We are only interested in dNSNames. We use a default handler to ignore
+    # other types.
+    # TODO: We should also handle iPAddresses.
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('dNSName', char.IA5String().subtype(
+            implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2)
+        )
+        ),
+    )
+
+
+class _GeneralNames(univ.SequenceOf):
+    componentType = _GeneralName()
+    sizeSpec = univ.SequenceOf.sizeSpec + \
+        constraint.ValueSizeConstraint(1, 1024)
+
 class ProxyRewrite:
     dev1info = dict()
     dev2info = dict()
@@ -54,7 +71,6 @@ class ProxyRewrite:
     server_address = None
     interface = None
 
-
     @staticmethod
     def load_device_info(sn):
         if '.xml' in sn:
@@ -66,7 +82,7 @@ class ProxyRewrite:
     @staticmethod
     def intercept_this_host(hostname):
         hostname = hostname.replace(':443','')
-        if is_courier_push_ip(hostname): return False
+        if ProxyRewrite.is_courier_push_ip(hostname): return False
         # always intercept IP addresses
         isip=re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname)
         if isip: return True
@@ -817,6 +833,9 @@ class ProxyRewrite:
             if ProxyRewrite.rewriteOSVersion == True:
                 path = path.replace(ProxyRewrite.dev1info['BuildVersion'], ProxyRewrite.dev2info['BuildVersion'])
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        elif hostname == 'play.itunes.apple.com':
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname.endswith('buy.itunes.apple.com'):
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])

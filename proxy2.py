@@ -148,7 +148,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ssl.SSLError as e:
                     print("SSLError occurred on %s: %r" % (dst_ip,e))
                     self.finish()
-        elif ProxyRewrite.server_address != dst_ip and dst_port == 443:
+        elif ProxyRewrite.server_address != dst_ip and (dst_port == 443 or dst_port == 993):
             print("Handling %s:%s" % (dst_ip, dst_port))
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
@@ -716,6 +716,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 
+            urllogger = open("logs/urls.log", "ab")
+            urllogger.write(str(self.command+' '+self.path+"\n"))
+            urllogger.close()
+
             if ProxyRewrite.singlelogfile:
                 ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
                 ProxyRewrite.logger.write(str(req.headers))
@@ -1017,6 +1021,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
     elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
+    elif 'wlxe0b94db08046' in iflist: ProxyRewrite.server_address = (get_ip_address('wlxe0b94db08046'), port)
     elif 'wlp61s0' in iflist: ProxyRewrite.server_address = (get_ip_address('wlp61s0'), port)
     elif 'wlo1' in iflist: ProxyRewrite.server_address = (get_ip_address('wlo1'), port)
 

@@ -1,5 +1,12 @@
 ## Documentation on identity.apple.com:
 
+## When searching for which executable uses User-Agent AppleIDXMLRPC, I found the following:
+
+iPhone:~ root# grep "AppleIDXMLRPC" -r /System
+Binary file /System/Library/CoreServices/AppleIDAuthAgent matches
+
+## Here is an example request sent to identity.apple.com:
+
 	POST https://identity.apple.com/dsservices/dsxmlrpc
 	X-Apple-I-MD-RINFO: 17106176^M
 	Accept: text/xml^M
