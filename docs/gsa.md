@@ -1,5 +1,11 @@
 # Research on gsa.apple.com:
 
+## The following was found in the AuthKit headers (akd is what communicates with gsa.apple.com):
+	#import <AuthKit/AuthKit-Structs.h>
+	@interface AKCertificatePinning : NSObject
+	+(BOOL)isCertificateTrustValidForIDMSServerOID:(SecTrustRef)arg1 ;
+	@end
+
 ## For the initial post to https://gsa.apple.com/grandslam/GsService2 with a plist xml formatted body:
 
 ### This initial body seems to be what sets up many of the header fields used later, such as X-Apple-I-MD, X-Apple-I-MD-M, etc. Below is the initial packet:

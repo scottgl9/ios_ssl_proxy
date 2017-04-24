@@ -1,5 +1,8 @@
 # the backup UUID is derrived from the keybag UUID
 
+# The private framework MobileBackup seems to be where the backupUUID is generated. Either in the MBBackup class,
+# or in the MBManager class.
+
 Note that when I search the root filesystem on the iPhone for the backupDeviceUUID, it appears to be stored here:
 Binary file /User/Library/Caches/com.apple.Preferences/Cache.db-wal matches
 
