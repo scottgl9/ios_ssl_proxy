@@ -43,7 +43,7 @@
 	<key>BrickState</key>
 	<true/>
 	<key>BuildVersion</key>
-	<string>13G34</string>
+	<string>13F69</string>
 	<key>CPUArchitecture</key>
 	<string>arm64</string>
 	<key>CarrierBundleInfoArray</key>
@@ -129,7 +129,7 @@
 	<key>ProductType</key>
 	<string>iPhone7,1</string>
 	<key>ProductVersion</key>
-	<string>9.3.3</string>
+	<string>9.3.2</string>
 	<key>ProductionSOC</key>
 	<true/>
 	<key>ProtocolVersion</key>
