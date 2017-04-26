@@ -34,6 +34,7 @@ import uuid
 import ConfigParser
 import signal
 from ProxyRewrite import *
+from ProxyAPNHandler import *
 
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
@@ -121,22 +122,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
-        if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
-            print("APN on %s:%s" % (dst_ip, dst_port))
-            #data = self.request.recv(4096)
-            #print(repr(data))
-            #with self.lock:
-            #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-            #ssl._https_verify_certificates(enable=False)
-            #try:
-            #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
-            #except ssl.SSLError as e:
-            #    print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
-            #apsd = ProxyAPNHandler(dst_ip, dst_port)
-            #apsd.main_loop()
-            #return
-            # use transparent mode
-        elif ProxyRewrite.transparent == True and dst_port != 80 and dst_port != 5223:
+        #if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
+        #    print("APN on %s:%s" % (dst_ip, dst_port))
+        #    #data = self.request.recv(4096)
+        #    #print(repr(data))
+        #    #with self.lock:
+        #    #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+        #    #ssl._https_verify_certificates(enable=False)
+        #    #try:
+        #    #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
+        #    #except ssl.SSLError as e:
+        #    #    print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
+        #    # use transparent mode
+        if ProxyRewrite.transparent == True and dst_port != 80:
             with self.lock:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
@@ -771,174 +769,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
             logger.close()
-
-
-
-# Changing the buffer_size and delay, you can improve the speed and bandwidth.
-# But when buffer get to high or delay go too down, you can broke things
-buffer_size = 4096
-delay = 0.0001
-
-class Forward:
-    cakey = 'ca.key'
-    cacert = 'ca.crt'
-    certkey = 'cert.key'
-    certdir = 'certs/'
-    certKey=None
-    issuerCert=None
-    issuerKey=None
-    
-    def __init__(self):
-        self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
-        self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
-        self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
-        
-        self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def start(self, host, port):
-        try:
-            #with self.lock:
-            #certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, 'courier.push.apple.com', 5223)
-
-            #ssl_context.set_ciphers("ECDHE+AESGCM")
-            #courierCert=crypto.load_certificate(crypto.FILETYPE_PEM, open('server_certs/courier.push.apple.com.crt', 'rt').read())
-            #ssl_context.load_cert_chain(certfile="server_certs/courier.push.apple.com.crt") #certpath, keyfile=self.certkey)
-            #ssl_context.set_alpn_protocols(["apns-security-v2"])
-            #ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            #ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            #ssl_context.verify_mode = ssl.CERT_REQUIRED
-            #ssl_context.check_hostname = True
-            #self.forward = ssl_context.wrap_socket(self.forward, server_hostname="courier.push.apple.com")
-            self.forward.connect((host, port))
-            return self.forward
-        except Exception, e:
-            print e
-            return False
-
-class ProxyAPNHandler:
-    input_list = []
-    channel = {}
-    cakey = 'ca.key'
-    cacert = 'ca.crt'
-    certkey = 'cert.key'
-    certdir = 'certs/'
-    timeout = 5
-    lock = threading.Lock()
-    certKey=None
-    issuerCert=None
-    issuerKey=None
-
-
-    def __init__(self, host, port):
-        self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
-        self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
-        self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
-
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        
-        self.server.bind((host, port))
-        self.server.listen(200)
-
-    def main_loop(self):
-        self.input_list.append(self.server)
-        while 1:
-            time.sleep(delay)
-            ss = select.select
-            inputready, outputready, exceptready = ss(self.input_list, [], [])
-            for self.s in inputready:
-                if self.s == self.server:
-                    print("Incoming connection!")
-                    self.on_accept()
-                    break
-
-                self.data = self.s.recv(buffer_size)
-                if len(self.data) == 0:
-                    self.on_close()
-                    break
-                else:
-                    # on_recv() always receives data from server
-                    print("received %d bytes from server" % len(self.data))
-                    self.on_recv()
-
-    def extract_certs(self, data):
-        certs = None
-        index=0
-
-        while 1:
-            index = data.find("\x30\x82", index)
-            if index < 0: break
-            length = struct.unpack(">h", data[index+2:index+4])[0] + 5
-            if length > len(data):
-                print("Length of %d extends past end" % length)
-                return
-            print("index=%d, length=%d" % (index, length))
-            certdata = data[index:index+length]
-            if certs == None: certs = []
-            certs.append(certdata)
-            index = index + length
-        return certs
-
-    def on_accept(self):
-        clientsock, clientaddr = self.server.accept()
-
-        SO_ORIGINAL_DST = 80
-        dst = clientsock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
-        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
-        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
-        #with self.lock:
-        #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-
-
-        # before setting up the SSL connection, receive the request from the client so it wont timeout
-        data = clientsock.recv(buffer_size)
-        print(repr(data))
-
-        #ssl._https_verify_certificates(enable=False)
-        #with self.lock:
-        #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-
-        #ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        #ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
-        #ssl_context.set_alpn_protocols(["apns-security-v2"])
-        #clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
- 
-        peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
-        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
-
-        forward = Forward().start(dst_ip, dst_port)
-        if forward:
-            print clientaddr, "has connected"
-            # now do a wrap_socket on the forwarding port
-            self.input_list.append(clientsock)
-            self.input_list.append(forward)
-            self.channel[clientsock] = forward
-            self.channel[forward] = clientsock
-        else:
-            print "Can't establish connection with remote server.",
-            print "Closing connection with client side", clientaddr
-            clientsock.close()
-
-    def on_close(self):
-        print self.s.getpeername(), "has disconnected"
-        #remove objects from input_list
-        self.input_list.remove(self.s)
-        self.input_list.remove(self.channel[self.s])
-        out = self.channel[self.s]
-        # close the connection with client
-        self.channel[out].close()  # equivalent to do self.s.close()
-        # close the connection with remote server
-        self.channel[self.s].close()
-        # delete both objects from channel dict
-        del self.channel[out]
-        del self.channel[self.s]
-
-    def on_recv(self):
-        data = self.data
-        # here we can parse and/or modify the data before send forward
-        print(repr(data))
-        print("data len=%d" % len(data))
-        self.channel[self.s].send(data)
 
 
 def run_http_server(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1"):
