@@ -378,12 +378,11 @@ class ProxyRewrite:
             if ProxyRewrite.changePushToken == True and 'registerDevice' in path:
                 pushToken = ProxyRewrite.save_plist_body_attrib(body, 'pushToken', 'deviceInfo')
                 if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
-                backupDeviceUUID
             
             # save backupDeviceUUID
             if ProxyRewrite.changeBackupDeviceUUID == True and 'registerDevice' in path:
                 backupDeviceUUID = ProxyRewrite.save_plist_body_attrib(body, 'backupDeviceUUID', 'deviceInfo')
-                if backupDeviceUUID != ProxyRewrite.dev2info['backupDeviceUUID']: ProxyRewrite.dev1info['backupDeviceUUID'] = backupDeviceUUID
+                ProxyRewrite.dev1info['backupDeviceUUID'] = backupDeviceUUID
                 
             if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
@@ -430,12 +429,13 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
-            d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
-            d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
-            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
-            body = body.replace(d1uid, d2uid)
-            print("Replaced %s with %s\n" % (d1uid, d2uid))
+            if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+                d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+                d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+                d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+                d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+                body = body.replace(d1uid, d2uid)
+                print("Replaced %s with %s\n" % (d1uid, d2uid))
 
             if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"buildVersion":"fmipVersion", "appVersion":"fmipBuildVersion"}, 'clientContext')
@@ -466,12 +466,13 @@ class ProxyRewrite:
                 json_obj['collectionInfo']['data'] = ProxyRewrite.b64_rewrite_text(json_obj['collectionInfo']['data'], attribs)
                 body = json.dumps(json_obj)
 
-            d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
-            d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-            d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
-            d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
-            body = body.replace(d1uid, d2uid)
-            print("Replaced %s with %s\n" % (d1uid, d2uid))
+            if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+                d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+                d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+                d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+                d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+                body = body.replace(d1uid, d2uid)
+                print("Replaced %s with %s\n" % (d1uid, d2uid))
 
             if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipVersion' in body and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in body:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"fmipVersion":"fmipVersion", "fmipBuildVersion":"fmipBuildVersion"}, 'deviceInfo')

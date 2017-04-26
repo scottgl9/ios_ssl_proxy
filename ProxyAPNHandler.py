@@ -39,42 +39,6 @@ import signal
 buffer_size = 4096
 delay = 0.0001
 
-class Forward:
-    cakey = 'ca.key'
-    cacert = 'ca.crt'
-    certkey = 'cert.key'
-    certdir = 'certs/'
-    certKey=None
-    issuerCert=None
-    issuerKey=None
-    
-    def __init__(self):
-        self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
-        self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
-        self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
-        
-        self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def start(self, host, port):
-        try:
-            #with self.lock:
-            #certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, 'courier.push.apple.com', 5223)
-
-            #ssl_context.set_ciphers("ECDHE+AESGCM")
-            #courierCert=crypto.load_certificate(crypto.FILETYPE_PEM, open('server_certs/courier.push.apple.com.crt', 'rt').read())
-            #ssl_context.load_cert_chain(certfile="server_certs/courier.push.apple.com.crt") #certpath, keyfile=self.certkey)
-            #ssl_context.set_alpn_protocols(["apns-security-v2"])
-            #ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            #ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            #ssl_context.verify_mode = ssl.CERT_REQUIRED
-            #ssl_context.check_hostname = True
-            #self.forward = ssl_context.wrap_socket(self.forward, server_hostname="courier.push.apple.com")
-            self.forward.connect((host, port))
-            return self.forward
-        except Exception, e:
-            print e
-            return False
-
 class ProxyAPNHandler:
     input_list = []
     channel = {}
@@ -87,6 +51,7 @@ class ProxyAPNHandler:
     certKey=None
     issuerCert=None
     issuerKey=None
+    apnslogger = None
 
 
     def __init__(self, host, port):
@@ -96,7 +61,7 @@ class ProxyAPNHandler:
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        
+        self.apnslogger = open("logs/APNS.log", "ab")
         self.server.bind((host, port))
         self.server.listen(200)
 
@@ -115,6 +80,7 @@ class ProxyAPNHandler:
                 self.data = self.s.recv(buffer_size)
                 if len(self.data) == 0:
                     self.on_close()
+                    self.apnslogger.close()
                     break
                 else:
                     # on_recv() always receives data from server
@@ -201,7 +167,6 @@ class ProxyAPNHandler:
 
     def on_recv(self):
         data = self.data
+        self.apnslogger.write(data)
         # here we can parse and/or modify the data before send forward
-        print(repr(data))
-        print("data len=%d" % len(data))
         self.channel[self.s].send(data)
