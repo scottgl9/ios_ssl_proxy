@@ -10,7 +10,16 @@
 # omit /var/mobile/Library/Caches/com.apple.springboard.sharedimagecache
 # /var/preferences
 # /var/root/Library/Preferences
-killall -9 absd akd accountsd activationd askpermissiond assetsd backupd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd AssetCacheLocatorService assetsd bird calaccessd cfprefsd cdpd configd cloudd CloudKeychainProxy cmfsyncagent coreauthd dataaccessd familynotificationd fairplayd.H2 findmydeviced fmfd fmflocatord geod identityservices identityservicesd imagent ind IDSKeychainSyncingProxy IDSRemoteURLConnectionAgent itunescloudd itunesstored keybagd lskdd lockdown locationd mapspushd mobileactivationd MobileMail nanoregistryd networkd notifyd nsurlsessiond nsurlstoraged online-auth-agent OTAPKIAssetTool passd pfd pkd profiled routined sbd securityd syncdefaultsd seld tccd Preferences
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.apsd.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.cloudd.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.security.CircleJoinRequested.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.cmfsyncagent.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.familycircled.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.idamd.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.lskdd.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.nanobackupd.plist
+launchctl unload -w /System/Library/LaunchDaemons/com.apple.syncdefaultsd.plist
+killall -9 absd akd accountsd activationd aggregated askpermissiond assetsd atc backupd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd AssetCacheLocatorService assetsd assistantd bird calaccessd CallHistorySyncHelper cfprefsd cdpd configd cloudd CloudKeychainProxy cmfsyncagent coreauthd dataaccessd familynotificationd fairplayd.H2 findmydeviced fmfd fmflocatord geod identityservices identityservicesd imagent ind IDSKeychainSyncingProxy IDSRemoteURLConnectionAgent IMDMessageServicesAgent itunescloudd itunesstored keybagd lskdd lockdown locationd mapspushd mobileactivationd MobileMail nanoregistryd networkd notifyd nsurlsessiond nsurlstoraged online-auth-agent OTAPKIAssetTool passd pfd pkd profiled routined sbd securityd syncdefaultsd seld tccd Preferences
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1 | grep Caches/com.apple.mobileme.fmip1`/Cache.db*
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1 | grep Caches/com.apple.mobileme.fmf1`/Cache.db*
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1.plist`
@@ -100,4 +109,5 @@ rm -f /private/var/preferences/SystemConfiguration/com.apple.accounts.exists.pli
 rm -f /private/var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 #rm -rf /private/var/root/Library/Lockdown
 sync
-killall -9 absd akd accountsd activationd askpermissiond assetsd backupd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd assetsd bird calaccessd cfprefsd cdpd configd cloudd CloudKeychainProxy cmfsyncagent coreauthd dataaccessd familynotificationd fairplayd.H2 findmydeviced fmfd fmflocatord geod identityservices identityservicesd imagent ind IDSKeychainSyncingProxy IDSRemoteURLConnectionAgent itunescloudd itunesstored keybagd lskdd lockdown locationd mapspushd mobileactivationd MobileMail nanoregistryd networkd notifyd nsurlsessiond nsurlstoraged online-auth-agent passd pfd pkd profiled routined securityd syncdefaultsd seld tccd Preferences backboardd SpringBoard
+launchctl load -w /System/Library/LaunchDaemons/com.apple.apsd.plist
+killall -9 absd akd accountsd activationd aggregated askpermissiond assetsd atc backupd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd AssetCacheLocatorService assetsd assistantd bird calaccessd CallHistorySyncHelper cfprefsd cdpd configd cloudd CloudKeychainProxy cmfsyncagent coreauthd dataaccessd familynotificationd fairplayd.H2 findmydeviced fmfd fmflocatord geod identityservices identityservicesd imagent ind IDSKeychainSyncingProxy IDSRemoteURLConnectionAgent IMDMessageServicesAgent itunescloudd itunesstored keybagd lskdd lockdown locationd mapspushd mobileactivationd MobileMail nanoregistryd networkd notifyd nsurlsessiond nsurlstoraged online-auth-agent OTAPKIAssetTool passd pfd pkd profiled routined sbd securityd syncdefaultsd seld tccd Preferences backboardd SpringBoard
