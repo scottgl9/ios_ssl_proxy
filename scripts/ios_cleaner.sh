@@ -15,10 +15,10 @@ launchctl unload -w /System/Library/LaunchDaemons/com.apple.cloudd.plist
 launchctl unload -w /System/Library/LaunchDaemons/com.apple.security.CircleJoinRequested.plist
 launchctl unload -w /System/Library/LaunchDaemons/com.apple.cmfsyncagent.plist
 launchctl unload -w /System/Library/LaunchDaemons/com.apple.familycircled.plist
-launchctl unload -w /System/Library/LaunchDaemons/com.apple.idamd.plist
-launchctl unload -w /System/Library/LaunchDaemons/com.apple.lskdd.plist
-launchctl unload -w /System/Library/LaunchDaemons/com.apple.nanobackupd.plist
-launchctl unload -w /System/Library/LaunchDaemons/com.apple.syncdefaultsd.plist
+#launchctl unload -w /System/Library/LaunchDaemons/com.apple.idamd.plist
+#launchctl unload -w /System/Library/LaunchDaemons/com.apple.lskdd.plist
+#launchctl unload -w /System/Library/LaunchDaemons/com.apple.nanobackupd.plist
+#launchctl unload -w /System/Library/LaunchDaemons/com.apple.syncdefaultsd.plist
 killall -9 absd akd accountsd activationd aggregated askpermissiond assetsd atc backupd syncdefaultsd AppleIDAuthAgent aosnotifyd apsd AssetCacheLocatorService assetsd assistantd bird calaccessd CallHistorySyncHelper cfprefsd cdpd configd cloudd CloudKeychainProxy cmfsyncagent coreauthd dataaccessd familynotificationd fairplayd.H2 findmydeviced fmfd fmflocatord geod identityservices identityservicesd imagent ind IDSKeychainSyncingProxy IDSRemoteURLConnectionAgent IMDMessageServicesAgent itunescloudd itunesstored keybagd lskdd lockdown locationd mapspushd mobileactivationd MobileMail nanoregistryd networkd notifyd nsurlsessiond nsurlstoraged online-auth-agent OTAPKIAssetTool passd pfd pkd profiled routined sbd securityd syncdefaultsd seld tccd Preferences
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1 | grep Caches/com.apple.mobileme.fmip1`/Cache.db*
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1 | grep Caches/com.apple.mobileme.fmf1`/Cache.db*
@@ -26,19 +26,27 @@ rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobi
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1.plist`
 find /private/var -name "Cache.db*" -exec rm {} \;
 
+find /private/var/containers/Data/System -name "adi.pb" -exec rm {} \;
+
 rm -f /private/var/Keychains/keychain-2.db*
 rm -f /private/var/root/Library/Preferences/com.apple.coreservices.appleidauthenticationinfo.plist
 rm -f /private/var/mobile/Library/AccountNotifications/*.sqlite*
 rm -f /private/var/mobile/Library/Accounts/*.sqlite*
 rm -f /private/var/mobile/Library/AddressBook/*.sqlite*
+rm -rf /private/var/mobile/Library/Application\ Support/CloudDocs/*
+rm -rf /private/var/mobile/Library/Application\ Support/com.apple.ProtectedCloudStorage
+
 
 # delete certain cache files only
 #find /private/var/mobile/Library/Caches -name "Cache.db*"  -exec rm {} \;
 rm -rf /private/var/mobile/Library/Caches/CloudKit/*
-rm -rf /private/var/mobile/Library/Caches/com.apple.accountsd/*
+rm -rf /private/var/mobile/Library/Caches/FamilyCircle
+rm -rf /private/var/mobile/Library/Caches/com.apple.AssetCacheLocatorService
+rm -rf /private/var/mobile/Library/Caches/com.apple.accountsd
 rm -rf /private/var/mobile/Library/Caches/com.apple.akd/*
 rm -rf /private/var/mobile/Library/Caches/com.apple.dataaccess.dataaccessd/*
 rm -rf /private/var/mobile/Library/Caches/com.apple.imfoundation.IMRemoteURLConnectionAgent/*
+rm -rf /private/var/mobile/Library/Caches/com.apple.itunesstored/*
 rm -rf /private/var/mobile/Library/Caches/com.apple.passd/fsCachedData/*
 rm -rf /private/var/mobile/Library/Caches/com.apple.Preferences/*
 rm -rf /private/var/mobile/Library/Caches/com.apple.purplebuddy/*
@@ -59,7 +67,7 @@ rm -rf /private/var/mobile/Library/com.apple.companionappd/*
 rm -rf /private/var/mobile/Library/com.apple.nsurlsessiond/*
 rm -rf /private/var/mobile/Library/DataAccess/*
 rm -rf /private/var/mobile/Library/Health/*
-rm -rf /private/var/mobile/Library/homed/*
+rm -rf /private/var/mobile/Library/homed
 rm -f /private/var/mobile/Library/LASD/*
 rm -f /private/var/mobile/Library/locationd/*
 rm -f /private/var/mobile/Library/Logs/CrashReporter/*.ips*
@@ -69,7 +77,9 @@ rm -rf /private/var/mobile/Library/Mobile\ Documents/*
 rm -rf /private/var/mobile/Library/MusicLibrary/*
 rm -f /private/var/mobile/Library/News/*
 rm -rf /private/var/mobile/Library/Notes/notes.sqlite*
+rm -rf /private/var/mobile/Library/com.apple.nsurlsessiond/*
 rm -rf /private/var/mobile/Library/Safari/*
+rm -rf /private/var/mobile/Library/Suggestions/*
 rm -f /private/var/mobile/Library/Preferences/com.apple.AOS*
 rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.accounts*
@@ -103,7 +113,7 @@ rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 
-rm -f /private/var/mobile/Media/PhotoData/Photos.sqlite*
+rm -rf /private/var/mobile/Media/PhotoData/*
 
 rm -f /private/var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /private/var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
