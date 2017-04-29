@@ -602,13 +602,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def response_handler(self, req, req_body, res, res_body):
         if ProxyRewrite.rewriteDevice == False: return res_body
         if 'Host' in req.headers and 'setup.icloud.com' in req.headers['Host'] and 'configurations/init?context=buddy' in self.path:
-			p = plistlib.readPlistFromString(res_body)
-			p['setupAssistantServerEnabled'] = False
-			p['doQualification'] = True
-			if 'setupAssistantServerEnabled' in p: print(p['setupAssistantServerEnabled'])
-			res_body = plistlib.writePlistToString(p)
-			res.headers['Content-Length'] = str(len(res_body))
-			return res_body
+            p = plistlib.readPlistFromString(res_body)
+            #p['setupAssistantServerEnabled'] = False
+            #p['doQualification'] = True
+            #if 'setupAssistantServerEnabled' in p: print(p['setupAssistantServerEnabled'])
+            #res_body = plistlib.writePlistToString(p)
+            #res.headers['Content-Length'] = str(len(res_body))
+            return res_body
         elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host'] and 'absinthe-cert/certificate.cer' in self.path:
             with open("certificate.crt", "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
             #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
@@ -689,14 +689,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
             # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
-            if 'setup.icloud.com/setup/qualify/cert' in self.path: headers_only = True
-            if 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: 
-                headers_only = True
-            if 'bookmarks.icloud.com' in hostname: headers_only = True
             if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz"): headers_only = True
-
-            if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: headers_only = True
-            if 'keyvalueservice.icloud.com' in req.path: headers_only = True
+            if 'setup.icloud.com/setup/qualify/cert' in self.path: headers_only = True
+            elif 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: 
+                headers_only = True
+            elif 'bookmarks.icloud.com' in hostname: headers_only = True
+            elif 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: headers_only = True
+            elif 'keyvalueservice.icloud.com' in req.path: headers_only = True
+            elif 'appldnld.apple.com' in req.path: headers_only = True
             if headers_only == True:
                 req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
                 res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)

@@ -33,6 +33,7 @@ import requests
 import uuid
 import ConfigParser
 import signal
+from ProxyRewrite import *
 
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
@@ -115,24 +116,16 @@ class ProxyAPNHandler:
         #with self.lock:
         #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
 
-
-        # before setting up the SSL connection, receive the request from the client so it wont timeout
-        #data = clientsock.recv(buffer_size)
-        #print(repr(data))
-
-        #ssl._https_verify_certificates(enable=False)
-        #with self.lock:
-        #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-
-        #ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        #ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
-        #ssl_context.set_alpn_protocols(["apns-security-v2"])
-        #clientsock = ssl_context.wrap_socket(clientsock, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
- 
         peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
 
+        with self.lock:
+            certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #ssl._https_verify_certificates(enable=False)
+        #clientsock = ssl.wrap_socket(clientsock, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=False)
+        #self.forward = ssl.wrap_socket(self.forward, ca_certs="server_certs/courier.push.apple.com.crt")#, cert_reqs=ssl.CERT_OPTIONAL)
         try:
             self.forward.connect((dst_ip, dst_port))
         except Exception, e:
@@ -141,6 +134,12 @@ class ProxyAPNHandler:
 
         if self.forward:
             print clientaddr, "has connected"
+
+            #ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            #ssl_context.load_cert_chain(certfile=certpath, keyfile=self.certkey)
+            #ssl_context.set_alpn_protocols(["apns-security-v2"])
+            #clientsock.do_handshake()
+            #self.forward.do_handshake()
             # now do a wrap_socket on the forwarding port
             self.input_list.append(clientsock)
             self.input_list.append(self.forward)
@@ -167,6 +166,7 @@ class ProxyAPNHandler:
 
     def on_recv(self):
         data = self.data
-        self.apnslogger.write(data)
+        if self.apnslogger:
+            self.apnslogger.write(data)
         # here we can parse and/or modify the data before send forward
         self.channel[self.s].send(data)

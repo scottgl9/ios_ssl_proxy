@@ -102,10 +102,23 @@ def unpack_indexTable(filename, path):
         outf.write("%s %s %d\n" % (filepath, binascii.hexlify(hashdata), index))
         count=count + 1
 
+def pack_indexTable(path):
+    outf = open("certsIndex.data.new", "wb")
+    with open('certsTable/certsIndex.txt') as f:
+        for line in f:
+            parts = line.strip().split(' ')
+            print(parts)
+            indexbin = struct.pack("<I", int(parts[2])-8)
+            outf.write(binascii.unhexlify(parts[1]))
+            outf.write(indexbin)
+    outf.close()
+
+
 if cmdtype == 'unpack': 
     print("Unpacking certsTable.data to certsTable directory...")
     unpack_certTable("certsTable.data")
     unpack_indexTable("certsIndex.data", "certsTable")
 elif cmdtype == 'pack':
     print("Packing certsTable directory to certsTable.data...")
-    pack_certTable("./certsTable")
+    #pack_certTable("./certsTable")
+    pack_indexTable("certsTable")
