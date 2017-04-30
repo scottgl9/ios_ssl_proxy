@@ -123,9 +123,11 @@ class ProxyAPNHandler:
             certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
 
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #ssl._https_verify_certificates(enable=False)
-        #clientsock = ssl.wrap_socket(clientsock, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=False)
-        #self.forward = ssl.wrap_socket(self.forward, ca_certs="server_certs/courier.push.apple.com.crt")#, cert_reqs=ssl.CERT_OPTIONAL)
+
+        if ProxyRewrite.apnproxyssl:
+            ssl._https_verify_certificates(enable=False)
+            clientsock = ssl.wrap_socket(clientsock, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=False)
+            self.forward = ssl.wrap_socket(self.forward, ca_certs="server_certs/courier.push.apple.com.crt")#, cert_reqs=ssl.CERT_OPTIONAL)
         try:
             self.forward.connect((dst_ip, dst_port))
         except Exception, e:

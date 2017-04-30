@@ -59,6 +59,7 @@ class ProxyRewrite:
     dev2info = dict()
     logger = None
     apnproxy = False
+    apnproxyssl = False
     transparent = False
     changeClientID = False
     changePushToken = False

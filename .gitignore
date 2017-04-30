@@ -1,3 +1,4 @@
 proxy2
 proxy2.c
 proxy2.cfg
+*.pyc

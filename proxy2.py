@@ -480,8 +480,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def print_info(self, req, req_body, res, res_body):
-        #if 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: return
-
         def parse_qsl(s):
             return '\n'.join("%-20s %s" % (k, v) for k, v in urlparse.parse_qsl(s, keep_blank_values=True))
 
@@ -704,8 +702,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 print with_color(32, res_header_text)
             else:
                 self.print_info(req, req_body_plain, res, res_body)
-            #ProxyRewrite.logger.write(req_header_text)
-            #ProxyRewrite.logger.write(res_header_text)
 
             logname = hostname
             # remove 'pXX-' from hostname for log filename
@@ -815,6 +811,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if config.has_option('proxy2', 'interface'): ProxyRewrite.interface = config.get('proxy2', 'interface')
     ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
     if config.has_option('proxy2', 'apnproxy'): ProxyRewrite.apnproxy = config.getboolean('proxy2', 'apnproxy')
+    if config.has_option('proxy2', 'apnproxyssl'): ProxyRewrite.apnproxyssl = config.getboolean('proxy2', 'apnproxyssl')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.changeBackupDeviceUUID = config.getboolean('proxy2', 'change_backupdeviceuuid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')
@@ -849,7 +846,10 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     iflist = netifaces.interfaces()
     ProxyRewrite.server_address = ('', port)
 
-    if 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
+    if ProxyRewrite.interface != None:
+        print("Setting interface to %s" % (ProxyRewrite.interface))
+        ProxyRewrite.server_address = (get_ip_address(ProxyRewrite.interface), port)
+    elif 'ap1' in iflist: ProxyRewrite.server_address = (get_ip_address('ap1'), port)
     elif 'ap0' in iflist: ProxyRewrite.server_address = (get_ip_address('ap0'), port)
     elif 'ppp0' in iflist: ProxyRewrite.server_address = (get_ip_address('ppp0'), port)
     elif 'wlxe0b94db08046' in iflist: ProxyRewrite.server_address = (get_ip_address('wlxe0b94db08046'), port)
