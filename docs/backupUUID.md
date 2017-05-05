@@ -1,5 +1,15 @@
 # the backup UUID is derrived from the keybag UUID
 
+
+## NOTE: the master key, when converted from hex to ascii:
+
+MasterKey =                 {
+PublicIdentities = (<6181c330 81c00201 01020101 042025e4 1fff9cc9 d2af74a1 e4f77ed2 b2872fef 7f713606 fd8148bf 29d87169 e5faa031 302f302d 02010104 283026a0 110c0f69 50686f6e 65204f53 3b313347 3334a111 180f3230 31363132 32333134 31313231 5aa16330 610414e9 78173c2c 31cfa1fd e6746ca8 798b813e 658b5902 01010446 30440220 1d0d968c 73fc513e 925ab4a8 1ee63649 6784097f 62a2aa14 c0a435b8 d2a15f5a 0220655e dc573773 05d9610c 4f960bfc dd58739c 6219061b f8b2ecdb ad5f38aa 4ab7>);
+
+ASCII Version of Master Key (base64 encoded):
+YcKBw4MwwoHDgAIBAQIBAQQgJcOkH8O/wpzDicOSwq90wqHDpMO3fsOSwrLChy/Dr39xNgbDvcKBSMK/KcOYcWnDpcO6wqAxMC8wLQIBAQQoMCbCoBEMD2lQaG9uZSBPUzsxM0czNMKhERgPMjAxNjEyMjMxNDExMjFawqFjMGEEFMOpeBc8LDHDj8Khw73DpnRswqh5wovCgT5lwotZAgEBBEYwRAIgHQrClsKMc8O8UT7CklrCtMKoHsOmNklnwoQJf2LCosKqFMOAwqQ1wrjDksKhX1oCIGVew5xXN3MFw5lhDE/ClgvDvMOdWHPCnGIZBhvDuMKyw6zDm8KtXzjCqkrCtw==
+
+
 # the following is from the iPhone 5 syslog (the backupDeviceUUID is 1fc9cef18fbcf929281c518e4445763e60a65b3b):
 
 Apr 28 16:59:23 iPhone cdpd[1444] <Warning>: Updated account info cache with { 
