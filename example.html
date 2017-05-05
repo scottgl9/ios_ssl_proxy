@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<link href="http://getbootstrap.com/2.3.2/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript">                                         
+$(document).ready(function() {
+    $('tr.header').click(function () { 
+        toggleRowChildren($(this), 'header');
+    });
+
+    function toggleRowChildren(parentRowElement, parentClass) {
+        var childClass = parentRowElement.attr('id');
+        $('tr.'+childClass, parentRowElement.parent()).fadeToggle(0);
+        $('tr.'+childClass).each(function(){
+            if ($(this).hasClass(parentClass) && !$(this).hasClass('collapsed')) {
+                toggleRowChildren($(this), parentClass);
+            }
+        });
+        parentRowElement.toggleClass('collapsed');
+    }
+});
+</script>                                                               
+</head>                                                                 
+<body>                                                                  
+<table class="table table-hover table-bordered">
+    <tr id="cat1" class="header">
+        <th>Cat1</th>
+        <th>Row</th>
+    </tr>
+    <tr class="cat1">
+        <td>data1</td>
+        <td>data2</td>
+    </tr>
+    <tr id="cat1a" class="header cat1">
+        <th>Cat1a</th>
+        <th>Row</th>
+    </tr>
+    <tr class="cat1a">
+        <td>data1</td>
+        <td>data2</td>
+    </tr>
+    <tr class="cat1a">
+        <td>data3</td>
+        <td>data4</td>
+    </tr>
+    <tr id="cat2" class="header">
+        <th>Cat2</th>
+        <th>Row</th>
+    </tr>
+    <tr class="cat2">
+        <td>data1</td>
+        <td>data2</td>
+    </tr>
+</table>
+</body>                                                                 
+</html>
