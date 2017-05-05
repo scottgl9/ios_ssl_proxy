@@ -215,15 +215,19 @@ class ProxyRewrite:
         text = plistlib.writePlistToString(p)
         return text
 
+    # extract only plist (ignore extra junk such as boundary)
     @staticmethod
-    def rewrite_plist_body_activation(headers, text):
-        print(headers)
+    def get_plist_body_activation(headers, text):
         if headers['Content-Type'] == 'application/x-plist': return
         elif headers['Content-Type'] == 'application/xml': return
-        text = text[text.find('<?xml'):text.find('</plist>')+8]
+        return text[text.find('<?xml'):text.find('</plist>')+8]
+
+    @staticmethod
+    def rewrite_plist_body_activation(headers, text):
+        xml = get_plist_body_activation(headers, text)
         boundary = headers['Content-Type'].split('=')[1]
         print("Boundary = %s" % boundary)
-        p = plistlib.readPlistFromString(text)
+        p = plistlib.readPlistFromString(xml)
         if 'ActivationInfoXML' in ProxyRewrite.dev2info:
             # copy straight from device info
             p['ActivationInfoXML'] = ProxyRewrite.dev2info['ActivationInfoXML']
@@ -236,18 +240,17 @@ class ProxyRewrite:
             #if 'serverKP' in text: del p['serverKP']
             #if 'signActRequest' in text: del p['signActRequest']
 
-        else:
-            attribs = 'BluetoothAddress,EthernetAddress,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
-            if ProxyRewrite.rewriteOSVersion == True:
-                attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
-            if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-            if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-            if 'RegulatoryModelNumber' in ProxyRewrite.dev1info:
-                attribs = ("%s,%s" % (attribs, 'RegulatoryModelNumber'))
-            text_modified = ProxyRewrite.rewrite_body_attribs(str(p['ActivationInfoXML']), attribs, '')
-            p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
+        attribs = 'BluetoothAddress,EthernetAddress,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,UniqueChipID,WifiAddress,DeviceClass'
+        if ProxyRewrite.rewriteOSVersion == True:
+            attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
+        if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+        if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+        if 'RegulatoryModelNumber' in ProxyRewrite.dev1info:
+            attribs = ("%s,%s" % (attribs, 'RegulatoryModelNumber'))
+        text_modified = ProxyRewrite.rewrite_body_attribs(str(p['ActivationInfoXML']), attribs, '')
+        p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
         text = ("--%s\nContent-Disposition: form-data; name=\"activation-info\"\n\n%s\n--%s--" % (boundary,plistlib.writePlistToString(p),boundary))
         print(text)
 
@@ -704,9 +707,6 @@ class ProxyRewrite:
                     headers = ProxyRewrite.replace_header_field(headers, 'X-APPLE-UB-PUSHTOKEN', 'aps-token')
             if 'X-Apple-Ubiquity-Device-Id' in headers:
                 headers = ProxyRewrite.rewrite_header_field(headers, 'X-Apple-Ubiquity-Device-Id', 'UniqueDeviceID,UniqueDeviceID')
-
-        #if 'X-Apple-ADSID' in headers and 'ADSID' in ProxyRewrite.dev1info and 'ADSID' in ProxyRewrite.dev2info:
-        #    headers = ProxyRewrite.replace_header_field(headers, 'X-Apple-ADSID', 'ADSID')
 
         if 'User-Agent' in headers:
             attribs='HardwarePlatform,ProductName,ProductType,ProductType2,DeviceClass'
