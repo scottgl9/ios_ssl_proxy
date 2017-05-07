@@ -1,5 +1,18 @@
 # the backup UUID is derrived from the keybag UUID
 
+Keybag location:
+/var/root/Library/Backup/RestoreKeyBag.plist
+
+## When capturing the data passed into the CC_SHA1 function for the cdpd process for the iPhone 5, here is the input data that is used to calculate the hash:
+
+C38K4AG6DTTN3170157339530c8:6f:1d:0a:52:3cc8:6f:1d:0a:52:3d
+
+C38K4AG6DTTN -> SerialNumber
+317015733953 -> UniqueChipID
+c8:6f:1d:0a:52:3c -> WiFiAddress
+c8:6f:1d:0a:52:3d -> BluetoothAddress
+
+SHA1(C38K4AG6DTTN3170157339530c8:6f:1d:0a:52:3cc8:6f:1d:0a:52:3d) = 3fbace309f3896cb8607d7e1e31d6d9945536b61 (UDID)
 
 ## NOTE: the master key, when converted from hex to ascii:
 
@@ -9,6 +22,26 @@ PublicIdentities = (<6181c330 81c00201 01020101 042025e4 1fff9cc9 d2af74a1 e4f77
 ASCII Version of Master Key (base64 encoded):
 YcKBw4MwwoHDgAIBAQIBAQQgJcOkH8O/wpzDicOSwq90wqHDpMO3fsOSwrLChy/Dr39xNgbDvcKBSMK/KcOYcWnDpcO6wqAxMC8wLQIBAQQoMCbCoBEMD2lQaG9uZSBPUzsxM0czNMKhERgPMjAxNjEyMjMxNDExMjFawqFjMGEEFMOpeBc8LDHDj8Khw73DpnRswqh5wovCgT5lwotZAgEBBEYwRAIgHQrClsKMc8O8UT7CklrCtMKoHsOmNklnwoQJf2LCosKqFMOAwqQ1wrjDksKhX1oCIGVew5xXN3MFw5lhDE/ClgvDvMOdWHPCnGIZBhvDuMKyw6zDm8KtXzjCqkrCtw==
 
+# This is where the sha1 is computed for BackupKeybagDigest:
+
+	id __cdecl -[NSData(SecureBackup) sha1Digest](struct NSData *self, SEL a2)
+	{
+	  struct NSData *v2; // r5@1
+	  void *v3; // r4@1
+	  const UInt8 *v4; // r6@1
+	  void *v5; // r0@1
+	  void *v6; // r0@1
+	  void *v7; // r0@1
+
+	  v2 = self;
+	  v3 = malloc(0x14u);
+	  v4 = CFDataGetBytePtr(v2);
+	  v5 = objc_msgSend((void *)v2, "length");
+	  CC_SHA1((int)v4, (int)v5, (int)v3);
+	  v6 = objc_msgSend(&OBJC_CLASS___NSData, "alloc");
+	  v7 = objc_msgSend(v6, "initWithBytesNoCopy:length:freeWhenDone:", v3, 20, 1);
+	  return (id)j__objc_autoreleaseReturnValue(v7);
+	}
 
 # the following is from the iPhone 5 syslog (the backupDeviceUUID is 1fc9cef18fbcf929281c518e4445763e60a65b3b):
 
