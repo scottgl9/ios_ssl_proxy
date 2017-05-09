@@ -112,7 +112,7 @@ def pack_indexTable(path, filename):
     with open('certsTable/certsIndex.txt') as f:
         for line in f:
             parts = line.strip().split(' ')
-            print(parts)
+            #print(parts)
             indexbin = struct.pack("<I", int(parts[2])-8)
             outf.write(binascii.unhexlify(parts[1]))
             outf.write(indexbin)
@@ -128,7 +128,8 @@ elif cmdtype == 'pack':
     pack_certTable("./certsTable", "certsTable.data.new")
     pack_indexTable("certsTable", "certsIndex.data.new")
     allowed=plistlib.load(open("Allowed.plist", 'rb'), fmt=plistlib.FMT_BINARY)
-    print(str(allowed['65F231AD2AF7F7DD52960AC702C10EEFA6D53B11']))
+    for item in allowed['65F231AD2AF7F7DD52960AC702C10EEFA6D53B11']:
+        print(str(binascii.hexlify(item), 'ascii'))
     pm=plistlib.load(open("manifest.data", 'rb'), fmt=plistlib.FMT_BINARY)
     pm['certsIndex.data'] = file_sha256("certsIndex.data")
     pm['certsTable.data'] = file_sha256("certsTable.data")

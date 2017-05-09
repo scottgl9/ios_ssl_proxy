@@ -31,6 +31,12 @@ for (CFIndex i = count - 1; i >= 0; i--)
  [certs addObject:(__bridge id) certRef];
 }
 
+## Allowed.plist:
+
+This file contains the sha256 hashes of non-ca certificates signed by two CAs:
+65F231AD2AF7F7DD52960AC702C10EEFA6D53B11 - Issuer: C=CN, O=CNNIC SSL, CN=CNNIC SSL 
+7C724B39C7C0DB62A54F9BAA183492A2CA838259 - Issuer: C=CN, O=China Internet Network Information Center, CN=China Internet Network Information Center EV Certificates Root
+
 # Hashes found from cerrtsIndex.data in certsTable.data:
 
 found hash a888eb1220701cd1d849d3d8b33a5ac4d98cb449 with pos=194553 len=52
