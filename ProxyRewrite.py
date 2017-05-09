@@ -948,28 +948,28 @@ class ProxyRewrite:
         cert.set_pubkey(req.get_pubkey())
         #cert.set_version(2)
 
-        cert.add_extensions([
-            crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
-            #crypto.X509Extension("nsCertType", True, "sslCA"),
-            crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
-            crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"), #, digitalSignature"),
-            crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert)
-        ])
-
-        #cert.add_extensions([crypto.X509Extension("authorityKeyIdentifier", critical=False, value="keyid:always", issuer=cert)])
+        #cert.add_extensions([crypto.X509Extension("authorityKeyIdentifier", critical=False, value="keyid:always", issuer=issuerCert)])
 
         if srvcert:
             cert.set_serial_number(int(srvcert.get_serial_number()))
             if altnames:
                 print("ALTNAMES: %s\n" % altnames)
-                cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
-
+                #cert.add_extensions([crypto.X509Extension("subjectAltName", False, ", ".join(altnames))])
+                cert.add_extensions([crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert),
+                                     crypto.X509Extension("authorityKeyIdentifier", critical=False, value="keyid:always", issuer=issuerCert)])
                 for i in range(srvcert.get_extension_count()):
                      ext = srvcert.get_extension(i)
-                     print(ext.get_short_name())
-                     if (ext.get_short_name() == 'UNDEF' or ext.get_short_name() == 'ct_precert_scts'):
-                         print("Adding %s to cert" % ext.get_short_name())
+                     name = ext.get_short_name()
+                     if (name != "subjectKeyIdentifier" and name != "authorityKeyIdentifier"):
                          cert.add_extensions([ext])
+        else:
+            cert.add_extensions([
+                    crypto.X509Extension("basicConstraints", True, "CA:FALSE"),
+                    crypto.X509Extension("extendedKeyUsage", True, "serverAuth"),
+                    crypto.X509Extension("keyUsage", True, "keyCertSign, cRLSign"), #, digitalSignature"),
+                    crypto.X509Extension('subjectKeyIdentifier', False, 'hash', subject=cert),
+                    crypto.X509Extension("authorityKeyIdentifier", critical=False, value="keyid:always", issuer=issuerCert)
+            ])
 
         cert.sign(issuerKey, "sha256")
         with open(certpath, "w") as cert_file:
