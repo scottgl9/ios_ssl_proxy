@@ -152,8 +152,14 @@ elif cmdtype == 'pack':
     pm['certsTable.data'] = file_sha256("certsTable.data")
     plistlib.dump(pm, open("manifest.data.new", 'wb'), fmt=plistlib.FMT_BINARY)
 elif cmdtype == 'test':
+    if sys.argv[2:]:
+        filename = sys.argv[2]
+    else:
+        print("Usage: %s test <filename>" % sys.argv[0])
+        exit(0)
+
     print("Creating TrustStore html entry...")
-    st_cert=open("certsTable/33.cer", 'rb').read()
+    st_cert=open(filename, 'rb').read()
     cert=crypto.load_certificate(crypto.FILETYPE_ASN1, st_cert)
 
     outline = ("<tr><td>%s </td>" % cert.get_subject().CN)
