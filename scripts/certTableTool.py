@@ -19,6 +19,15 @@ else:
     print("Usage: %s unpack|pack" % sys.argv[0])
     exit(0)
 
+def month_string_to_number(m):
+    mtable = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    try:
+        out = mtable[m-1]
+        return out
+    except:
+        raise ValueError('Not a month %d' % m)
+
 def file_sha256(filepath):
     with open(filepath, 'rb') as f:
         return hashlib.sha256(f.read()).digest()
@@ -122,6 +131,11 @@ def pack_indexTable(path, filename):
 def int_to_bytes(x):
     return x.to_bytes((x.bit_length() // 8) + 1, byteorder='little')
 
+def split_hex(value):
+    if len(value) <=2: return value
+    value = value[2:] if len(value) % 2 == 0 else "0" + value[2:]
+    return " ".join(value[i:i+2] for i in range(0, len(value), 2))
+
 if cmdtype == 'unpack': 
     print("Unpacking certsTable.data to certsTable directory...")
     unpack_certTable("certsTable.data")
@@ -139,15 +153,32 @@ elif cmdtype == 'pack':
     plistlib.dump(pm, open("manifest.data.new", 'wb'), fmt=plistlib.FMT_BINARY)
 elif cmdtype == 'test':
     print("Creating TrustStore html entry...")
-    st_cert=open("certsTable/0.cer", 'rb').read()
+    st_cert=open("certsTable/33.cer", 'rb').read()
     cert=crypto.load_certificate(crypto.FILETYPE_ASN1, st_cert)
+
+    outline = ("<tr><td>%s </td>" % cert.get_subject().CN)
+    outline = ("%s<td> %s </td>" % (outline, cert.get_issuer().CN))
     key = cert.get_pubkey()
     if key.type() == crypto.TYPE_RSA:
-        print("RSA")
+        outline = ("%s<td> %s </td>" % (outline, "RSA"))
     else:
         print(str(key.type()))
-    print(str(key.bits()))
-    print(str(cert.get_signature_algorithm()))
-    print(str(hex(cert.get_serial_number())))
+    outline = ("%s<td> %d bits </td>" % (outline, key.bits()))
+
+    sigal = str(cert.get_signature_algorithm(), 'ascii')
+    if sigal.startswith('sha1'): sigal = "SHA-1"
+    elif sigal.startswith('sha256'): sigal = "SHA-256"
+    elif sigal.startswith('sha384'): sigal = "SHA-384"
+    elif sigal.startswith('md5'): sigal = "MD5"
+    outline = ("%s<td> %s </td>" % (outline, sigal))
+ 
+    serialnum = ('%X' % cert.get_serial_number())
+    if len(serialnum) % 2 != 0: serialnum = ("0%s" % serialnum)
+    outline = ("%s<td> %s </td>" % (outline, split_hex(serialnum)))
+
     expstr = datetime.datetime.strptime(str(cert.get_notAfter(),'ascii'), "%Y%m%d%H%M%SZ")
-    print("%s:%s:%s %s %s, %s" % (expstr.hour, expstr.minute, expstr.second, expstr.month, expstr.day, expstr.year))
+    month = month_string_to_number(expstr.month)
+    exp = ("%.2d:%.2d:%.2d %s %s, %s" % (expstr.hour, expstr.minute, expstr.second, month, expstr.day, expstr.year))
+    outline = ("%s<td> %s </td>" % (outline, exp))
+    outline = ("%s<td> Always</td></tr>" % outline)
+    print(outline)
