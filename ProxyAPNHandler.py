@@ -56,6 +56,10 @@ class ProxyAPNHandler:
 
 
     def __init__(self, host, port):
+        if ProxyRewrite.usejbca:
+            self.cacert = 'jbca.crt'
+            self.cakey = 'jbca.key'
+
         self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
         self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
         self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())

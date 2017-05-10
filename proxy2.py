@@ -101,6 +101,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.tls = threading.local()
         self.tls.conns = {}
 
+        if ProxyRewrite.usejbca:
+            self.cacert = 'jbca.crt'
+            self.cakey = 'jbca.key'
+
         self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
         self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
         self.issuerKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.cakey, 'rt').read())
@@ -812,6 +816,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.transparent = config.getboolean('proxy2', 'transparent')
     if config.has_option('proxy2', 'apnproxy'): ProxyRewrite.apnproxy = config.getboolean('proxy2', 'apnproxy')
     if config.has_option('proxy2', 'apnproxyssl'): ProxyRewrite.apnproxyssl = config.getboolean('proxy2', 'apnproxyssl')
+    if config.has_option('proxy2', 'usejbca'): ProxyRewrite.usejbca = config.getboolean('proxy2', 'usejbca')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.changeBackupDeviceUUID = config.getboolean('proxy2', 'change_backupdeviceuuid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')

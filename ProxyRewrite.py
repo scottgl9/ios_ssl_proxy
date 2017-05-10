@@ -61,6 +61,7 @@ class ProxyRewrite:
     apnproxy = False
     apnproxyssl = False
     transparent = False
+    usejbca = False
     changeClientID = False
     changePushToken = False
     changeBackupDeviceUUID = False
