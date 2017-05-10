@@ -8,9 +8,10 @@ import binascii
 import struct
 import sys
 import os
-#from OpenSSL import crypto, SSL
+from OpenSSL import crypto
 import hashlib
 import plistlib
+import datetime
 
 if sys.argv[1:]:
         cmdtype = sys.argv[1]
@@ -118,6 +119,8 @@ def pack_indexTable(path, filename):
             outf.write(indexbin)
     outf.close()
 
+def int_to_bytes(x):
+    return x.to_bytes((x.bit_length() // 8) + 1, byteorder='little')
 
 if cmdtype == 'unpack': 
     print("Unpacking certsTable.data to certsTable directory...")
@@ -134,3 +137,17 @@ elif cmdtype == 'pack':
     pm['certsIndex.data'] = file_sha256("certsIndex.data")
     pm['certsTable.data'] = file_sha256("certsTable.data")
     plistlib.dump(pm, open("manifest.data.new", 'wb'), fmt=plistlib.FMT_BINARY)
+elif cmdtype == 'test':
+    print("Creating TrustStore html entry...")
+    st_cert=open("certsTable/0.cer", 'rb').read()
+    cert=crypto.load_certificate(crypto.FILETYPE_ASN1, st_cert)
+    key = cert.get_pubkey()
+    if key.type() == crypto.TYPE_RSA:
+        print("RSA")
+    else:
+        print(str(key.type()))
+    print(str(key.bits()))
+    print(str(cert.get_signature_algorithm()))
+    print(str(hex(cert.get_serial_number())))
+    expstr = datetime.datetime.strptime(str(cert.get_notAfter(),'ascii'), "%Y%m%d%H%M%SZ")
+    print("%s:%s:%s %s %s, %s" % (expstr.hour, expstr.minute, expstr.second, expstr.month, expstr.day, expstr.year))
