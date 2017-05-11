@@ -140,7 +140,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #    # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80:
             with self.lock:
-                certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                if ProxyRewrite.use_rewrite_pubkey:
+                    certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                else:
+                    certpath = ProxyRewrite.gen_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
@@ -153,8 +156,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         elif ProxyRewrite.server_address != dst_ip and (dst_port == 443 or dst_port == 993):
             print("Handling %s:%s" % (dst_ip, dst_port))
             with self.lock:
-                #certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-                certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                if ProxyRewrite.use_rewrite_pubkey:
+                    certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                else:
+                    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
             try:
                 self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
@@ -232,8 +237,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             hostname = self.path.split(':')[0]
 
         with self.lock:
-            #certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
-            certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+            if ProxyRewrite.use_rewrite_pubkey:
+                certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+            else:
+                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
@@ -713,11 +720,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             # remove 'pXX-' from hostname for log filename
             if 'icloud.com' in hostname: logname = re.sub(r'^p\d\d-', '', hostname)
 
-            logger = open("logs/"+logname+".log", "ab")
+            if ProxyRewrite.unique_log_dir:
+                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+            else:
+                logdir = "logs"
+
+            logger = open("%s/%s.log" % (logdir, logname), "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))
 
-            urllogger = open("logs/urls.log", "ab")
+            urllogger = open("%s/urls.log" % logdir, "ab")
             urllogger.write(str(self.command+' '+self.path+"\n"))
             urllogger.close()
 
@@ -758,7 +770,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 logger.write(str(res_body))
                 if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(res_body))
 
-            errlogger = open("logs/errors.log", "ab")
+            errlogger = open("%s/errors.log" % logdir, "ab")
             if res.status == 404 or res.status == 400 or res.status == 424 or res.status == 500 or res.status == 502:
                 errlogger.write(str(self.command+' '+self.path+"\n"))
                 errlogger.write(str(req.headers))
@@ -819,6 +831,8 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if config.has_option('proxy2', 'apnproxy'): ProxyRewrite.apnproxy = config.getboolean('proxy2', 'apnproxy')
     if config.has_option('proxy2', 'apnproxyssl'): ProxyRewrite.apnproxyssl = config.getboolean('proxy2', 'apnproxyssl')
     if config.has_option('proxy2', 'usejbca'): ProxyRewrite.usejbca = config.getboolean('proxy2', 'usejbca')
+    if config.has_option('proxy2', 'unique_log_dir'): ProxyRewrite.unique_log_dir = config.getboolean('proxy2', 'unique_log_dir')
+    if config.has_option('proxy2', 'use_rewrite_pubkey'): ProxyRewrite.use_rewrite_pubkey = config.getboolean('proxy2', 'use_rewrite_pubkey')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.changeBackupDeviceUUID = config.getboolean('proxy2', 'change_backupdeviceuuid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')

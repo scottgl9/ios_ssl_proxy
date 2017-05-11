@@ -62,6 +62,8 @@ class ProxyRewrite:
     apnproxyssl = False
     transparent = False
     usejbca = False
+    unique_log_dir = False
+    use_rewrite_pubkey = False
     changeClientID = False
     changePushToken = False
     changeBackupDeviceUUID = False
