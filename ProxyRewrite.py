@@ -863,6 +863,51 @@ class ProxyRewrite:
         return res
 
     @staticmethod
+    def rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, port):
+        cert = None
+        if 'icloud.com' in hostname: chostname = re.sub(r'^p\d\d-', '', hostname)
+        else: chostname = hostname
+        certpath = "%s/%s.crt" % (certdir.rstrip('/'), chostname)
+
+        if os.path.isfile(certpath): return certpath
+        
+        #if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
+        try:
+            st_cert = ssl.get_server_certificate((hostname, port))
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+        except ssl.SSLError, e:
+            print("get_server_certificate() failed")
+            # assume that the cert they want is for courier.push.apple.com
+            srvcertname = "server_certs/courier.push.apple.com.crt"
+            st_cert=open(srvcertname, 'rt').read()
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+        except socket.error, e:
+            print("get_server_certificate() failed")
+            # assume that the cert they want is for courier.push.apple.com
+            srvcertname = "server_certs/courier.push.apple.com.crt"
+            st_cert=open(srvcertname, 'rt').read()
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+        if cert:
+                algtype = cert.get_signature_algorithm()
+                keysize = cert.get_pubkey().bits()
+                print(algtype)
+                print(keysize)
+                cert.set_pubkey(certKey)
+
+                if (algtype.startswith('sha1')):
+                    cert.sign(certKey, "sha1")
+                elif (algtype.startswith('sha256')):
+                    cert.sign(certKey, "sha256")
+                elif (algtype.startswith('sha512')):
+                    cert.sign(certKey, "sha512")
+                elif (algtype.startswith('sha384')):
+                    cert.sign(certKey, "sha384")
+
+                with open(certpath, "w") as cert_file:
+                    cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        return certpath
+
+    @staticmethod
     def generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, port):
         # remove 'pXX-' from hostname
         if 'icloud.com' in hostname: chostname = re.sub(r'^p\d\d-', '', hostname)
