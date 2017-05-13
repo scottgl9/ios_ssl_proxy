@@ -68,6 +68,30 @@ F88298E7B3DEAC94E84A7EB2CE98476F7764F65D6C657DAEAB63FCC8F96630B2
 BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1
 
 ## The token appears in the following URLs:
+
+### p18-buy.itunes.apple.com:
+POST https://p18-buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/registerSuccess
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>device-name-data</key>
+        <data>
+        aVBob25l
+        </data>
+        <key>environment</key>
+        <string>production</string>
+        <key>guid</key>
+        <string>3fbace309f3896cb8607d7e1e31d6d9945536b61</string>
+        <key>serial-number</key>
+        <string>C38K4AG6DTTN</string>
+        <key>token</key>
+        <data>
+        bgt4UnXtAngueUbu7C1G5N9SRawp2r2zeuGR6YB1SBQ=
+        </data>
+</dict>
+</plist>
+
+
 ### setup.icloud.com:
                 <key>pushToken</key>
                 <string>BD05858D4974AA81D9BF04725437FAFCA19F1B705994C4E239F223F4CC41C0E1</string>
@@ -195,6 +219,13 @@ Feb  2 16:28:29 iPhone FindMyiPhone(FMCore)[1496] <Info>: Received updated APS t
 			</data>
 	</dict>
 	</plist>
+
+## The following files in the itunes backup also contain the apple push token:
+
+( HomeDomain::Library/com.apple.itunesstored/itunesstored_private.sqlitedb <-> 80c42a429a2e9877c4972b1e1ae246efc55f9c3)
+
+Found binary form of hex 6E0B785275ED02782E7946EEEC2D46E4DF5245AC29DABDB37AE191E980754814 in 3fbace309f3896cb8607d7e1e31d6d9945536b61/e7532f808c1e24e4bf0b06816ad43b43b7d79f50 at offset 26E
+(Library/Preferences/com.apple.gamed.plist)
 
 
 ## NOTE: Something strange that I noticed is that the APNS token is actually different for fmf related data:

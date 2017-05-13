@@ -725,6 +725,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             else:
                 logdir = "logs"
 
+            if os.path.exists(logdir) == False:
+                os.mkdir(logdir)
+
             logger = open("%s/%s.log" % (logdir, logname), "ab")
             logger.write(str(self.command+' '+self.path+"\n"))
             logger.write(str(req.headers))

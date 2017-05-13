@@ -43,6 +43,83 @@ YcKBw4MwwoHDgAIBAQIBAQQgJcOkH8O/wpzDicOSwq90wqHDpMO3fsOSwrLChy/Dr39xNgbDvcKBSMK/
 	  return (id)j__objc_autoreleaseReturnValue(v7);
 	}
 
+# the following is an example from the iPhone 5 syslog:
+
+ay 12 23:25:00 iPhone accountsd[524] <Warning>: ValidateCredentials start 
+May 12 23:25:00 iPhone accountsd[524] <Warning>:   running ValidateCredentials step LogStatus 
+May 12 23:25:00 iPhone accountsd[524] <Warning>: Master identity: <PCSIdentity@0x16e1f730  pubkey: HjoXTAq29tvck68n9YxhZdsbLdYg932aBRcCMsFb6lo= service: MasterKey> BAT: 20170324212026;iPhone OS;13E238 <> 
+May 12 23:25:00 iPhone accountsd[524] <Error>: KeychainGetICDPStatus: keychain: -25300 
+May 12 23:25:00 iPhone accountsd[524] <Error>: KeychainGetICDPStatus: status: off 
+May 12 23:25:00 iPhone accountsd[524] <Warning>: Local iCDP status is 0 
+May 12 23:25:00 iPhone accountsd[524] <Warning>:   running ValidateCredentials step PreCheckKeychain 
+May 12 23:25:00 iPhone accountsd[524] <Warning>:   running ValidateCredentials step FixupKeychainItems 
+May 12 23:25:00 iPhone com.apple.lakitu[620] <Warning>: === SSL Kill Switch 2: replaced_SSLCopyPeerTrust 
+May 12 23:25:00 iPhone cdpd[638] <Warning>: Updated account info cache with { 
+	    SecureBackupContainsiCloudIdentity = 1; 
+	    SecureBackupEnabled = 0; 
+	    SecureBackupStingrayMetadata =     { 
+	        BackupKeybagDigest = <2e09d348 cbb5fb9b fab2a073 f4058153 418bda3f>; 
+	        ClientMetadata =         { 
+	            SecureBackupKeyRegistry =             { 
+	                Backup =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010802 01010420 b13709d4 0570b0bd 4bee7e97 0f94c812 95fc0317 e9721fe0 3c644634 3cfe46d9> 
+	                    ); 
+	                }; 
+	                CloudKit =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010402 01010420 5097dd51 a0ae3c26 329e0aed f6e5a953 c3eeb519 011480a8 a2763c71 da87f659> 
+	                    ); 
+	                }; 
+	                FDE =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010602 01010420 3a251735 a29cdcbe 5e698f17 28c5f5f9 a31908d4 65e88100 4537b56c 05c39160> 
+	                    ); 
+	                }; 
+	                Maildrop =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010702 01010420 3931c6f4 eb3bbcad c3354acc c64b867a f2fc346d 79abd529 c8a1726f ce7498b6> 
+	                    ); 
+	                }; 
+	                News =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010b02 01010420 56577dd7 9b1fad36 bef017bd a10c1cb9 1164324f cf2587a2 f6bd0f18 9bae67d4> 
+	                    ); 
+	                }; 
+	                Notes =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010902 01010420 dcec1e48 11fbe378 d7930931 da6512b9 cc488683 183fc11f 725c2841 ed78cb7b> 
+	                    ); 
+	                }; 
+	                Photos =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010302 01010420 84d4f014 d39e10a2 9a513142 68791e09 821dd136 86494bd0 0d595f99 7367d5d2> 
+	                    ); 
+	                }; 
+	                Sharing =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010c02 01010420 7e79f05a dc34af91 7a5ebcd1 69aa9d2b 03ac50a1 359be87e 421d1232 8431a7ab> 
+	                    ); 
+	                }; 
+	                iCloudDrive =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010202 01010420 701d92b5 5eeb31dd 32b4867d dc375897 12f130c4 25a91d4a c7b94864 ae4eee43> 
+	                    ); 
+	                }; 
+	                iMessage =                 { 
+	                    PublicIdentities =                     ( 
+	                        <612a3028 02010a02 01010420 be56c3c0 af3e3169 f0a025ae 81ccef39 bce2f824 e520e072 d4b3c5ba 18dc0dd5> 
+	                    ); 
+	                }; 
+	            }; 
+	            SecureBackupLiverpoolPublicData = <61819130 818e0201 04020101 04205097 dd51a0ae 3c26329e 0aedf6e5 a953c3ee b5190114 80a8a276 3c71da87 f659a164 30620414 212a7265 cc66142f 58f459c6 3a7d9e2d b43d3f46 02010104 47304502 20679791 eb0d50a6 78ca2411 c675b949 01f86478 356bbe75 4e6843bc 6af09c53 ea022100 83ae6787 7b440072 2d3b514a 9366ec9d 2aeaa987 2148afa4 11de55f9 e5c0e1f7>; 
+	            SecureBackupMetadataTimestamp = "2017-03-24 21:20:27"; 
+	            SecureBackupiCloudDataProtection =             { 
+
+This subset of the hex value of SecureBackupLiverpoolPublicData (binary form of hex below appears in alot of the logged https requests):
+411c675b94901f86478356bbe754e6843bc6af09c53ea02210083ae67877b4400722d3b514a9366ec9d2aeaa9872148afa411de55f9e5c0e1f7
+
+
 # the following is from the iPhone 5 syslog (the backupDeviceUUID is 1fc9cef18fbcf929281c518e4445763e60a65b3b):
 
 Apr 28 16:59:23 iPhone cdpd[1444] <Warning>: Updated account info cache with { 

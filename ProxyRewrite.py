@@ -618,6 +618,12 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+
+            if 'registerSuccess' in path and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                d1apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev1info['aps-token']))
+                d2apns_encoded = base64.b64encode(binascii.unhexlify(ProxyRewrite.dev2info['aps-token']))
+                body = body.replace(d1apns_encoded, d2apns_encoded)
+                print("%s: replacing %s -> %s" % (hostname, d1apns_encoded, d2apns_encoded))
             return body
         elif hostname.endswith('identity.apple.com') and ProxyRewrite.rewriteOSVersion == True:
             body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductVersion', hostname)
