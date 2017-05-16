@@ -55,23 +55,6 @@ def get_ip_address(ifname):
 def with_color(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
 
-class _GeneralName(univ.Choice):
-    # We are only interested in dNSNames. We use a default handler to ignore
-    # other types.
-    # TODO: We should also handle iPAddresses.
-    componentType = namedtype.NamedTypes(
-        namedtype.NamedType('dNSName', char.IA5String().subtype(
-            implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 2)
-        )
-        ),
-    )
-
-
-class _GeneralNames(univ.SequenceOf):
-    componentType = _GeneralName()
-    sizeSpec = univ.SequenceOf.sizeSpec + \
-        constraint.ValueSizeConstraint(1, 1024)
-
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     # lets use IPv4 instead of IPv6
     #address_family = socket.AF_INET6
@@ -629,31 +612,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #print("replaced response for %s" % req.headers['Host'])
             #return res_body
             #if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
-            # handle setting certs so we can use our own keybag
-            #p = plistlib.readPlistFromString(res_body)
-            #print("Certs for %s" % req.headers['Host'])
-            #cert0 = base64.b64encode(p['certs'][0].data)
-            #cert1 = base64.b64encode(p['certs'][1].data)
-            #bag = p['bag'].data
-            #origsignature = base64.b64encode(p['signature'].data)
-            #print(cert0)
-            #print(cert1)
-            #with self.lock:
-            #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, req.headers['Host'], 443)
-            #st_cert=open(certpath, 'rt').read()
-            #certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
-            #res_body = res_body.replace(cert0, certdata)
-            #st_cert=open(self.cacert, 'rt').read()
-            #certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
-            #res_body = res_body.replace(cert1, certdata)
-            #newsignature = base64.b64encode(crypto.sign(self.certKey, bag, 'sha1'))
-            #res_body = res_body.replace(origsignature, newsignature)
-            #print("Replaced %s with %s" % (origsignature, newsignature))
-            #p['certs'][0] = certdata
-            #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
-            #res_body = plistlib.readPlistFromString(
-            #print(res_body)
-        #elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
+			#elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
             #p = plistlib.readPlistFromString(res_body)
             #print("Certs for %s" % req.headers['Host'])

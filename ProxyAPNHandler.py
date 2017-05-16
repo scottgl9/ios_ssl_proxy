@@ -66,7 +66,11 @@ class ProxyAPNHandler:
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.apnslogger = open("logs/APNS.log", "ab")
+        if ProxyRewrite.unique_log_dir:
+            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+        else:
+            logdir = "logs"
+        self.apnslogger = open(("%s/APNS.log" % logdir), "ab")
         self.server.bind((host, port))
         self.server.listen(200)
 

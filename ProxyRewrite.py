@@ -1119,3 +1119,33 @@ class ProxyRewrite:
                         print(str(data[pos+2:pos+2+datalen]))
                         pos = pos + datalen
                 pos = pos + 2
+
+    @staticmethod
+    def rewrite_init_keybag(body, hostname, certdir, certKey, issuerCert, issuerKey):
+        # handle setting certs so we can use our own keybag
+        p = plistlib.readPlistFromString(body)
+        print("Certs for %s" % hostname)
+        cert0 = base64.b64encode(p['certs'][0].data)
+        cert1 = base64.b64encode(p['certs'][1].data)
+        bag = p['bag'].data
+        origsignature = base64.b64encode(p['signature'].data)
+        print(cert0)
+        print(cert1)
+        with self.lock:
+            #if ProxyRewrite.use_rewrite_pubkey:
+            #    certpath = ProxyRewrite.rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, 443)
+            #else:
+            certpath = ProxyRewrite.generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, 443)
+
+        st_cert=open(certpath, 'rt').read()
+        certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
+        body = body.replace(cert0, certdata)
+        certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(issuerCert))
+        body = body.replace(cert1, certdata)
+        newsignature = base64.b64encode(crypto.sign(certKey, bag, 'sha1'))
+        body = body.replace(origsignature, newsignature)
+        print("Replaced %s with %s" % (origsignature, newsignature))
+        #p['certs'][0] = certdata
+        #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
+        #body = plistlib.readPlistFromString(p)
+        return body
