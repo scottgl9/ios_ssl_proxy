@@ -39,7 +39,6 @@ from ProxyAPNHandler import *
 TYPE_RSA = crypto.TYPE_RSA
 TYPE_DSA = crypto.TYPE_DSA
 
-
 # NOTE: these are special case hostnames where the cert forging isn't working correctly:
 # gsa.apple.com, gsas.apple.com, and p**-fmip.icloud.com (such as p51-fmip.icloud.com)_
 
@@ -604,14 +603,19 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res.headers['Content-Length'] = str(len(res_body))
             return res_body
         elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host'] and 'absinthe-cert/certificate.cer' in self.path:
-            with open("certificate.crt", "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
+            if ProxyRewrite.unique_log_dir:
+                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+            else:
+                logdir = "logs"
+            with open("%s/certificate.cer" % logdir, "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
             #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
             #res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
             #res.headers['Content-Length'] = str(len(res_body))
             #res.headers['Content-Type'] = 'application/x-buddyml'
             #print("replaced response for %s" % req.headers['Host'])
             #return res_body
-            #if 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
+        elif 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
+            res_body = ProxyRewrite.rewrite_init_keybag(res_body, req.headers['Host'], self.certdir, self.certKey, self.issuerCert, self.issuerKey)
 			#elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
             #p = plistlib.readPlistFromString(res_body)
@@ -659,7 +663,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
             # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
-            if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz"): headers_only = True
+            if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz") or self.path.endswith(".zip"): headers_only = True
             if 'setup.icloud.com/setup/qualify/cert' in self.path: headers_only = True
             elif 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: 
                 headers_only = True
@@ -801,6 +805,10 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.rewriteDevice = config.getboolean('proxy2', 'rewrite_device')
     ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
     ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
+
+
+    if ProxyRewrite.unique_log_dir and os.path.exists("logs_%s" % ProxyRewrite.dev1info['SerialNumber']) == False:
+        os.mkdir("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
 
     if config.has_option('proxy2', 'ProductVersion'):
         ProxyRewrite.dev2info['ProductVersion'] = config.get('proxy2', 'ProductVersion')

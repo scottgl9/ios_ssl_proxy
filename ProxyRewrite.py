@@ -1131,17 +1131,18 @@ class ProxyRewrite:
         origsignature = base64.b64encode(p['signature'].data)
         print(cert0)
         print(cert1)
-        with self.lock:
-            #if ProxyRewrite.use_rewrite_pubkey:
-            #    certpath = ProxyRewrite.rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, 443)
-            #else:
+        #with self.lock:
+        if ProxyRewrite.use_rewrite_pubkey:
+            certpath = ProxyRewrite.rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, 443)
+        else:
             certpath = ProxyRewrite.generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, 443)
 
         st_cert=open(certpath, 'rt').read()
         certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))
         body = body.replace(cert0, certdata)
-        certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(issuerCert))
-        body = body.replace(cert1, certdata)
+        if ProxyRewrite.use_rewrite_pubkey == False:
+            certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(issuerCert))
+            body = body.replace(cert1, certdata)
         newsignature = base64.b64encode(crypto.sign(certKey, bag, 'sha1'))
         body = body.replace(origsignature, newsignature)
         print("Replaced %s with %s" % (origsignature, newsignature))
