@@ -69,9 +69,9 @@ class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
             return HTTPServer.handle_error(self, request, client_address)
 
 class ProxyRequestHandler(BaseHTTPRequestHandler):
-    cakey = 'ca.key'
-    cacert = 'ca.crt'
-    certkey = 'cert.key'
+    cakey = 'ssl/ca.key'
+    cacert = 'ssl/ca.crt'
+    certkey = 'ssl/cert.key'
     certdir = 'certs/'
     timeout = 5
     lock = threading.Lock()
@@ -84,8 +84,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         self.tls.conns = {}
 
         if ProxyRewrite.usejbca:
-            self.cacert = 'jbca.crt'
-            self.cakey = 'jbca.key'
+            self.cacert = 'ssl/jbca.crt'
+            self.cakey = 'ssl/jbca.key'
 
         self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
         self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
@@ -121,33 +121,39 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #    #    print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
         #    # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80:
+            certkey = None
             with self.lock:
                 if ProxyRewrite.use_rewrite_pubkey:
-                    certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certpath, keysize = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = ("ssl/keys/cert%s.key" % keysize)
                 else:
-                    certpath = ProxyRewrite.gen_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = self.certkey
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 try:
                     ssl._https_verify_certificates(enable=False)
-                    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                    self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
                 except ssl.SSLError as e:
                     print("SSLError occurred on %s: %r" % (dst_ip,e))
                     self.finish()
         elif ProxyRewrite.server_address != dst_ip and (dst_port == 443 or dst_port == 993):
             print("Handling %s:%s" % (dst_ip, dst_port))
+            certkey = None
             with self.lock:
                 if ProxyRewrite.use_rewrite_pubkey:
-                    certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certpath, keysize = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = ("ssl/keys/cert%s.key" % keysize)
                 else:
                     certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = self.certkey
             try:
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 try:
                     ssl._https_verify_certificates(enable=False)
-                    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+                    self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
                 except ssl.SSLError as e:
                     print("SSLError occurred on %s: %r" % (dst_ip,e))
                     self.finish()
@@ -218,23 +224,27 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         else:
             hostname = self.path.split(':')[0]
 
+        certkey = None
+
         with self.lock:
             if ProxyRewrite.use_rewrite_pubkey:
-                certpath = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+                certpath, keysize = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+                certkey = ("ssl/keys/cert%s.key" % keysize)
             else:
                 certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, hostname, 443)
+                certkey = self.certkey
 
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'Connection Established'))
         self.end_headers()
 
         try:
             ssl._https_verify_certificates(enable=False)
-            self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
+            self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=False, suppress_ragged_eofs=True)
         except ssl.SSLError as e:
             print("SSLError occurred on %s: %r" % (self.path,e))
             try:
                 ssl._https_verify_certificates(enable=False)
-                self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
+                self.connection = ssl.wrap_socket(self.connection, keyfile=certkey, certfile=certpath, ssl_version=ssl.PROTOCOL_TLSv1_2, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True)
             except ssl.SSLError as e:
                 print("SSLError occurred on %s: %r" % (self.path,e))
                 self.finish()
@@ -614,8 +624,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res.headers['Content-Type'] = 'application/x-buddyml'
             #print("replaced response for %s" % req.headers['Host'])
             #return res_body
-        elif 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
-            res_body = ProxyRewrite.rewrite_init_keybag(res_body, req.headers['Host'], self.certdir, self.certKey, self.issuerCert, self.issuerKey)
+        #elif 'Host' in req.headers and ('init-p01st.push.apple.com' in req.headers['Host'] or 'init-p01md.push.apple.com' in req.headers['Host']):
+            #res_body = ProxyRewrite.rewrite_init_keybag(res_body, req.headers['Host'], self.certdir, self.certKey, self.issuerCert, self.issuerKey)
 			#elif 'Host' in req.headers and 'init.ess.apple.com' in req.headers['Host']:
             # handle setting certs so we can intercept profile.ess.apple.com
             #p = plistlib.readPlistFromString(res_body)

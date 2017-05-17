@@ -877,7 +877,9 @@ class ProxyRewrite:
         else: chostname = hostname
         certpath = "%s/%s.crt" % (certdir.rstrip('/'), chostname)
 
-        if os.path.isfile(certpath): return certpath
+        if os.path.isfile(certpath):
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(certpath, 'rt').read())
+            return certpath, cert.get_pubkey().bits()
         
         #if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",hostname):
         try:
@@ -900,6 +902,9 @@ class ProxyRewrite:
                 keysize = cert.get_pubkey().bits()
                 print(algtype)
                 print(keysize)
+                certKeyFile = ("ssl/keys/cert%s.key" % keysize)
+                print("Loaded private key %s" % certKeyFile)
+                certKey = crypto.load_privatekey(crypto.FILETYPE_PEM,  open(certKeyFile, 'rt').read())
                 cert.set_pubkey(certKey)
 
                 if (algtype.startswith('sha1')):
@@ -913,7 +918,7 @@ class ProxyRewrite:
 
                 with open(certpath, "w") as cert_file:
                     cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-        return certpath
+        return certpath, keysize
 
     @staticmethod
     def generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, port):
@@ -1135,7 +1140,10 @@ class ProxyRewrite:
         if ProxyRewrite.use_rewrite_pubkey:
             certpath = ProxyRewrite.rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, 443)
         else:
-            certpath = ProxyRewrite.generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, 443)
+            certpath, keysize = ProxyRewrite.generate_cert(certdir, certKey, issuerCert, issuerKey, hostname, 443)
+            certKeyFile = ("ssl/keys/cert%s.key" % keysize)
+            print("Loaded private key %s" % certKeyFile)
+            certKey = crypto.load_privatekey(crypto.FILETYPE_PEM,  open(certKeyFile, 'rt').read())
 
         st_cert=open(certpath, 'rt').read()
         certdata = base64.b64encode(ssl.PEM_cert_to_DER_cert(st_cert))

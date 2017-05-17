@@ -43,9 +43,9 @@ delay = 0.0001
 class ProxyAPNHandler:
     input_list = []
     channel = {}
-    cakey = 'ca.key'
-    cacert = 'ca.crt'
-    certkey = 'cert.key'
+    cakey = 'ssl/ca.key'
+    cacert = 'ssl/ca.crt'
+    certkey = 'ssl/cert.key'
     certdir = 'certs/'
     timeout = 5
     lock = threading.Lock()
@@ -57,8 +57,8 @@ class ProxyAPNHandler:
 
     def __init__(self, host, port):
         if ProxyRewrite.usejbca:
-            self.cacert = 'jbca.crt'
-            self.cakey = 'jbca.key'
+            self.cacert = 'ssl/jbca.crt'
+            self.cakey = 'ssl/jbca.key'
 
         self.certKey=crypto.load_privatekey(crypto.FILETYPE_PEM, open(self.certkey, 'rt').read())
         self.issuerCert=crypto.load_certificate(crypto.FILETYPE_PEM, open(self.cacert, 'rt').read())
