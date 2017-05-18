@@ -619,11 +619,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 logdir = "logs"
             with open("%s/certificate.cer" % logdir, "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
         elif 'Host' in req.headers and 'escrowproxy.icloud.com' in req.headers['Host'] and self.path.endswith("escrowproxy/api/get_records"):
-            p = plistlib.readPlistFromString(res_body)
-            metadata = p['metadataList'][0]['metadata']
-            import biplist 
-            metaplist = biplist.readPlistFromString(base64.b64decode(metadata))
-            print(binascii.hexlify(metaplist['BackupKeybagDigest']))
+            ProxyRewrite.decode_escrowproxy_record(res_body)
             #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
             #res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
             #res.headers['Content-Length'] = str(len(res_body))

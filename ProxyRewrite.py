@@ -1186,3 +1186,18 @@ class ProxyRewrite:
         #p['certs'][1] = ssl.PEM_cert_to_DER_cert(st_cert)
         #body = plistlib.readPlistFromString(p)
         return body
+
+    @staticmethod
+    def decode_escrowproxy_record(body):
+        p = plistlib.readPlistFromString(body)
+        metadata = p['metadataList'][0]['metadata']
+        import biplist
+        metaplist = biplist.readPlistFromString(base64.b64decode(metadata))
+        keyreglist = metaplist['ClientMetadata']['SecureBackupKeyRegistry']
+        for keyreg in keyreglist:
+            print(keyreg)
+        if 'SecureBackupStableMetadata' in metaplist:
+            escrowkey = metaplist['SecureBackupStableMetadata']['EscrowKey']
+            print("EscrowKey = %s" % binascii.hexlify(escrowkey))
+        print("BackupKeybagDigest = %s" % binascii.hexlify(metaplist['BackupKeybagDigest']))
+
