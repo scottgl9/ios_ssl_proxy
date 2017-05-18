@@ -398,12 +398,20 @@ class ProxyRewrite:
                 
             if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
-
+            orig_body = body
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
             # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
             if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in body:
                 body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
+
+            #body = body.replace('17f899e7ececa6cf4d60eb216311d007abeb11d0', '99da0bf10d7f7f397f41e8019c0513953b2885c5')
+
+            if 'X-Mme-Nas-Qualify' in headers:
+                val = bytearray(base64.b64decode(headers['X-Mme-Nas-Qualify']))
+                val = val.replace(orig_body, body)
+                headers['X-Mme-Nas-Qualify'] = base64.b64encode(val)
+                print("Replaced X-Mme-Nas-Qualify")
 
             return body
         elif hostname.endswith('fmf.icloud.com'):
@@ -695,7 +703,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
                 if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'client-id'))
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
+                #headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
                 if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
@@ -706,7 +714,7 @@ class ProxyRewrite:
                     attribs = ("%s,%s" % (attribs, 'aps-token'))
                 if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                     attribs = ("%s,%s" % (attribs, 'client-id'))
-                headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
+                #headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
         elif hostname.endswith('quota.icloud.com'):
             if 'X-Client-UDID' in headers:
                 headers = ProxyRewrite.replace_header_field(headers, 'X-Client-UDID', 'UniqueDeviceID')
