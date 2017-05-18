@@ -14,7 +14,7 @@ Binary file /var/mobile/Library/Caches/com.apple.icloud.fmfd/Cache.db-wal matche
 Binary file /var/mobile/Library/Caches/com.apple.mediastream.mstreamd/Cache.db matches
 Binary file /var/mobile/Library/Passes/PaymentWebServiceContext.archive matches
 
-
+## NOTE: iPhone 5 doesn't have a MobileEquipmentIdentifier if it is the GSM version, so if the device being spoofed has an MEID, make sure and insert MEID
 
 ### ADSID - advertising Identifier (used by ASIdentifierManager class)
 Description: value which seems to be static UUID per account, appears to be same for any iOS device

@@ -103,6 +103,7 @@ class ProxyRewrite:
             if hostname == "gsas.apple.com": return False
 
         if hostname == "ppq.apple.com": return False
+        elif hostname == "iphonesystdw.corp.apple.com": return False
         #if hostname == "albert.apple.com": return False
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
@@ -319,6 +320,10 @@ class ProxyRewrite:
             if headers[field] != oldval:
                 print("%s: %s Replacing %s: %s -> %s" % (headers["Host"], field, attrib, str(ProxyRewrite.dev1info[attrib]), str(ProxyRewrite.dev2info[attrib])))
 
+        # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
+        if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in val:
+            val = ProxyRewrite.rewrite_plist_body_attribs(headers, val, {"meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
+
         headers[field] = base64.b64encode(val)
         return headers
 
@@ -395,6 +400,11 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
 
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+
+            # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
+            if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in body:
+                body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
+
             return body
         elif hostname.endswith('fmf.icloud.com'):
             attribs = 'DeviceColor,EnclosureColor,HardwareModel,HardwarePlatform,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,DeviceClass'
@@ -467,10 +477,15 @@ class ProxyRewrite:
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
             content_type = headers['Content-Type']
-            if 'identityV3Session' in path and content_type.startswith('application/json'):
+            if 'identityV3Session' in path and content_type.startswith('application/json') and 'collectionInfo' in body:
                 json_obj = json.loads(body)
                 text = json_obj['collectionInfo']['data']
                 json_obj['collectionInfo']['data'] = ProxyRewrite.b64_rewrite_text(json_obj['collectionInfo']['data'], attribs)
+                body = json.dumps(json_obj)
+            elif path.endswith("%s/identityV3" % ProxyRewrite.dev1info['UniqueDeviceID']):
+                json_obj = json.loads(body)
+                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
+                    json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
                 body = json.dumps(json_obj)
 
             if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
@@ -609,7 +624,12 @@ class ProxyRewrite:
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
-            body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","meid":"MobileEquipmentIdentifier","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
+
+            # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
+            if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in body:
+                body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, 'Request')
+
+            body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"imei":"InternationalMobileEquipmentIdentity","iccid":"IntegratedCircuitCardIdentity","pn":"PhoneNumber"}, 'Request')
             return body
         elif hostname.endswith('buy.itunes.apple.com'):
             attribs = 'ProductType,SerialNumber,UniqueDeviceID,HardwareModel,HardwarePlatform,InternationalMobileEquipmentIdentity,MobileEquipmentIdentifier,UniqueDeviceID,DeviceClass'
