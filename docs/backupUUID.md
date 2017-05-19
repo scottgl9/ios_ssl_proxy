@@ -15,6 +15,7 @@ MKBBackupValidateKeyUUID: Loaded handler at "/home/scottgl/sandbox/proxy2/__hand
 MKBKeyBagCopyUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBKeyBagCopyUUID.js"
 MKBKeyBagCreateBackup: Loaded handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBKeyBagCreateBackup.js"
 MCGestaltGetDeviceUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/ManagedConfiguration/MCGestaltGetDeviceUUID.js"
+MBMobileUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileBackup/MBMobileUID.js"
 
 
 ## When capturing the data passed into the CC_SHA1 function for the cdpd process for the iPhone 5, here is the input data that is used to calculate the hash:
