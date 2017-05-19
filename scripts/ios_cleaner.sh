@@ -27,6 +27,15 @@ rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobi
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1 | grep Caches/com.apple.mobileme.fmf1`/Cache.db*
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmf1.plist`
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1.plist`
+rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.MailAccount-ExtProperties.plist`
+
+rm -rf `find /private/var/mobile/Containers/Data/Application -name com.apple.notificationcenter`
+rm -rf `find /private/var/mobile/Containers/Data/Application -name CloudKit`
+rm -rf `find /private/var/mobile/Containers/Data/Application -name WebKit`
+rm -f `find /private/var/containers/Data/System -name activation_record.plist`
+rm -f `find /private/var/containers/Data/System -name data_ark.plist`
+rm -f `find /private/var/containers/Data/System -name lskd.rl`
+rm -f /private/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist
 find /private/var -name "Cache.db*" -exec rm {} \;
 
 find /private/var/containers/Data/System -name "adi.pb" -exec rm {} \;
@@ -68,8 +77,11 @@ killall -9 identityservices identityservicesd
 rm -f /private/var/mobile/Library/IdentityServices/ids*
 killall -9 apsd
 rm -f /private/var/mobile/Library/ApplePushService/aps.*
+killall -9 calaccessd
 rm -rf /private/var/mobile/Library/Calendar/*
+killall -9 itunesstored
 rm -rf /private/var/mobile/Library/com.apple.itunesstored/*
+rm -rf /private/var/mobile/Library/Cookies/com.apple.itunesstore*
 rm -rf /private/var/mobile/Library/com.apple.companionappd/*
 killall -9 nsurlsessiond nsurlstoraged
 rm -rf /private/var/mobile/Library/com.apple.nsurlsessiond/*
@@ -79,10 +91,12 @@ killall -9 healthd
 rm -rf /private/var/mobile/Library/Health/*
 killall -9 homed
 rm -rf /private/var/mobile/Library/homed
+rm -rf /private/var/mobile/Library/Keyboard/*
 rm -f /private/var/mobile/Library/LASD/*
 killall -9 locationd
 rm -f /private/var/mobile/Library/locationd/*
 rm -f /private/var/mobile/Library/Logs/CrashReporter/*.ips*
+rm -f /private/var/mobile/Library/Logs/FMFD/FMFD.asl
 rm -f /private/var/mobile/Library/MediaStream/albumshare/personID.plist
 killall -9 MobileMail
 rm -rf /private/var/mobile/Library/Mail/*
@@ -90,6 +104,7 @@ rm -rf /private/var/mobile/Library/Mobile\ Documents/*
 rm -rf /private/var/mobile/Library/MusicLibrary/*
 rm -f /private/var/mobile/Library/News/*
 rm -rf /private/var/mobile/Library/Notes/notes.sqlite*
+rm -f /private/var/mobile/Library/OnDemandResources/Database/odr.sqlite*
 rm -rf /private/var/mobile/Library/Safari/*
 rm -rf /private/var/mobile/Library/Suggestions/*
 rm -f /private/var/mobile/Library/Preferences/com.apple.AOS*
@@ -126,6 +141,8 @@ rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeyc
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 
 rm -rf /private/var/mobile/Media/PhotoData/*
+rm -f /private/var/mobile/Media/Recordings/*
+rm -f /private/var/mobile/Media/iTunes_Control/iTunes/*.sqlitedb*
 
 rm -f /private/var/preferences/SystemConfiguration/com.apple.accounts.exists.plist
 rm -f /private/var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
