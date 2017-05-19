@@ -604,7 +604,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def response_handler(self, req, req_body, res, res_body):
         if ProxyRewrite.rewriteDevice == False: return res_body
-        if 'Host' in req.headers and 'setup.icloud.com' in req.headers['Host'] and 'configurations/init?context=buddy' in self.path:
+        hostname = None
+        if 'Host' in self.headers:
+            hostname = self.headers['Host']
+        else:
+            hostname = self.path.split(':')[0]
+
+        if 'setup.icloud.com' in hostname and 'configurations/init?context=buddy' in self.path:
             p = plistlib.readPlistFromString(res_body)
             #p['setupAssistantServerEnabled'] = False
             #p['doQualification'] = True
@@ -612,14 +618,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res_body = plistlib.writePlistToString(p)
             #res.headers['Content-Length'] = str(len(res_body))
             return res_body
-        elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host'] and 'absinthe-cert/certificate.cer' in self.path:
+        elif 'static.ips.apple.com' in hostname and 'absinthe-cert/certificate.cer' in self.path:
             if ProxyRewrite.unique_log_dir:
                 logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
             else:
                 logdir = "logs"
             with open("%s/certificate.cer" % logdir, "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
-        elif 'Host' in req.headers and 'escrowproxy.icloud.com' in req.headers['Host'] and self.path.endswith("escrowproxy/api/get_records"):
+        elif 'escrowproxy.icloud.com' in hostname and self.path.endswith("escrowproxy/api/get_records"):
             ProxyRewrite.decode_escrowproxy_record(res_body)
+        elif ProxyRewrite.use_rewrite_pubkey and 'setup.icloud.com' in hostname and self.path.endswith("setup/qualify/cert?ver=P1.10.1"):
+            res_body = ProxyRewrite.rewrite_cert_pubkey_data(res_body)
             #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
             #res_body='<xmlui><page><navigationBar title="Verification Failed" hidesBackButton="false"/><tableView><section footer="Please retry activation."/><section><buttonRow align="center" label="Try Again" name="tryAgain"/></section></tableView></page></xmlui>'
             #res.headers['Content-Length'] = str(len(res_body))
@@ -646,11 +654,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         #        res.headers['Content-Length'] = str(len(r.text))
         # rewrite response status
         #res = ProxyRewrite.rewrite_status(req.path, res)
-        #if 'setup.icloud.com/configurations/init?context=settings' in self.path or 'setup.icloud.com/setup/get_account_settings' in self.path:
-            #res_body = ProxyRewrite.replace_hostname_body(res_body, 'fmip.icloud.com', 'fmiptest.icloud.com')
-            # Attempt to replace gsa.apple.com to use a different server
-            #res_body = res_body.replace('gsa.apple.com', 'gsa-nc1.apple.com')
-            #print("setup.icloud.com: Replaced gsa.apple.com -> gsa-nc1.apple.com")
         #if 'setup.icloud.com/setup/get_account_settings' in self.path:
         #elif 'Host' in req.headers and 'static.ips.apple.com' in req.headers['Host']:
         #    #res_body = open('./barney_activation_help_en_us.buddyml', 'rt').read()

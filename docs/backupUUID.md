@@ -3,6 +3,20 @@
 Keybag location:
 /var/root/Library/Backup/RestoreKeyBag.plist
 
+
+## Functions which might relate to the deviceBackupUUID:
+
+__IOHIDDeviceGetUUIDKey: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/IOKit/__IOHIDDeviceGetUUIDKey.js"
+__IOHIDDeviceGetUUIDString: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/IOKit/__IOHIDDeviceGetUUIDString.js"
+MBDeviceUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileBackup/MBDeviceUUID.js"
+MKBBackupValidateBackupKeyWithUUID: Loaded handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBBackupValidateBackupKeyWithUUID.js"
+MKBBackupCopyBackupKeyUUID: Loaded handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBBackupCopyBackupKeyUUID.js"
+MKBBackupValidateKeyUUID: Loaded handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBBackupValidateKeyUUID.js"
+MKBKeyBagCopyUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBKeyBagCopyUUID.js"
+MKBKeyBagCreateBackup: Loaded handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileKeyBag/MKBKeyBagCreateBackup.js"
+MCGestaltGetDeviceUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/ManagedConfiguration/MCGestaltGetDeviceUUID.js"
+
+
 ## When capturing the data passed into the CC_SHA1 function for the cdpd process for the iPhone 5, here is the input data that is used to calculate the hash:
 
 C38K4AG6DTTN3170157339530c8:6f:1d:0a:52:3cc8:6f:1d:0a:52:3d

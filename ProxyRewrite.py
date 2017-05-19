@@ -899,6 +899,32 @@ class ProxyRewrite:
         return res
 
     @staticmethod
+    def rewrite_cert_pubkey_data(certdata):
+        if (bytes(certdata).startswith("\x30\x82")):
+            cert=crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
+        else:
+            cert=crypto.load_certificate(crypto.FILETYPE_PEM, certdata)
+        algtype = cert.get_signature_algorithm()
+        keysize = cert.get_pubkey().bits()
+        print(algtype)
+        print(keysize)
+        certKeyFile = ("ssl/keys/cert%s.key" % keysize)
+        certKey = crypto.load_privatekey(crypto.FILETYPE_PEM,  open(certKeyFile, 'rt').read())
+        cert.set_pubkey(certKey)
+        if (algtype.startswith('sha1')):
+            cert.sign(certKey, "sha1")
+        elif (algtype.startswith('sha256')):
+            cert.sign(certKey, "sha256")
+        elif (algtype.startswith('sha512')):
+            cert.sign(certKey, "sha512")
+        elif (algtype.startswith('sha384')):
+            cert.sign(certKey, "sha384")
+        if (bytes(certdata).startswith("\x30\x82")):
+            return crypto.dump_certificate(crypto.FILETYPE_PEM, cert), keysize
+        else:
+            return crypto.dump_certificate(crypto.FILETYPE_PEM, cert), keysize
+
+    @staticmethod
     def rewrite_cert_pubkey(certdir, certKey, issuerCert, issuerKey, hostname, port):
         cert = None
         if 'icloud.com' in hostname: chostname = re.sub(r'^p\d\d-', '', hostname)
@@ -924,28 +950,10 @@ class ProxyRewrite:
             # assume that the cert they want is for courier.push.apple.com
             srvcertname = "server_certs/courier.push.apple.com.crt"
             st_cert=open(srvcertname, 'rt').read()
-            cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
-        if cert:
-                algtype = cert.get_signature_algorithm()
-                keysize = cert.get_pubkey().bits()
-                print(algtype)
-                print(keysize)
-                certKeyFile = ("ssl/keys/cert%s.key" % keysize)
-                print("Loaded private key %s" % certKeyFile)
-                certKey = crypto.load_privatekey(crypto.FILETYPE_PEM,  open(certKeyFile, 'rt').read())
-                cert.set_pubkey(certKey)
+        certdata, keysize = ProxyRewrite.rewrite_cert_pubkey_data(st_cert)
 
-                if (algtype.startswith('sha1')):
-                    cert.sign(certKey, "sha1")
-                elif (algtype.startswith('sha256')):
-                    cert.sign(certKey, "sha256")
-                elif (algtype.startswith('sha512')):
-                    cert.sign(certKey, "sha512")
-                elif (algtype.startswith('sha384')):
-                    cert.sign(certKey, "sha384")
-
-                with open(certpath, "w") as cert_file:
-                    cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        with open(certpath, "w") as cert_file:
+            cert_file.write(certdata)
         return certpath, keysize
 
     @staticmethod
