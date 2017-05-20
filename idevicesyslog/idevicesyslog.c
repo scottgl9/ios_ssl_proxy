@@ -107,7 +107,11 @@ static void syslog_callback(char c, void *user_data)
 			bufpos=0; return;
 		} else if (strstr(buffer, "CFNetwork")) {
 			bufpos=0; return;
-                } else if (strstr(buffer, "com_apple_MobileAsset_")) {
+                } else if (strstr(buffer, "com.apple.corespotlight.log.index")) {
+			bufpos=0; return;
+                } else if (strstr(buffer, "com.apple.spotlight.IndexAgent")) {
+			bufpos=0; return;
+		} else if (strstr(buffer, "com_apple_MobileAsset_")) {
                         bufpos=0; return;
 		} else if (strstr(buffer, "CommCenter")) {
 			bufpos=0; return;
@@ -131,10 +135,14 @@ static void syslog_callback(char c, void *user_data)
 			bufpos=0; return;
                 } else if (strstr(buffer, "medialibraryd")) {
 			bufpos=0; return;
+                } else if (strstr(buffer, "MICodeSigningVerifier")) {
+			bufpos=0; return;
 		} else if (strstr(buffer, "mobileassetd")) {
                         bufpos=0; return;
                 } else if (strstr(buffer, "networkd")) {
                         bufpos=0; return;
+		} else if (strstr(buffer, "NSLayoutConstraint")) {
+			bufpos=0; return;
 		} else if (strstr(buffer, "PersistentConnection")) {
 			bufpos=0; return;
                 } else if (strstr(buffer, "powerd")) {
