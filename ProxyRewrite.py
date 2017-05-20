@@ -906,8 +906,13 @@ class ProxyRewrite:
             cert=crypto.load_certificate(crypto.FILETYPE_PEM, certdata)
         algtype = cert.get_signature_algorithm()
         keysize = cert.get_pubkey().bits()
+        if (algtype.startswith('sha256') and keysize == 256):
+            print("Switching keysize from 256 to 512")
+            keysize = 512
+
         print(algtype)
         print(keysize)
+
         certKeyFile = ("ssl/keys/cert%s.key" % keysize)
         certKey = crypto.load_privatekey(crypto.FILETYPE_PEM,  open(certKeyFile, 'rt').read())
         cert.set_pubkey(certKey)
