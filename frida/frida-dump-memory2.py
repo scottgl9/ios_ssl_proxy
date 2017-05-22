@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import os
 import sys
 import frida
 import time
@@ -13,7 +14,9 @@ def on_message(message, data):
         fo.close()
 
 def main(target_process):
-	session = frida.get_usb_device().attach(target_process)
+        if os.path.exists("%s_dump" % target_process) == False:
+            os.mkdir("%s_dump" % target_process)
+        session = frida.get_usb_device().attach(target_process)
 	script = session.create_script("""
 		var ranges = Process.enumerateRangesSync({protection: 'r--', coalesce: true});
 		var range;
@@ -25,7 +28,7 @@ def main(target_process):
                         if (range.size < 1048576) {
                             console.log(range.base+":"+range.size);
                             var bytes = Memory.readByteArray(range.base, range.size);
-                            send('%s'+range.base, bytes);
+                            send('%s_dump/'+range.base, bytes);
                         } else {
                             //base = range.base
                             console.log("Splitting "+range.base+":"+range.size);
@@ -33,7 +36,7 @@ def main(target_process):
                             //for(var i = 0; i < (splitcnt-1); i++) {
                             var bytes = Memory.readByteArray(range.base, 1048576);
                             //    console.log(range.base);
-                            send('%s'+range.base, bytes);
+                            send("%s_dump/"+range.base, bytes);
                                 //range.base.add(1048576)
                             //}
                         }
