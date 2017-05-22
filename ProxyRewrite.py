@@ -376,26 +376,32 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
 
             # save client-id so we can replace it with our new generated UUID
-            if ProxyRewrite.changeClientID == True and 'login_or_create_account' in path:
+            clientid = None
+            if 'login_or_create_account' in path and 'client-id' in body:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
-                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif ProxyRewrite.changeClientID == True and 'get_account_settings' in path:
+                #if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+            elif 'get_account_settings' in path and 'client-id' in body:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', 'userInfo')
-                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
-            elif ProxyRewrite.changeClientID == True and 'loginDelegates' in path:
+                #if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+            elif 'loginDelegates' in path and 'client-id' in body:
                 clientid = ProxyRewrite.save_plist_body_attrib(body, 'client-id', '')
-                if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+                #if clientid != ProxyRewrite.dev2info['client-id']: ProxyRewrite.dev1info['client-id'] = clientid
+
+            if clientid != None:
+                ProxyRewrite.add_info_summary('clientid', clientid)
 
             # save the push token
-            if ProxyRewrite.changePushToken == True and 'registerDevice' in path:
+            if 'registerDevice' in path and 'pushToken' in body:
                 pushToken = ProxyRewrite.save_plist_body_attrib(body, 'pushToken', 'deviceInfo')
-                if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
-            
+                #if pushToken != ProxyRewrite.dev2info['aps-token']: ProxyRewrite.dev1info['aps-token'] = pushToken
+                ProxyRewrite.add_info_summary('aps-token', pushToken)
+
             # save backupDeviceUUID
-            if ProxyRewrite.changeBackupDeviceUUID == True and 'registerDevice' in path:
+            if 'registerDevice' in path and 'backupDeviceUUID' in body:
                 backupDeviceUUID = ProxyRewrite.save_plist_body_attrib(body, 'backupDeviceUUID', 'deviceInfo')
                 ProxyRewrite.dev1info['backupDeviceUUID'] = backupDeviceUUID
-                
+                ProxyRewrite.add_info_summary('backupDeviceUUID', backupDeviceUUID)
+
             if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
             orig_body = body
@@ -1214,3 +1220,18 @@ class ProxyRewrite:
             print("EscrowKey = %s" % binascii.hexlify(escrowkey))
         print("BackupKeybagDigest = %s" % binascii.hexlify(metaplist['BackupKeybagDigest']))
 
+
+    # add / update info parsed from requests/responses to logs/summary.plist
+    @staticmethod
+    def add_info_summary(key, value):
+            if ProxyRewrite.unique_log_dir:
+                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+            else:
+                logdir = "logs"
+            filename = ("%s/summary.plist" % logdir)
+            if os.path.exists(filename):
+                p = plistlib.readPlist(filename)
+            else:
+                p = dict()
+            p[key] = value
+            plistlib.writePlist(p, filename)
