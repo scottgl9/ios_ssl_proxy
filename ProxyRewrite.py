@@ -64,6 +64,7 @@ class ProxyRewrite:
     usejbca = False
     unique_log_dir = False
     use_rewrite_pubkey = False
+    remove_certs = False
     changeClientID = False
     changePushToken = False
     changeBackupDeviceUUID = False
@@ -1218,8 +1219,10 @@ class ProxyRewrite:
         if 'SecureBackupStableMetadata' in metaplist:
             escrowkey = metaplist['SecureBackupStableMetadata']['EscrowKey']
             print("EscrowKey = %s" % binascii.hexlify(escrowkey))
-        print("BackupKeybagDigest = %s" % binascii.hexlify(metaplist['BackupKeybagDigest']))
-
+            ProxyRewrite.add_info_summary('EscrowKey', binascii.hexlify(escrowkey))
+        backupkeybagdigest = binascii.hexlify(metaplist['BackupKeybagDigest'])
+        print("BackupKeybagDigest = %s" % backupkeybagdigest)
+        ProxyRewrite.add_info_summary('BackupKeybagDigest', backupkeybagdigest)
 
     # add / update info parsed from requests/responses to logs/summary.plist
     @staticmethod

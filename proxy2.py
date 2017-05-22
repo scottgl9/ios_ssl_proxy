@@ -814,6 +814,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if config.has_option('proxy2', 'usejbca'): ProxyRewrite.usejbca = config.getboolean('proxy2', 'usejbca')
     if config.has_option('proxy2', 'unique_log_dir'): ProxyRewrite.unique_log_dir = config.getboolean('proxy2', 'unique_log_dir')
     if config.has_option('proxy2', 'use_rewrite_pubkey'): ProxyRewrite.use_rewrite_pubkey = config.getboolean('proxy2', 'use_rewrite_pubkey')
+    if config.has_option('proxy2', 'remove_certs'): ProxyRewrite.remove_certs = config.getboolean('proxy2', 'remove_certs')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
     ProxyRewrite.changeBackupDeviceUUID = config.getboolean('proxy2', 'change_backupdeviceuuid')
     ProxyRewrite.rewriteOSVersion = config.getboolean('proxy2', 'rewrite_osversion')
