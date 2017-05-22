@@ -1,5 +1,10 @@
 # Device Apple Push Service Notification Token research (APNS):
 
+## IDEA: how aps-token is used / generated:
+I'm pretty sure the aps-token (32 bytes in length) is used for one of the following:
+1) AES256 key for encrypting / decrypting APN data
+2) private key for communicating with courier.push.apple.com
+
 ## From searching through the filesystem on the iphone 5c for the APS token 0da7f16bce990c4591e054286f071c142db8b8aad665afd552d2e0fbe9497b80, the following files has the token:
 
 Binary file /var/mobile/Containers/Data/Application/E0C6A3BA-CFB8-4585-BFD9-89AA277E4572/Library/Caches/com.apple.mobileme.fmip1/Cache.db matches
