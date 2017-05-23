@@ -117,7 +117,6 @@ class ProxyRewrite:
         elif re.match(r"^17.249.28.\d{1,3}$",ipaddr): return True
         elif re.match(r"^17.249.60.\d{1,3}$",ipaddr): return True
         return False
-    
     @staticmethod
     def replace_hostname_body(text, oldhost, newhost):
         if oldhost in text:
