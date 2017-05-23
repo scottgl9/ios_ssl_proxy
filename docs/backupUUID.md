@@ -1,8 +1,15 @@
 # the backup UUID is derrived from the keybag UUID
 
-Keybag location:
-/var/root/Library/Backup/RestoreKeyBag.plist
-
+Possibly useful functions from iOS9 MobileBackup.framework:
+-(BOOL)deleteBackupUDID:(id)arg1 error:(id*)arg2 ;
+-(BOOL)saveKeybagsForBackupUDID:(id)arg1 withError:(id*)arg2 ;
+-(void)startRestoreForBackupUDID:(id)arg1 snapshotID:(unsigned long long)arg2 ;
+-(BOOL)startRestoreForBackupUDID:(id)arg1 snapshotID:(unsigned long long)arg2 error:(id*)arg3 ;
+-(id)journalForBackupUUID:(id)arg1 error:(id*)arg2 ;
+-(id)getAppleIDsForBackupUDID:(id)arg1 snapshotID:(unsigned long long)arg2 error:(id*)arg3 ;
+-(id)getAppleIDsForBackupUDID:(id)arg1 snapshotID:(unsigned long long)arg2 activeAppleID:(id*)arg3 error:(id*)arg4 ;
+-(BOOL)setupBackupWithPasscode:(id)arg1 error:(id*)arg2 ;
+-(id)initWithDelegate:(id)arg1 ;
 
 ## Functions which might relate to the deviceBackupUUID:
 
@@ -17,6 +24,8 @@ MKBKeyBagCreateBackup: Loaded handler at "/home/scottgl/sandbox/proxy2/__handler
 MCGestaltGetDeviceUUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/ManagedConfiguration/MCGestaltGetDeviceUUID.js"
 MBMobileUID: Auto-generated handler at "/home/scottgl/sandbox/proxy2/__handlers__/MobileBackup/MBMobileUID.js"
 
+Keybag location:
+/var/root/Library/Backup/RestoreKeyBag.plist
 
 ## When capturing the data passed into the CC_SHA1 function for the cdpd process for the iPhone 5, here is the input data that is used to calculate the hash:
 
