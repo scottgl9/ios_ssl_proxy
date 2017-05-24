@@ -109,17 +109,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
         print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
         #if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
-        #    print("APN on %s:%s" % (dst_ip, dst_port))
-        #    #data = self.request.recv(4096)
-        #    #print(repr(data))
-        #    #with self.lock:
-        #    #    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-        #    #ssl._https_verify_certificates(enable=False)
-        #    #try:
-        #    #    self.connection = ssl.wrap_socket(self.connection, keyfile=self.certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True) #, suppress_ragged_eofs=True)
-        #    #except ssl.SSLError as e:
-        #    #    print("Error occurred while connecting to %s %s" % (dst_ip, dst_port))
-        #    # use transparent mode
+        #    print("APN connection %s:%s" % (dst_ip, dst_port))
+        #    apnproxy = ProxyAPNHandler(dst_ip, dst_port)
+        #    apnproxy.main_loop()
+        #    return
+        # use transparent mode
         if ProxyRewrite.transparent == True and dst_port != 80:
             certkey = None
             with self.lock:
