@@ -29,12 +29,14 @@ rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobi
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.mobileme.fmip1.plist`
 rm -f `find /private/var/mobile/Containers/Data/Application -name com.apple.MailAccount-ExtProperties.plist`
 
+rm -f `find /private/var/containers/Shared/SystemGroup -name com.apple.icloud.ifccd.notbackedup.plist`
 rm -rf `find /private/var/mobile/Containers/Data/Application -name com.apple.notificationcenter`
 rm -rf `find /private/var/mobile/Containers/Data/Application -name CloudKit`
 rm -rf `find /private/var/mobile/Containers/Data/Application -name WebKit`
 rm -f `find /private/var/containers/Data/System -name activation_record.plist`
 rm -f `find /private/var/containers/Data/System -name data_ark.plist`
 rm -f `find /private/var/containers/Data/System -name lskd.rl`
+rm -f /private/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/profile-2ccdb2ebb375ce31cfde3b30b2e7c6e17dc09e63231ba70394567dbe0bf8c20b.stub
 rm -f /private/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles/CloudConfigurationDetails.plist
 find /private/var -name "Cache.db*" -exec rm {} \;
 
@@ -107,13 +109,12 @@ rm -rf /private/var/mobile/Library/Notes/notes.sqlite*
 rm -f /private/var/mobile/Library/OnDemandResources/Database/odr.sqlite*
 rm -rf /private/var/mobile/Library/Safari/*
 rm -rf /private/var/mobile/Library/Suggestions/*
-rm -f /private/var/mobile/Library/Preferences/com.apple.AOS*
+rm -f /private/var/mobile/Library/Preferences/com.apple.AOSNotification*.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist
-rm -f /private/var/mobile/Library/Preferences/com.apple.accounts*
+rm -f /private/var/mobile/Library/Preferences/com.apple.accountsd.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.assistant*
 rm -f /private/var/mobile/Library/Preferences/com.apple.bird.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.calaccessd.plist
-rm -f /private/var/mobile/Library/Preferences/com.apple.security.CircleJoinRequested.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.cmfsyncagent.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.coreduet*
 rm -f /private/var/mobile/Library/Preferences/com.apple.corerecents.recentsd.plist
@@ -130,13 +131,17 @@ rm -f /private/var/mobile/Library/Preferences/com.apple.mobile.*
 rm -f /private/var/mobile/Library/Preferences/com.apple.mobile.ld*.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.routined.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.passd.plist
+rm -f /private/var/mobile/Library/Preferences/com.apple.Preferences.plist
+rm -f /private/var/mobile/Library/Preferences/com.apple.security.CircleJoinRequested.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.seld.*
+rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeper.plist
+rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeperd.plist
 rm -f /private/var/mobile/Library/Preferences/ProtectedCloudKeySyncing.plist
 rm -f /private/var/mobile/Library/Preferences/kbd.plist
 
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cloudrecents.*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
-rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.sbd*
+rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.sbd.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
 

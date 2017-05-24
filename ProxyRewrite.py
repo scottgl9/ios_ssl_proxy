@@ -1212,6 +1212,12 @@ class ProxyRewrite:
         metadata = p['metadataList'][0]['metadata']
         import biplist
         metaplist = biplist.readPlistFromString(base64.b64decode(metadata))
+        if ProxyRewrite.unique_log_dir:
+            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+        else:
+            logdir = "logs"
+        filename = ("%s/escrowproxy_metadata.plist" % logdir)
+        biplist.writePlist(metaplist, filename)
         keyreglist = metaplist['ClientMetadata']['SecureBackupKeyRegistry']
         for keyreg in keyreglist:
             print(keyreg)
