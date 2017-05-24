@@ -1,5 +1,59 @@
 ## Documentation on iOS services
 
+## Services which are set to KeepAlive in LaunchDaemons (auto restart):
+com.apple.BTServer.plist
+com.apple.CommCenter.plist
+com.apple.CommCenterClassic.plist
+com.apple.CommCenterLite.plist
+com.apple.OTACrashCopier.plist
+com.apple.OTATaskingAgent.plist
+com.apple.SpringBoard.plist
+com.apple.UserEventAgent-System.plist
+com.apple.aggregated.plist
+com.apple.apsd.plist
+com.apple.assertiond.plist
+com.apple.assetsd.nebulad.plist
+com.apple.assetsd.plist
+com.apple.atc.plist
+com.apple.backboardd.plist
+com.apple.configd.plist
+com.apple.crash_mover.plist
+com.apple.dataaccess.dataaccessd.plist
+com.apple.fairplayd.H2.plist
+com.apple.fseventsd.plist
+com.apple.homed.plist
+com.apple.iaptransportd.plist
+com.apple.identityservicesd.plist
+com.apple.imagent.plist
+com.apple.itunesstored.plist
+com.apple.locationd.plist
+com.apple.logd.plist
+com.apple.managedconfiguration.mdmd.plist
+com.apple.managedconfiguration.profiled.plist
+com.apple.mediaremoted.plist
+com.apple.mediaserverd.plist
+com.apple.mediastream.mstreamd.plist
+com.apple.midiserver-ios.plist
+com.apple.mobileassetd.plist
+com.apple.mobilestoredemod.plist
+com.apple.mtmergeprops.plist
+com.apple.nanoregistryd.plist
+com.apple.navd.plist
+com.apple.ondemandd.plist
+com.apple.powerd.plist
+com.apple.prdaily.plist
+com.apple.revisiond.plist
+com.apple.rolld.plist
+com.apple.routined.plist
+com.apple.sharingd.plist
+com.apple.timed.plist
+com.apple.timezoneupdates.tzd.plist
+com.apple.usbptpd.plist
+com.apple.wifiFirmwareLoader.plist
+com.apple.wifid.plist
+com.apple.wirelessproxd.plist
+
+
 ## Services which run after signed out of iCloud, but don't run on startup:
 
 com.apple.absd
