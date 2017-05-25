@@ -111,6 +111,14 @@ class ProxyRewrite:
         return True
 
     @staticmethod
+    def log_filename(filename):
+        if ProxyRewrite.unique_log_dir:
+            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+        else:
+            logdir = "logs"
+        return ("%s/%s" % (logdir, filename))
+
+    @staticmethod
     def is_courier_push_ip(ipaddr):
 		# from data gathered, this will match the ip address to map to the hostname courier.push.apple.com
         if re.match(r"^17.188.\b1[2-6][0-9]\b.\d{1,3}$",ipaddr): return True
@@ -411,8 +419,6 @@ class ProxyRewrite:
             if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in body:
                 body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
 
-            #body = body.replace('17f899e7ececa6cf4d60eb216311d007abeb11d0', '99da0bf10d7f7f397f41e8019c0513953b2885c5')
-
             if 'X-Mme-Nas-Qualify' in headers:
                 val = bytearray(base64.b64decode(headers['X-Mme-Nas-Qualify']))
                 val = val.replace(orig_body, body)
@@ -701,25 +707,25 @@ class ProxyRewrite:
                 #if ProxyRewrite.rewriteOSVersion == True:
                 #    attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
 
-                if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-                if ProxyRewrite.changePushToken == True and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-                    attribs = ("%s,%s" % (attribs, 'aps-token'))
-                if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
-                    attribs = ("%s,%s" % (attribs, 'client-id'))
+                #if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                #    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+                #if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                #    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+                #if ProxyRewrite.changePushToken == True and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'aps-token'))
+                #if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'client-id'))
                 #headers = ProxyRewrite.b64_rewrite_header_field(headers, 'X-Mme-Nas-Qualify', attribs)
             elif 'x-mme-nas-qualify' in headers:
                 attribs = 'DeviceColor,EnclosureColor,ProductType,SerialNumber,TotalDiskCapacity,UniqueDeviceID,DeviceClass'
-                if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
-                    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
-                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
-                    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
-                if ProxyRewrite.changePushToken == True and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
-                    attribs = ("%s,%s" % (attribs, 'aps-token'))
-                if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
-                    attribs = ("%s,%s" % (attribs, 'client-id'))
+                #if 'InternationalMobileEquipmentIdentity' in ProxyRewrite.dev1info:
+                #    attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
+                #if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
+                #    attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+                #if ProxyRewrite.changePushToken == True and 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'aps-token'))
+                #if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
+                #    attribs = ("%s,%s" % (attribs, 'client-id'))
                 #headers = ProxyRewrite.b64_rewrite_header_field(headers, 'x-mme-nas-qualify', attribs)
         elif hostname.endswith('quota.icloud.com'):
             if 'X-Client-UDID' in headers:
@@ -1214,11 +1220,7 @@ class ProxyRewrite:
         metaplist = biplist.readPlistFromString(base64.b64decode(metadata))
         keyreglist = metaplist['ClientMetadata']['SecureBackupKeyRegistry']
 
-        if ProxyRewrite.unique_log_dir:
-            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
-        else:
-            logdir = "logs"
-        filename = ("%s/escrowproxy_metadata.plist" % logdir)
+        filename = ProxyRewrite.log_filename("escrowproxy_metadata.plist")
         biplist.writePlist(metaplist, filename)#, binary=False)
         for keyreg in keyreglist:
             print(keyreg)
@@ -1233,14 +1235,10 @@ class ProxyRewrite:
     # add / update info parsed from requests/responses to logs/summary.plist
     @staticmethod
     def add_info_summary(key, value):
-            if ProxyRewrite.unique_log_dir:
-                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
-            else:
-                logdir = "logs"
-            filename = ("%s/summary.plist" % logdir)
-            if os.path.exists(filename):
-                p = plistlib.readPlist(filename)
-            else:
-                p = dict()
-            p[key] = value
-            plistlib.writePlist(p, filename)
+        filename = ProxyRewrite.log_filename("summary.plist")
+        if os.path.exists(filename):
+            p = plistlib.readPlist(filename)
+        else:
+            p = dict()
+        p[key] = value
+        plistlib.writePlist(p, filename)

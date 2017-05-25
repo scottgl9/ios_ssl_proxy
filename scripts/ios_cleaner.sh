@@ -1,5 +1,8 @@
 #!/bin/sh
 
+
+#IGNORE_PATH=`find /private/var/mobile/Containers/Data/Application -name supplies.wall.Home-Depot | egrep -o -m 1 "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"`
+#find /private/var/mobile/Containers/Data/Application/* -not -path "/private/var/mobile/Containers/Data/Application/$IGNORE_PATH/*" -exec rm -rf {} \;
 # directories affect (for backup):
 # /var/Keychains
 # /var/mobile/Library 

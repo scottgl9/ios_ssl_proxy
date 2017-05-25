@@ -566,6 +566,11 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         req.headers = ProxyRewrite.rewrite_headers(req.headers, req.path)
         # rewrite URL path if needed
         req.path = ProxyRewrite.rewrite_path(req.headers, req.path)
+        hostname = None
+        if 'Host' in self.headers:
+            hostname = self.headers['Host']
+        else:
+            hostname = self.path.split(':')[0]
 
         # should be able to safely modify body here:
         req_body_plain = req_body
@@ -594,6 +599,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
 
+        if 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
+            fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
+            with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
+
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
@@ -613,11 +622,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res.headers['Content-Length'] = str(len(res_body))
             return res_body
         elif 'static.ips.apple.com' in hostname and 'absinthe-cert/certificate.cer' in self.path:
-            if ProxyRewrite.unique_log_dir:
-                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
-            else:
-                logdir = "logs"
-            with open("%s/certificate.cer" % logdir, "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
+            with open(ProxyRewrite.log_filename("certificate.cer"), "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
         elif 'escrowproxy.icloud.com' in hostname and self.path.endswith("escrowproxy/api/get_records"):
             ProxyRewrite.decode_escrowproxy_record(res_body)
         elif ProxyRewrite.use_rewrite_pubkey and 'setup.icloud.com' in hostname and self.path.endswith("setup/qualify/cert?ver=P1.10.1"):
