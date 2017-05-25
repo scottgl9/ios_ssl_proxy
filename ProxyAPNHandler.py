@@ -106,9 +106,13 @@ class ProxyAPNHandler:
             length = struct.unpack(">h", data[index+2:index+4])[0] + 5
             if length > len(data):
                 print("Length of %d extends past end" % length)
-                return
+                return certs
+            if length < 0: return certs
             print("index=%d, length=%d" % (index, length))
             certdata = data[index:index+length]
+            cert = crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
+            print(cert.get_issuer())
+            print(cert.get_subject())
             if certs == None: certs = []
             certs.append(certdata)
             index = index + length
@@ -186,7 +190,8 @@ class ProxyAPNHandler:
 
     def on_recv(self):
         data = self.data
-        print(repr(data))
+        self.extract_certs(data)
+        #print(repr(data))
         if self.apnslogger:
             self.apnslogger.write(data)
         # here we can parse and/or modify the data before send forward
