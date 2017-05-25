@@ -20,11 +20,8 @@ def main(target_process):
 	script = session.create_script("""
 		var ranges = Process.enumerateRangesSync({protection: 'r--', coalesce: true});
 		var range;
-                while (1) {
-			range = ranges.pop();
-			if(!range){
-				break;
-                        }
+		for (var i=0; i<ranges.length; i++) {
+			range = ranges[i]; //ranges.pop();
                         if (range.size < 1048576) {
                             console.log(range.base+":"+range.size);
                             var bytes = Memory.readByteArray(range.base, range.size);

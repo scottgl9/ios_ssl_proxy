@@ -20,14 +20,14 @@ def main(target_process):
                 var lastmodule="";
                 var lastmodulebase=0;
                 var modulelist = [];
-                while (1) {
-                    module = modules.pop();
-                    if (!module) { break; }
+                for (var i=0; i<modules.length; i++) {
+                    module = modules[i];
                     if (lastmodule == "") {
                         lastmodule = module.name;
                         lastmodulebase = module.base;
                         continue;
                     }
+                    console.log(module.name+":"+module.base+":"+module.size);
                     line = { "name":module.name, "start":parseInt(module.base,16), "end":parseInt(lastmodulebase,16) };
                     modulelist.push(line);
                     lastmodule = module.name;
@@ -35,11 +35,9 @@ def main(target_process):
                 }
 		var ranges = Process.enumerateRangesSync({protection: 'r--', coalesce: true});
 		var range;
-                while (1) {
-			range = ranges.pop();
-			if(!range){
-				break;
-			}
+                for (var j=0; j<ranges.length; j++) {
+                        range = ranges[j]; //ranges.pop();
+			console.log(range.base+":"+range.size+":"+range.protection);
                         for(var i=0; i<modulelist.length; i++) {
                             name = modulelist[i].name;
                             if (name == "%s") {
