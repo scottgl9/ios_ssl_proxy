@@ -66,11 +66,14 @@ class ProxyAPNHandler:
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if ProxyRewrite.unique_log_dir:
-            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
-        else:
-            logdir = "logs"
-        self.apnslogger = open(("%s/APNS.log" % logdir), "ab")
+
+        if ProxyRewrite.file_logging:
+            if ProxyRewrite.unique_log_dir:
+                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+            else:
+                logdir = "logs"
+            self.apnslogger = open(("%s/APNS.log" % logdir), "ab")
+
         self.server.bind((host, port))
         self.server.listen(200)
 
@@ -110,9 +113,12 @@ class ProxyAPNHandler:
             if length < 0: return certs
             print("index=%d, length=%d" % (index, length))
             certdata = data[index:index+length]
-            cert = crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
-            print(cert.get_issuer())
-            print(cert.get_subject())
+            try:
+                cert = crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
+                print(cert.get_issuer())
+                print(cert.get_subject())
+            except:
+                cert = None
             if certs == None: certs = []
             certs.append(certdata)
             index = index + length
@@ -121,13 +127,7 @@ class ProxyAPNHandler:
     def on_accept(self):
         clientsock, clientaddr = self.server.accept()
 
-        SO_ORIGINAL_DST = 80
-        dst = clientsock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
-        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
-        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
-
-        peername = '%s:%s' % (clientsock.getpeername()[0], clientsock.getpeername()[1])
-        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        dst_ip, dst_port = ProxyRewrite.get_socket_info(clientsock)
 
         certkey = None
 
@@ -192,7 +192,10 @@ class ProxyAPNHandler:
         data = self.data
         self.extract_certs(data)
         #print(repr(data))
-        if self.apnslogger:
-            self.apnslogger.write(data)
+        if ProxyRewrite.file_logging and self.apnslogger:
+            try:
+                self.apnslogger.write(data)
+            except:
+                print("failed to write to file APN.log")
         # here we can parse and/or modify the data before send forward
         self.channel[self.s].send(data)

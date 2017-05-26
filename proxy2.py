@@ -102,12 +102,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     # hack to handle so that we can ignore certain hostnames
     def handle(self):
-        SO_ORIGINAL_DST = 80
-        dst = self.request.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
-        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
-        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
-        peername = '%s:%s' % (self.request.getpeername()[0], self.request.getpeername()[1])
-        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        dst_ip, dst_port = ProxyRewrite.get_socket_info(self.request)
         #if ProxyRewrite.is_courier_push_ip(dst_ip) and dst_port == 443:
         #    print("APN connection %s:%s" % (dst_ip, dst_port))
         #    apnproxy = ProxyAPNHandler(dst_ip, dst_port)
@@ -194,7 +189,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             return
 
     def do_CONNECT(self):
-        hostname = self.path.split(':')[0]
+        hostname = hostname = ProxyRewrite.get_hostname(self.headers, self.path)
         print("CONNECT %s" % self.path)
 
         if 'Proxy-Connection' in self.headers:
@@ -212,12 +207,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.connect_relay()
 
     def connect_intercept(self):
-        hostname = None
-        if 'Host' in self.headers:
-            hostname = self.headers['Host']
-        else:
-            hostname = self.path.split(':')[0]
-
+        hostname = ProxyRewrite.get_hostname(self.headers, self.path)
         certkey = None
 
         with self.lock:
@@ -514,7 +504,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 try:
                     json_obj = json.loads(req_body)
                     json_str = json.dumps(json_obj, indent=2)
-                    if json_str.count('\n') < 50 or 'fmip.icloud.com' in req.path or 'fmf.icloud.com' in req.path or 'fmipmobile.icloud.com' in req.path:
+                    if json_str.count('\n') < 50 or req.path.endswith('fmip.icloud.com') or req.path.endswith('fmf.icloud.com') or req.path.endswith('fmipmobile.icloud.com'):
                         req_body_text = json_str
                     else:
                         lines = json_str.splitlines()
@@ -566,11 +556,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         req.headers = ProxyRewrite.rewrite_headers(req.headers, req.path)
         # rewrite URL path if needed
         req.path = ProxyRewrite.rewrite_path(req.headers, req.path)
-        hostname = None
-        if 'Host' in self.headers:
-            hostname = self.headers['Host']
-        else:
-            hostname = self.path.split(':')[0]
+        hostname = ProxyRewrite.get_hostname(req.headers, req.path)
 
         # should be able to safely modify body here:
         req_body_plain = req_body
@@ -599,7 +585,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
 
-        if 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
+        if ProxyRewrite.file_logging and 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
             fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
             with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
 
@@ -621,7 +607,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #res_body = plistlib.writePlistToString(p)
             #res.headers['Content-Length'] = str(len(res_body))
             return res_body
-        elif 'static.ips.apple.com' in hostname and 'absinthe-cert/certificate.cer' in self.path:
+        elif ProxyRewrite.file_logging and 'static.ips.apple.com' in hostname and 'absinthe-cert/certificate.cer' in self.path:
             with open(ProxyRewrite.log_filename("certificate.cer"), "w") as f: f.write(ssl.DER_cert_to_PEM_cert(res_body))
         elif 'escrowproxy.icloud.com' in hostname and self.path.endswith("escrowproxy/api/get_records"):
             ProxyRewrite.decode_escrowproxy_record(res_body)
@@ -664,13 +650,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         return res_body
 
     def save_handler(self, req, req_body, res, res_body):
-        hostname = None
         headers_only = False
-        if 'Host' in req.headers:
-            hostname = req.headers['Host']
-        else:
-            hostname = self.path.split(':')[0]
-        
+        if ProxyRewrite.file_logging == False: return
+        hostname = ProxyRewrite.get_hostname(req.headers, req.path)
+
         if 'icloud.com' in hostname or 'apple.com' in hostname:
             req_body_plain = req_body
             if 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body)) > 0:
@@ -811,6 +794,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if config.has_option('proxy2', 'apnproxy'): ProxyRewrite.apnproxy = config.getboolean('proxy2', 'apnproxy')
     if config.has_option('proxy2', 'apnproxyssl'): ProxyRewrite.apnproxyssl = config.getboolean('proxy2', 'apnproxyssl')
     if config.has_option('proxy2', 'usejbca'): ProxyRewrite.usejbca = config.getboolean('proxy2', 'usejbca')
+    if config.has_option('proxy2', 'file_logging'): ProxyRewrite.file_logging = config.getboolean('proxy2', 'file_logging')
     if config.has_option('proxy2', 'unique_log_dir'): ProxyRewrite.unique_log_dir = config.getboolean('proxy2', 'unique_log_dir')
     if config.has_option('proxy2', 'use_rewrite_pubkey'): ProxyRewrite.use_rewrite_pubkey = config.getboolean('proxy2', 'use_rewrite_pubkey')
     if config.has_option('proxy2', 'remove_certs'): ProxyRewrite.remove_certs = config.getboolean('proxy2', 'remove_certs')
@@ -822,7 +806,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
 
 
-    if ProxyRewrite.unique_log_dir and os.path.exists("logs_%s" % ProxyRewrite.dev1info['SerialNumber']) == False:
+    if ProxyRewrite.file_logging and ProxyRewrite.unique_log_dir and os.path.exists("logs_%s" % ProxyRewrite.dev1info['SerialNumber']) == False:
         os.mkdir("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
 
     if config.has_option('proxy2', 'ProductVersion'):

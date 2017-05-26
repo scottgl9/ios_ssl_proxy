@@ -62,6 +62,7 @@ class ProxyRewrite:
     apnproxyssl = False
     transparent = False
     usejbca = False
+    file_logging = True
     unique_log_dir = False
     use_rewrite_pubkey = False
     remove_certs = False
@@ -109,6 +110,27 @@ class ProxyRewrite:
         #if hostname == "static.ips.apple.com": return False
         #if hostname == "captive.apple.com": return False
         return True
+
+    @staticmethod
+    def get_hostname(headers, path):
+        hostname = None
+        if 'Host' in headers:
+            hostname = headers['Host']
+            hostname = hostname.replace(':443','')
+        else:
+            hostname = path.split(':')[0]
+            hostname = hostname.replace(':443','')
+        return hostname
+
+    @staticmethod
+    def get_socket_info(sock):
+        SO_ORIGINAL_DST = 80
+        dst = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 16) # Get the original destination IP before iptables redirect
+        _, dst_port, ip1, ip2, ip3, ip4 = struct.unpack("!HHBBBB8x", dst)
+        dst_ip = '%s.%s.%s.%s' % (ip1,ip2,ip3,ip4)
+        peername = '%s:%s' % (sock.getpeername()[0], sock.getpeername()[1])
+        print('Client %s -> %s:%s' % (peername, dst_ip, dst_port))
+        return dst_ip, dst_port
 
     @staticmethod
     def log_filename(filename):
@@ -356,13 +378,7 @@ class ProxyRewrite:
     def rewrite_body(body, headers, path):
         if body == None: return None
 
-        hostname = None
-        if 'Host' in headers:
-            hostname = headers['Host']
-            hostname = hostname.replace(':443','')
-        else:
-            hostname = path.split(':')[0]
-            hostname = hostname.replace(':443','')
+        hostname = ProxyRewrite.get_hostname(headers, path)
 
         old_body = body
 
@@ -423,7 +439,6 @@ class ProxyRewrite:
                 val = bytearray(base64.b64decode(headers['X-Mme-Nas-Qualify']))
                 val = val.replace(orig_body, body)
                 headers['X-Mme-Nas-Qualify'] = base64.b64encode(val)
-                print("Replaced X-Mme-Nas-Qualify")
 
             return body
         elif hostname.endswith('fmf.icloud.com'):
@@ -681,14 +696,7 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_headers(headers, path):
-        hostname = None
-        if 'Host' in headers:
-            hostname = headers['Host']
-            hostname = hostname.replace(':443','')
-        else:
-            hostname = path.split(':')[0]
-            hostname = hostname.replace(':443','')
-
+        hostname = ProxyRewrite.get_hostname(headers, path)
         #if 'fmipmobile.icloud.com' in hostname:
         #        headers['Authorization'] = 'Basic %s' % base64.b64encode('%s:%s' % (ProxyRewrite.dev2info['dsPrsID'], ProxyRewrite.dev2info['mmeAuthToken']))
         #if 'fmfmobile.icloud.com' in hostname and 'Authorization' in headers and 'Basic' in headers['Authorization']:
@@ -847,13 +855,7 @@ class ProxyRewrite:
 
     @staticmethod
     def rewrite_path(headers, path):
-        hostname = None
-        if 'Host' in headers:
-            hostname = headers['Host']
-            hostname = hostname.replace(':443','')
-        else:
-            hostname = path.split(':')[0]
-
+        hostname = ProxyRewrite.get_hostname(headers, path)
         old_path = path
         if 'dsPrsID' in ProxyRewrite.dev1info and 'dsPrsID' in ProxyRewrite.dev2info:
             path = path.replace(ProxyRewrite.dev1info['dsPrsID'], ProxyRewrite.dev2info['dsPrsID']) 
@@ -1214,6 +1216,7 @@ class ProxyRewrite:
 
     @staticmethod
     def decode_escrowproxy_record(body):
+        if ProxyRewrite.file_logging == False: return
         p = plistlib.readPlistFromString(body)
         metadata = p['metadataList'][0]['metadata']
         import biplist
@@ -1235,6 +1238,7 @@ class ProxyRewrite:
     # add / update info parsed from requests/responses to logs/summary.plist
     @staticmethod
     def add_info_summary(key, value):
+        if ProxyRewrite.file_logging == False: return
         filename = ProxyRewrite.log_filename("summary.plist")
         if os.path.exists(filename):
             p = plistlib.readPlist(filename)
