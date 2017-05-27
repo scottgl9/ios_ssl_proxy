@@ -961,13 +961,13 @@ class ProxyRewrite:
         except ssl.SSLError, e:
             print("get_server_certificate() failed")
             # assume that the cert they want is for courier.push.apple.com
-            srvcertname = "server_certs/courier.push.apple.com.crt"
+            srvcertname = "ssl/server_certs/courier.push.apple.com.crt"
             st_cert=open(srvcertname, 'rt').read()
             cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
         except socket.error, e:
             print("get_server_certificate() failed")
             # assume that the cert they want is for courier.push.apple.com
-            srvcertname = "server_certs/courier.push.apple.com.crt"
+            srvcertname = "ssl/server_certs/courier.push.apple.com.crt"
             st_cert=open(srvcertname, 'rt').read()
         certdata, keysize = ProxyRewrite.rewrite_cert_pubkey_data(st_cert)
 
@@ -987,23 +987,23 @@ class ProxyRewrite:
         if ProxyRewrite.is_courier_push_ip(hostname):
             hostname = "courier.push.apple.com"
         if 'icloud.com' in hostname and 'fmip.icloud.com' not in hostname and 'escrowproxy.icloud.com' not in hostname:
-            srvcertname = "server_certs/icloud.com.crt"
+            srvcertname = "ssl/server_certs/icloud.com.crt"
         elif 'fmip.icloud.com' in hostname:
-            srvcertname = "server_certs/fmip.icloud.com.crt"
+            srvcertname = "ssl/server_certs/fmip.icloud.com.crt"
         elif hostname == 'xp.apple.com':
-            srvcertname = "server_certs/xp.apple.com.crt"
+            srvcertname = "ssl/server_certs/xp.apple.com.crt"
         elif 'itunes.apple.com' in hostname:
-            srvcertname = "server_certs/itunes.apple.com.crt"
+            srvcertname = "ssl/server_certs/itunes.apple.com.crt"
         elif 'escrowproxy.icloud.com' in hostname:
-            srvcertname = "server_certs/escrowproxy.icloud.com.crt"
+            srvcertname = "ssl/server_certs/escrowproxy.icloud.com.crt"
         elif 'ess.apple.com' in hostname:
-            srvcertname = "server_certs/ess.apple.com.crt"
+            srvcertname = "ssl/server_certs/ess.apple.com.crt"
         elif hostname == "courier.push.apple.com":
-            srvcertname = "server_certs/courier.push.apple.com.crt"
+            srvcertname = "ssl/server_certs/courier.push.apple.com.crt"
         elif hostname == 'apps.itunes.com':
-            srvcertname = "server_certs/apps.itunes.com.crt"
+            srvcertname = "ssl/server_certs/apps.itunes.com.crt"
         else:
-            srvcertname = "%s/%s.crt" % ('server_certs', hostname)
+            srvcertname = "%s/%s.crt" % ('ssl/server_certs', hostname)
         srvcert=None
         altnames=None
 
@@ -1018,13 +1018,13 @@ class ProxyRewrite:
             except ssl.SSLError, e:
                 print("get_server_certificate() failed")
                 # assume that the cert they want is for courier.push.apple.com
-                srvcertname = "server_certs/courier.push.apple.com.crt"
+                srvcertname = "ssl/server_certs/courier.push.apple.com.crt"
                 st_cert=open(srvcertname, 'rt').read()
                 srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
             except socket.error, e:
                 print("get_server_certificate() failed")
                 # assume that the cert they want is for courier.push.apple.com
-                srvcertname = "server_certs/courier.push.apple.com.crt"
+                srvcertname = "ssl/server_certs/courier.push.apple.com.crt"
                 st_cert=open(srvcertname, 'rt').read()
                 srvcert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
 

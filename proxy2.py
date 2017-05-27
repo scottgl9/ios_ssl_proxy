@@ -587,7 +587,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if ProxyRewrite.file_logging and 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
             fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
-            with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
+            #with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
 
         return req_body_modified
 
