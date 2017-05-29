@@ -135,7 +135,7 @@ class ProxyAPNHandler:
             length = struct.unpack(">h", data[index+2:index+4])[0] + 5
             if length > len(data):
                 print("Length of %d extends past end" % length)
-                return certs
+                return None
             if length < 0: return certs
             print("index=%d, length=%d" % (index, length))
             certdata = data[index:index+length]

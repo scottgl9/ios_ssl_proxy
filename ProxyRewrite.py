@@ -262,6 +262,9 @@ class ProxyRewrite:
         boundary = headers['Content-Type'].split('=')[1]
         print("Boundary = %s" % boundary)
         p = plistlib.readPlistFromString(xml)
+        if 'ActivationInfoXML' in p:
+            filename = ProxyRewrite.log_filename("ActivationInfoXML.plist")
+            plistlib.writePlist(p, filename)
         if 'ActivationInfoXML' in ProxyRewrite.dev2info:
             # copy straight from device info
             p['ActivationInfoXML'] = ProxyRewrite.dev2info['ActivationInfoXML']
@@ -888,6 +891,9 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['ProductVersion'], ProxyRewrite.dev2info['ProductVersion'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'play.itunes.apple.com':
+                path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
+                if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
+        elif hostname == 'upp.itunes.apple.com':
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname.endswith('buy.itunes.apple.com'):
