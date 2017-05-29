@@ -115,6 +115,7 @@ class ProxyAPNHandler:
             certdata = data[index:index+length]
             try:
                 cert = crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
+                issuer = cert.get_issuer()
                 print(cert.get_issuer())
                 print(cert.get_subject())
             except:
@@ -124,6 +125,38 @@ class ProxyAPNHandler:
             index = index + length
         return certs
 
+    def extract_client_cert(self, data):
+        cert = None
+        index=0
+
+        while 1:
+            index = data.find("\x30\x82", index)
+            if index < 0: break
+            length = struct.unpack(">h", data[index+2:index+4])[0] + 5
+            if length > len(data):
+                print("Length of %d extends past end" % length)
+                return certs
+            if length < 0: return certs
+            print("index=%d, length=%d" % (index, length))
+            certdata = data[index:index+length]
+            try:
+                cert = crypto.load_certificate(crypto.FILETYPE_ASN1, certdata)
+                issuer = cert.get_issuer()
+                if issuer.OU == 'Apple iPhone' and issuer.CN == 'Apple iPhone Device CA':
+                    print(cert.get_issuer())
+                    print(cert.get_subject())
+                    print(cert.get_subject().CN)
+                    apnuuid = cert.get_subject().CN
+                    if apnuuid != None:
+                        ProxyRewrite.add_info_summary('apnuuid', apnuuid)
+                    certdata = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
+                    with open(ProxyRewrite.log_filename("apn_client.pem"), "w") as f: f.write(certdata)
+                    return cert
+            except:
+                cert = None
+            index = index + length
+        return None
+
     def on_accept(self):
         clientsock, clientaddr = self.server.accept()
 
@@ -131,19 +164,25 @@ class ProxyAPNHandler:
 
         certkey = None
 
-        with self.lock:
-            if ProxyRewrite.use_rewrite_pubkey:
-                certpath, keysize = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-                certkey = ("ssl/keys/cert%s.key" % keysize)
-            else:
-                certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
-                certkey = self.certkey
-
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         if ProxyRewrite.apnproxyssl:
+            print("SSL Enabled for APN")
+            with self.lock:
+                if ProxyRewrite.use_rewrite_pubkey:
+                    certpath, keysize = ProxyRewrite.rewrite_cert_pubkey(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = ("ssl/keys/cert%s.key" % keysize)
+                else:
+                    certpath = ProxyRewrite.generate_cert(self.certdir, self.certKey, self.issuerCert, self.issuerKey, dst_ip, dst_port)
+                    certkey = self.certkey
             ssl._https_verify_certificates(enable=False)
             clientsock = ssl.wrap_socket(clientsock, keyfile=certkey, certfile=certpath, server_side=True, do_handshake_on_connect=True)
+            filename = ProxyRewrite.log_filename("apn_client.pem")
+            if os.path.isfile(filename):
+                st_cert=open(filename, 'rt').read()
+                cert = crypto.load_certificate(crypto.FILETYPE_PEM, st_cert)
+                print(cert.get_subject())
+
             #self.forward = ssl.wrap_socket(self.forward, ca_certs="server_certs/courier.push.apple.com.crt", cert_reqs=ssl.CERT_REQUIRED)
             #ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             #ssl_context.load_cert_chain(certfile=certpath, keyfile=certkey)
@@ -190,8 +229,12 @@ class ProxyAPNHandler:
 
     def on_recv(self):
         data = self.data
-        self.extract_certs(data)
-        #print(repr(data))
+        cert = self.extract_client_cert(data)
+        if cert:
+            print("Received client APN SSL cert")
+            #self.on_close()
+            #ProxyRewrite.apnproxyssl = True
+            #return
         if ProxyRewrite.file_logging and self.apnslogger:
             try:
                 self.apnslogger.write(data)

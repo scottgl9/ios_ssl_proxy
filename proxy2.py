@@ -587,7 +587,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if ProxyRewrite.file_logging and 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
             fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
-            #with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
+            if fdrblob != None:
+                with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
+        elif 'gs-loc.apple.com' in hostname or 'gsp-ssl.ls.apple.com' in hostname or 'gsp64-ssl.ls.apple.com' in hostname or 'gsp10-ssl.apple.com' in hostname:
+			ProxyRewrite.locationdDecode2(req_body_modified)
 
         return req_body_modified
 
@@ -660,7 +663,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 content_encoding = req.headers.get('Content-Encoding', 'identity')
                 req_body_plain = self.decode_content_body(str(req_body), content_encoding)
             # ignore saving binary data we don't care about, also don't save bookmarks because the logfile will continuously group
-            if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz") or self.path.endswith(".zip"): headers_only = True
+            if self.path.endswith(".png") or self.path.endswith(".jpeg") or self.path.endswith(".gz") or self.path.endswith(".zip") or self.path.endswith(".xz"): headers_only = True
             if 'setup.icloud.com/setup/qualify/cert' in self.path: headers_only = True
             elif 'setup.icloud.com/setup/account/getPhoto' in self.path or 'setup.icloud.com/setup/family/getMemberPhoto' in self.path: 
                 headers_only = True
@@ -696,7 +699,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             urllogger.write(str(self.command+' '+self.path+"\n"))
             urllogger.close()
 
-            if ProxyRewrite.singlelogfile:
+            if headers_only == False and ProxyRewrite.singlelogfile:
                 ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
                 ProxyRewrite.logger.write(str(req.headers))
 
@@ -709,7 +712,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     req_body = req_body_orig
 
-            if req_body:
+            if headers_only == False and req_body:
                 logger.write(str(req_body))
                 if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(req_body))
 
@@ -729,7 +732,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     res_body = res_body_orig
 
-            if res_body:
+            if headers_only == False and res_body:
                 logger.write(str(res_body))
                 if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(res_body))
 
@@ -743,7 +746,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 errlogger.write(str(res_body))
                 errlogger.write(str("\n"))
 
-            if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
+            if headers_only == False and ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
             logger.close()
 

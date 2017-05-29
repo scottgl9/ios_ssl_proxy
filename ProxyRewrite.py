@@ -1142,6 +1142,24 @@ class ProxyRewrite:
         return dercert
 
     @staticmethod
+    def locationdDecode2(body):
+        data = bytes(body)
+        if data[0] != '\x00' or data[1] != '\x01' or data[2] != '\x00':
+            print("Invalid locationd request body")
+            return
+        pos = 3
+        length = ord(data[pos])
+        locale = data[pos+1:pos+1+length]
+        pos = pos + 2+ length
+        length = ord(data[pos])
+        service = data[pos+1:pos+1+length]
+        pos = pos + 2 + length
+        length = ord(data[pos])
+        version= data[pos+1:pos+1+length]
+        pos = pos + 2 + length
+        print("{\t%s\n\t%s\n\t%s\n}" % (locale, service, version))
+
+    @staticmethod
     def locationdDecode(body):
         print(repr(body))
         data = bytes(body)
@@ -1158,13 +1176,15 @@ class ProxyRewrite:
                         instruct = False
                 elif data[pos+1] == '\x00':
                     #dont do anything
-                    print("")
+                    pos = pos + 1
+                    continue
                 else:
+                    if (pos + 1) >= len(data): break
                     datalen=ord(data[pos+1])
                     # this is some kind of substruct 0x12 0x13 0x0A 0x11
                     if data[pos+2] == '\x12':
                         print("DATA1_START")
-                        while pos < len(data):
+                        while pos <= len(data):
                             pos = pos + 4
                             datalen=ord(data[pos+1])
                             print(str(data[pos+1:pos+1+datalen]))
@@ -1173,10 +1193,10 @@ class ProxyRewrite:
                         pos = pos + 3
                         datalen=ord(data[pos])
                         pos = pos + 1
-                        print(binascii.hexlify(data[pos:pos+datalen]))
+                        print("\t%s" % binascii.hexlify(data[pos:pos+datalen]))
                         pos = pos + datalen
                     else:
-                        print(str(data[pos+2:pos+2+datalen]))
+                        print("\t%s" % str(data[pos+2:pos+2+datalen]))
                         pos = pos + datalen
                 pos = pos + 2
 
