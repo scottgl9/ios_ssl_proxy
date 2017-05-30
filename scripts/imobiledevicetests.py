@@ -47,7 +47,11 @@ def lockdown_get_service_client(service_class):
 
 def main():
     print(get_device_list())
-    lockdown = LockdownClient(iDevice())
+    try:
+        lockdown = LockdownClient(iDevice())
+    except LockdownError:
+        print("Failed to connect to device")
+        exit(0)
     #print_domain_values(lockdown)
     if trusted_host_attached(lockdown):
         sb = Popen("idevicesyslog | egrep --color=auto \"([a-f0-9]{8} [a-f0-9]{8} [a-f0-9]{8} [a-f0-9]{8} [a-f0-9]{8})|([A-Fa-f0-9]{2}){10,11}\"", shell=True, stdout=PIPE)

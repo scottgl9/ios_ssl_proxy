@@ -590,8 +590,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #if fdrblob != None:
             #    with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
         elif 'gs-loc.apple.com' in hostname or 'gsp-ssl.ls.apple.com' in hostname or 'gsp64-ssl.ls.apple.com' in hostname or 'gsp10-ssl.apple.com' in hostname:
-			ProxyRewrite.locationdDecode2(req_body_modified)
-
+            ProxyRewrite.locationdDecode2(req_body_modified)
+        elif 'identity.apple.com' in hostname:
+            import xml2dict
+            print(xml2dict.parse(req_body_modified))
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
@@ -808,6 +810,13 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     ProxyRewrite.jailbroken = config.getboolean('proxy2', 'jailbroken')
     ProxyRewrite.singlelogfile = config.getboolean('proxy2', 'singlelogfile')
 
+
+    if ProxyRewrite.remove_certs:
+        print("Removing old certs")
+        for filename in os.listdir("./certs"):
+            file_path = os.path.join("./certs", filename)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
 
     if ProxyRewrite.file_logging and ProxyRewrite.unique_log_dir and os.path.exists("logs_%s" % ProxyRewrite.dev1info['SerialNumber']) == False:
         os.mkdir("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
