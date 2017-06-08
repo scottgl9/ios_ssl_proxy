@@ -673,6 +673,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             elif 'ckdatabase.icloud.com' in req.path or 'ckdevice.icloud.com' in req.path or 'caldav.icloud.com' in req.path: headers_only = True
             elif 'keyvalueservice.icloud.com' in req.path: headers_only = True
             elif 'appldnld.apple.com' in req.path: headers_only = True
+
+            #for index in range(len(req.headers.headers)):
+            #    print(req.headers.headers[index])
+            #    #result = re.match("(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})", req.headers.headers[index])
+            #    #if result:
+            #    #    result = result.group(0)
+            #    #    print(result)
+            #    #    req.headers.headers[index].replace(result, result + " (base64)")
+
             if headers_only == True:
                 req_header_text = "%s %s %s" % (req.command, req.path, req.request_version)
                 res_header_text = "%s %d %s\n" % (res.response_version, res.status, res.reason)
