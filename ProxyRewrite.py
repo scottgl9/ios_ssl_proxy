@@ -64,6 +64,7 @@ class ProxyRewrite:
     usejbca = False
     file_logging = True
     unique_log_dir = False
+    split_logs = False
     use_rewrite_pubkey = False
     remove_certs = False
     changeClientID = False

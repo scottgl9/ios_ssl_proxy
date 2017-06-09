@@ -702,13 +702,39 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if os.path.exists(logdir) == False:
                 os.mkdir(logdir)
 
-            logger = open("%s/%s.log" % (logdir, logname), "ab")
-            logger.write(str(self.command+' '+self.path+"\n"))
-            logger.write(str(req.headers))
-
             urllogger = open("%s/urls.log" % logdir, "ab")
             urllogger.write(str(self.command+' '+self.path+"\n"))
             urllogger.close()
+
+            errlogger = open("%s/errors.log" % logdir, "ab")
+            if res.status == 404 or res.status == 400 or res.status == 424 or res.status == 500 or res.status == 502:
+                errlogger.write(str(self.command+' '+self.path+"\n"))
+                errlogger.write(str(req.headers))
+                if req_body: errlogger.write(str(req_body))
+                errlogger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
+                errlogger.write(str(res.headers))
+                errlogger.write(str(res_body))
+                errlogger.write(str("\n"))
+
+            if ProxyRewrite.split_logs:
+                if self.path.startswith("https"): path = self.path.replace("https://", "")
+                elif self.path.startswith("http"): path = self.path.replace("http://", "")
+                if 'icloud.com' in path: path = re.sub(r'^p\d\d-', '', path)
+                logdir = ("%s/%s" % (logdir, os.path.dirname(path)))
+                parts = logdir.split("/")
+                fullpath = parts[0]
+                for dirname in parts[1:]:
+                    fullpath = ("%s/%s" % (fullpath, dirname))
+                    if os.path.exists(fullpath) == False: os.mkdir(fullpath)
+                path, logname = os.path.split(self.path)
+                if '?' in logname: logname = logname.split('?')[0]
+                print("%s %s" % (logdir, logname))
+
+            path = ("%s/%s.log" % (logdir, logname))
+            if logname == '': path = ("%s.log" % logdir)
+            logger = open(path, "ab")
+            logger.write(str(self.command+' '+self.path+"\n"))
+            logger.write(str(req.headers))
 
             if headers_only == False and ProxyRewrite.singlelogfile:
                 ProxyRewrite.logger.write(str(self.command+' '+self.path+"\n"))
@@ -746,16 +772,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if headers_only == False and res_body:
                 logger.write(str(res_body))
                 if ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str(res_body))
-
-            errlogger = open("%s/errors.log" % logdir, "ab")
-            if res.status == 404 or res.status == 400 or res.status == 424 or res.status == 500 or res.status == 502:
-                errlogger.write(str(self.command+' '+self.path+"\n"))
-                errlogger.write(str(req.headers))
-                if req_body: errlogger.write(str(req_body))
-                errlogger.write(str("\r\n%s %d %s\r\n" % (self.protocol_version, res.status, res.reason)))
-                errlogger.write(str(res.headers))
-                errlogger.write(str(res_body))
-                errlogger.write(str("\n"))
 
             if headers_only == False and ProxyRewrite.singlelogfile: ProxyRewrite.logger.write(str("\n"))
             logger.write(str("\n"))
@@ -810,6 +826,7 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
     if config.has_option('proxy2', 'usejbca'): ProxyRewrite.usejbca = config.getboolean('proxy2', 'usejbca')
     if config.has_option('proxy2', 'file_logging'): ProxyRewrite.file_logging = config.getboolean('proxy2', 'file_logging')
     if config.has_option('proxy2', 'unique_log_dir'): ProxyRewrite.unique_log_dir = config.getboolean('proxy2', 'unique_log_dir')
+    if config.has_option('proxy2', 'split_logs'): ProxyRewrite.split_logs = config.getboolean('proxy2', 'split_logs')
     if config.has_option('proxy2', 'use_rewrite_pubkey'): ProxyRewrite.use_rewrite_pubkey = config.getboolean('proxy2', 'use_rewrite_pubkey')
     if config.has_option('proxy2', 'remove_certs'): ProxyRewrite.remove_certs = config.getboolean('proxy2', 'remove_certs')
     ProxyRewrite.changeClientID = config.getboolean('proxy2', 'change_clientid')
