@@ -1,4 +1,15 @@
-# the backup UUID is derrived from the keybag UUID
+## Comparing backup UUIDs from the iPhone 6s Plus, the iPhone 5c, the iPhone 5, and the iPad Pro:
+D:d9614827b8f0bfd998267f638bccff0acb597f8f
+D:e7f4930075aa28869a14bba01924e079678cb87a
+D:17f899e7ececa6cf4d60eb216311d007abeb11d0
+D:244a0c883f3ceec33f8e4d3ccf36772858251766
+
+
+These values don't look completely random (such as in a hash).
+iPhone5,3: e 7f 4 9 30075aa28869a14b b a01924e 0 79678cb87a
+iPhone5,1: 1 7f 8 9 9e7ececa6cf4d60e b 216311d 0 07abeb11d0
+
+## the backup UUID is derrived from the keybag UUID (I think)
 
 Possibly useful functions from iOS9 MobileBackup.framework:
 -(BOOL)deleteBackupUDID:(id)arg1 error:(id*)arg2 ;
