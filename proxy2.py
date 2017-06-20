@@ -591,18 +591,14 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             #    with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
         elif 'gs-loc.apple.com' in hostname or 'gsp-ssl.ls.apple.com' in hostname or 'gsp64-ssl.ls.apple.com' in hostname or 'gsp10-ssl.apple.com' in hostname:
             ProxyRewrite.locationdDecode2(req_body_modified)
-        elif 'identity.apple.com' in hostname:
-            import xml2dict
-            print(xml2dict.parse(req_body_modified))
+        #elif 'identity.apple.com' in hostname:
+        #    import xml2dict
+        #    print(xml2dict.parse(req_body_modified))
         return req_body_modified
 
     def response_handler(self, req, req_body, res, res_body):
         if ProxyRewrite.rewriteDevice == False: return res_body
-        hostname = None
-        if 'Host' in self.headers:
-            hostname = self.headers['Host']
-        else:
-            hostname = self.path.split(':')[0]
+        hostname = ProxyRewrite.get_hostname(req.headers, req.path)
 
         if 'setup.icloud.com' in hostname and 'configurations/init?context=buddy' in self.path:
             p = plistlib.readPlistFromString(res_body)

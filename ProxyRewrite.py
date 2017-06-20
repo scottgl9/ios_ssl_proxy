@@ -142,6 +142,12 @@ class ProxyRewrite:
         return ("%s/%s" % (logdir, filename))
 
     @staticmethod
+    def log_filename_write(filename, data):
+        path = ProxyRewrite.log_filename(filename)
+        with open(path, "w") as f:
+            f.write(data)
+
+    @staticmethod
     def is_courier_push_ip(ipaddr):
 		# from data gathered, this will match the ip address to map to the hostname courier.push.apple.com
         if re.match(r"^17.188.\b1[2-6][0-9]\b.\d{1,3}$",ipaddr): return True
@@ -425,10 +431,17 @@ class ProxyRewrite:
                 ProxyRewrite.add_info_summary('aps-token', pushToken)
 
             # save backupDeviceUUID
-            if 'registerDevice' in path and 'backupDeviceUUID' in body:
+            if 'deregisterDevice' in path and 'backupDeviceUUID' in body:
+                p = plistlib.readPlistFromString(body)
+                del p['deviceInfo']['backupDeviceUUID']
+                body = plistlib.writePlistToString(p)
+            elif 'registerDevice' in path and 'backupDeviceUUID' in body:
                 backupDeviceUUID = ProxyRewrite.save_plist_body_attrib(body, 'backupDeviceUUID', 'deviceInfo')
                 ProxyRewrite.dev1info['backupDeviceUUID'] = backupDeviceUUID
                 ProxyRewrite.add_info_summary('backupDeviceUUID', backupDeviceUUID)
+                p = plistlib.readPlistFromString(body)
+                del p['deviceInfo']['backupDeviceUUID']
+                body = plistlib.writePlistToString(p)
 
             if ProxyRewrite.changeClientID == True and 'client-id' in ProxyRewrite.dev1info and 'client-id' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'client-id'))
@@ -436,7 +449,7 @@ class ProxyRewrite:
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
             # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
-            if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'imei' in body:
+            if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info and 'registerDevice' in path:
                 body = ProxyRewrite.rewrite_plist_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, 'deviceInfo')
 
             if 'X-Mme-Nas-Qualify' in headers:
@@ -521,22 +534,37 @@ class ProxyRewrite:
                 text = json_obj['collectionInfo']['data']
                 json_obj['collectionInfo']['data'] = ProxyRewrite.b64_rewrite_text(json_obj['collectionInfo']['data'], attribs)
                 body = json.dumps(json_obj)
-            elif path.endswith("%s/identityV3" % ProxyRewrite.dev1info['UniqueDeviceID']):
+            elif path.endswith("identityV3"):
+                json_obj = json.loads(body)
+                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
+                    json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
+                if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+                    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+                    print("Replacing ecid with %s" % d2uid)
+                    json_obj['ecid'] = d2uid
+                body = json.dumps(json_obj)
+            elif path.endswith("identityV2"):
                 json_obj = json.loads(body)
                 if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
                     json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
                 body = json.dumps(json_obj)
 
-            if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
-                d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
-                d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-                d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
-                d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
-                body = body.replace(d1uid, d2uid)
-                print("Replaced %s with %s\n" % (d1uid, d2uid))
+            #if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+            #    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            #    print(d2uid)
+            #    #d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+            #    #d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+            #    #d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+            #    #d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            #    #body = body.replace(d1uid, d2uid)
+            #    #print("Replaced %s with %s\n" % (d1uid, d2uid))
 
             if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipVersion' in body and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in body:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"fmipVersion":"fmipVersion", "fmipBuildVersion":"fmipBuildVersion"}, 'deviceInfo')
+                        # if device 1 is GSM and doesn't have an MEID, just insert device 2's MEID if it is a device that has an MEID
+            #if 'MobileEquipmentIdentifier' not in ProxyRewrite.dev1info and 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
+            #    body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"meid":"MobileEquipmentIdentifier"}, '')
+
             return body
         elif hostname.endswith('keyvalueservice.icloud.com'):
             if ProxyRewrite.changePushToken == True and 'setAPNSToken' in path:
@@ -635,6 +663,7 @@ class ProxyRewrite:
             if ProxyRewrite.rewriteOSVersion == True:
                 attribs = ("%s,%s,%s" % (attribs, 'BuildVersion', 'ProductVersion'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
+            ProxyRewrite.decode_tbsc(headers, body)
             return body
         elif hostname == 'gsa.apple.com':
             attribs = 'DeviceColor,EnclosureColor,ModelNumber,ProductType,SerialNumber,UniqueDeviceID,TotalDiskCapacity,HardwareModel,HardwarePlatform,DeviceClass'
@@ -901,7 +930,7 @@ class ProxyRewrite:
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'configuration.apple.com':
-                #path = path.replace("9.0.plist", "10.1.plist")
+                #path = path.replace("9.0.plist", "8.0.plist")
                 if path != old_path: print("replace path %s -> %s\n" % (old_path, path))
         elif hostname == 'gsa.apple.com':
                 path = path.replace(ProxyRewrite.dev1info['UniqueDeviceID'], ProxyRewrite.dev2info['UniqueDeviceID'])
@@ -1261,6 +1290,25 @@ class ProxyRewrite:
         backupkeybagdigest = binascii.hexlify(metaplist['BackupKeybagDigest'])
         print("BackupKeybagDigest = %s" % backupkeybagdigest)
         ProxyRewrite.add_info_summary('BackupKeybagDigest', backupkeybagdigest)
+
+
+    @staticmethod
+    def decode_tbsc(headers, body):
+        sigkey = None
+        signature = None
+        if 'X-Apple-Sig-Key' in headers:
+            sigkey = base64.b64decode(headers['X-Apple-Sig-Key'])
+            ProxyRewrite.log_filename_write("tbsc_key.bin", sigkey)
+        if 'X-Apple-Signature' in headers:
+            signature = base64.b64decode(headers['X-Apple-Signature'])
+            ProxyRewrite.log_filename_write("tbsc_sig.bin", signature)
+        jobj = json.loads(body)
+        pcrt = base64.b64decode(jobj['pcrt'])
+        ProxyRewrite.log_filename_write("tbsc_pcrt.bin", pcrt)
+        scrt_part1 = base64.b64decode(jobj['scrt-part1'])
+        ProxyRewrite.log_filename_write("tbsc_scrtp1.bin", scrt_part1)
+        scrt_part2 = base64.b64decode(jobj['scrt-part2'])
+        ProxyRewrite.log_filename_write("tbsc_scrtp2.bin", scrt_part2)
 
     # add / update info parsed from requests/responses to logs/summary.plist
     @staticmethod

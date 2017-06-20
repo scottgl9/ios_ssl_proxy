@@ -13,7 +13,7 @@
 # omit /var/mobile/Library/Caches/com.apple.springboard.sharedimagecache
 # /var/preferences
 # /var/root/Library/Preferences
-launchctl unload -w /System/Library/LaunchDaemons/com.apple.apsd.plist
+#launchctl unload -w /System/Library/LaunchDaemons/com.apple.apsd.plist
 #launchctl unload -w /System/Library/LaunchDaemons/com.apple.cloudd.plist
 #launchctl unload -w /System/Library/LaunchDaemons/com.apple.security.CircleJoinRequested.plist
 #launchctl unload -w /System/Library/LaunchDaemons/com.apple.cmfsyncagent.plist
@@ -55,8 +55,6 @@ rm -f /private/var/mobile/Library/Accounts/*.sqlite*
 rm -f /private/var/mobile/Library/AddressBook/*.sqlite*
 rm -rf /private/var/mobile/Library/Application\ Support/CloudDocs/*
 rm -rf /private/var/mobile/Library/Application\ Support/com.apple.ProtectedCloudStorage
-# delete certain cache files only
-#find /private/var/mobile/Library/Caches -name "Cache.db*"  -exec rm {} \;
 rm -rf /private/var/mobile/Library/Caches/CloudKit/*
 rm -rf /private/var/mobile/Library/Caches/FamilyCircle
 rm -rf /private/var/mobile/Library/Caches/com.apple.AssetCacheLocatorService
@@ -76,9 +74,11 @@ rm -f /private/var/mobile/Library/Logs/CrashReporter/DiagnosticLogs/Accounts/cdp
 rm -f /private/var/mobile/Library/Application\ Support/com.apple.ProtectedCloudStorage/*
 rm -f /private/var/mobile/Library/Health/*.sqlite*
 killall -9 apsd
+rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist
 rm -f /private/var/mobile/Library/ApplePushService/aps.*
 rm -rf /private/var/mobile/Library/Calendar/*
 killall -9 itunesstored
+rm -f /private/var/mobile/Library/Preferences/com.apple.itunesstored.plist
 rm -rf /private/var/mobile/Library/Caches/com.apple.itunesstored/*
 rm -rf /private/var/mobile/Library/com.apple.itunesstored/*
 rm -rf /private/var/mobile/Library/Cookies/com.apple.itunesstore*
@@ -105,7 +105,6 @@ rm -f /private/var/mobile/Library/OnDemandResources/Database/odr.sqlite*
 rm -rf /private/var/mobile/Library/Safari/*
 rm -rf /private/var/mobile/Library/Suggestions/*
 rm -f /private/var/mobile/Library/Preferences/com.apple.AOSNotification*.plist
-rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.accountsd.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.assistant*
 rm -f /private/var/mobile/Library/Preferences/com.apple.bird.plist
@@ -124,7 +123,6 @@ rm -f /private/var/mobile/Library/IdentityServices/ids*
 rm -f /private/var/mobile/Library/Preferences/com.apple.identityservices*
 rm -f /private/var/mobile/Library/Preferences/com.apple.ids.*
 rm -f /private/var/mobile/Library/Preferences/com.apple.icloud.*
-rm -f /private/var/mobile/Library/Preferences/com.apple.itunesstored.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.lasd.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.mobile.*
 rm -f /private/var/mobile/Library/Preferences/com.apple.mobile.ld*.plist
@@ -137,7 +135,6 @@ rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeper.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeperd.plist
 rm -f /private/var/mobile/Library/Preferences/ProtectedCloudKeySyncing.plist
 rm -f /private/var/mobile/Library/Preferences/kbd.plist
-
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cloudrecents.*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.sbd.plist
@@ -152,7 +149,6 @@ rm -f /private/var/preferences/SystemConfiguration/com.apple.accounts.exists.pli
 rm -f /private/var/preferences/com.apple.security.cloudkeychainproxy3.keysToRegister.plist
 rm -rf /private/var/root/Library/Lockdown
 sync
-launchctl load -w /System/Library/LaunchDaemons/com.apple.identityservicesd.plist
-launchctl load -w /System/Library/LaunchDaemons/com.apple.apsd.plist
-
+#launchctl load -w /System/Library/LaunchDaemons/com.apple.identityservicesd.plist
+#launchctl load -w /System/Library/LaunchDaemons/com.apple.apsd.plist
 killall -9 aggregated apsd atc assetsd configd dataaccessd fairplayd.H2 identityservicesd imagent itunesstored locationd nanoregistryd profiled routined sharingd backboardd SpringBoard
