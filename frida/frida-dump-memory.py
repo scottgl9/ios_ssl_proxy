@@ -17,24 +17,13 @@ def main(target_process):
 	script = session.create_script("""
                 var modules = Process.enumerateModulesSync();
                 var module;
-                var lastmodule="";
-                var lastmodulebase=0;
-                var modulelist = [];
+                var moduledict = {};
                 for (var i=0; i<modules.length; i++) {
-                    module = modules[i];
-                    if (lastmodule == "") {
-                        lastmodule = module.name;
-                        lastmodulebase = module.base;
-                        continue;
-                    }
+                    //moduledict[module.base] = module.name;
                     console.log(module.name+":"+module.base+":"+module.size);
-                    line = { "name":module.name, "start":parseInt(module.base,16), "end":parseInt(lastmodulebase,16) };
-                    modulelist.push(line);
-                    lastmodule = module.name;
-                    lastmodulebase = module.base;
                 }
 		var ranges = Process.enumerateRangesSync({protection: 'r--', coalesce: true});
-		var range;
+                var range;
                 for (var j=0; j<ranges.length; j++) {
                         range = ranges[j]; //ranges.pop();
 			console.log(range.base+":"+range.size+":"+range.protection);
@@ -48,15 +37,9 @@ def main(target_process):
                                     console.log(modulelist[i].name);
                                     console.log(range.base+':'+range.size+':'+range.protection);
                                     var bytes = Memory.readByteArray(range.base, range.size);
-                                    send(range.base, bytes);
+                                    //send(range.base, bytes);
                                 }
 
-                            } else if (name == "ApplePushService") {
-                                if (parseInt(range.base,16) >= modulelist[i].start && range.size < 1000000) {
-                                    console.log(modulelist[i].name+":"+range.size);
-                                    var bytes = Memory.readByteArray(range.base, range.size);
-                                    send(range.base, bytes);
-                                }
                             }
                         }
 		}

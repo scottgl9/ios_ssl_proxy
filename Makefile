@@ -5,3 +5,7 @@ all:
 
 clean:
 	rm -f proxy2 proxy2.c
+
+
+copy:
+	scp com.nablac0d3.SSLKillSwitchSettings.plist root@192.168.1.78:/private/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist 

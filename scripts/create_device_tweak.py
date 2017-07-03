@@ -12,6 +12,8 @@ import datetime
 # scp com.nablac0d3.SSLKillSwitchSettings.plist root@192.168.0.144:/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist
 key_list = ["BuildVersion", "DeviceColor", "DeviceEnclosureColor", "HardwareModel", "ModelNumber", "ProductType", "ProductVersion", "SerialNumber", "UniqueDeviceID", "WiFiAddress", "DieId", "EnclosureColor", "HardwareModel", "HardwarePlatform", "BluetoothAddress", "EthernetAddress", "UniqueChipID", "DieID", "MLBSerialNumber", "FirmwareVersion", "CPUArchitecture", "WirelessBoardSnum", "BasebandCertId", "BasebandChipID", "BasebandMasterKeyHash", "BasebandVersion", "BoardId", "InternationalMobileEquipmentIdentity", "MobileEquipmentIdentifier", "WirelessBoardSerialNumber"]
 
+#, "IntegratedCircuitCardIdentity", "CarrierBundleInfoArray"]
+
 def load_device_info(sn):
     if '.xml' in sn:
         device = plistlib.readPlist(sn)

@@ -498,13 +498,13 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)
 
-            if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
-                d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
-                d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
-                d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
-                d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
-                body = body.replace(d1uid, d2uid)
-                print("Replaced %s with %s\n" % (d1uid, d2uid))
+            #if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+            #    d1lenfix = (len(str(hex(ProxyRewrite.dev1info['UniqueChipID']))) - 10) + 2
+            #    d2lenfix = (len(str(hex(ProxyRewrite.dev2info['UniqueChipID']))) - 10) + 2
+            #    d1uid = "0x%s" % str(hex(ProxyRewrite.dev1info['UniqueChipID']))[4:]
+            #    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+            #    body = body.replace(d1uid, d2uid)
+            #    print("Replaced %s with %s\n" % (d1uid, d2uid))
 
             if 'fmipVersion' in ProxyRewrite.dev1info and 'fmipVersion' in ProxyRewrite.dev2info and 'fmipBuildVersion' in ProxyRewrite.dev1info and 'fmipBuildVersion' in ProxyRewrite.dev2info:
                 body = ProxyRewrite.rewrite_json_body_attribs(headers, body, {"buildVersion":"fmipVersion", "appVersion":"fmipBuildVersion"}, 'clientContext')
@@ -536,18 +536,18 @@ class ProxyRewrite:
                 body = json.dumps(json_obj)
             elif path.endswith("identityV3"):
                 json_obj = json.loads(body)
-                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
-                    json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
-                if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
-                    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
-                    print("Replacing ecid with %s" % d2uid)
-                    json_obj['ecid'] = d2uid
-                body = json.dumps(json_obj)
-            elif path.endswith("identityV2"):
-                json_obj = json.loads(body)
-                if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
-                    json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
-                body = json.dumps(json_obj)
+                #if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
+                #    json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
+                #if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
+                #    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))
+                #    print("Replacing ecid with %s" % d2uid)
+                #    json_obj['ecid'] = d2uid
+                #body = json.dumps(json_obj)
+            #elif path.endswith("identityV2"):
+            #    json_obj = json.loads(body)
+            #    if 'MobileEquipmentIdentifier' in ProxyRewrite.dev2info:
+            #        json_obj['meid'] =  ProxyRewrite.dev2info['MobileEquipmentIdentifier']
+            #    body = json.dumps(json_obj)
 
             #if ProxyRewrite.dev1info['UniqueChipID'] != ProxyRewrite.dev2info['UniqueChipID']:
             #    d2uid = str(hex(ProxyRewrite.dev2info['UniqueChipID']))

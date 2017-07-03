@@ -572,14 +572,9 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         req_body_modified = ProxyRewrite.rewrite_body(req_body_plain, req.headers, req.path)
 
-        #if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
-        #    #fdrpl=plistlib.readPlistFromString(open('fdr.plist', 'rt').read())
-        #    #bodypl = plistlib.readPlistFromString(req_body_modified)
-        #    #print("%s: replaced fdrblob: %s -> %s" % (req.path, base64.b64encode(bodypl['FDRBlob'].data), base64.b64encode(fdrpl['FDRBlob'].data)))
-        #    #bodypl['FDRBlob'] = fdrpl['FDRBlob']
-        #    #req_body_modified = plistlib.writePlistToString(bodypl)
-        #    #req.headers['Content-Length'] = str(len(req_body_modified))
-        #elif 'Host' in req.headers and 'mobilebackup.icloud.com' in req.headers['Host'] and 'vnd.com.apple.mbs+protobuf' in req.headers['Content-Type']:
+        if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
+            bodypl = plistlib.readPlistFromString(req_body_modified)
+            with open(ProxyRewrite.log_filename("fdr.cer"), "wb") as f: f.write(bodypl['FDRBlob'].data)
         # *TODO* implement protobuf decoder here
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
