@@ -136,9 +136,12 @@ class ProxyRewrite:
     @staticmethod
     def log_filename(filename):
         if ProxyRewrite.unique_log_dir:
-            logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+            dev1sn = ProxyRewrite.dev1info['SerialNumber']
+            dev2sn = ProxyRewrite.dev2info['SerialNumber']
+            logdir = ("logs_%s_%s" % (dev1sn, dev2sn))
         else:
             logdir = "logs"
+        if filename == '': return logdir
         return ("%s/%s" % (logdir, filename))
 
     @staticmethod
@@ -173,7 +176,7 @@ class ProxyRewrite:
         else:
             psub = p
         if attrname in psub:
-            print("found %s in body: %s" % (attrname, psub[attrname]))
+            print("found %s in body" % (attrname))
             return psub[attrname]
         return ''
 

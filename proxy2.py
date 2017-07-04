@@ -574,16 +574,16 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         if 'Host' in req.headers and 'albert.apple.com' in req.headers['Host'] and 'drmHandshake' in self.path:
             bodypl = plistlib.readPlistFromString(req_body_modified)
-            with open(ProxyRewrite.log_filename("fdr.cer"), "wb") as f: f.write(bodypl['FDRBlob'].data)
+            with open(ProxyRewrite.log_filename("fdr_%s.bin" % binascii.hexlify(bodypl['HandshakeRequestMessage'].data)), "wb") as f: f.write(bodypl['FDRBlob'].data)
         # *TODO* implement protobuf decoder here
         if req_body_modified != req_body_plain and 'Content-Encoding' in req.headers and req.headers['Content-Encoding'] == 'gzip' and 'Content-Length' in req.headers and req.headers['Content-Length'] > 0 and len(str(req_body_modified)) > 0:
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_modified = self.encode_content_body(str(req_body_modified), content_encoding)
 
-        if ProxyRewrite.file_logging and 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
-            fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
-            #if fdrblob != None:
-            #    with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
+        #if ProxyRewrite.file_logging and 'albert.apple.com' in hostname and self.path.endswith("deviceservices/drmHandshake"):
+        #    fdrblob = ProxyRewrite.save_plist_body_attrib(req_body_modified, 'FDRBlob', '')
+        #    #if fdrblob != None:
+        #    #    with open(ProxyRewrite.log_filename("fdr.bin", "wb")) as f: f.write(fdrblob)
         elif 'gs-loc.apple.com' in hostname or 'gsp-ssl.ls.apple.com' in hostname or 'gsp64-ssl.ls.apple.com' in hostname or 'gsp10-ssl.apple.com' in hostname:
             ProxyRewrite.locationdDecode2(req_body_modified)
         #elif 'identity.apple.com' in hostname:
@@ -835,8 +835,11 @@ def test(HandlerClass=ProxyRequestHandler, ServerClass=ThreadingHTTPServer, prot
             if os.path.isfile(file_path):
                 os.unlink(file_path)
 
-    if ProxyRewrite.file_logging and ProxyRewrite.unique_log_dir and os.path.exists("logs_%s" % ProxyRewrite.dev1info['SerialNumber']) == False:
-        os.mkdir("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+    logdir = ProxyRewrite.log_filename('')
+    if ProxyRewrite.file_logging and ProxyRewrite.unique_log_dir and os.path.exists(logdir) == False:
+        os.mkdir(logdir)
+    else:
+        print("%s already exists, using for logs" % logdir)
 
     if config.has_option('proxy2', 'ProductVersion'):
         ProxyRewrite.dev2info['ProductVersion'] = config.get('proxy2', 'ProductVersion')
