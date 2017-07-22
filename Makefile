@@ -8,4 +8,5 @@ clean:
 
 
 copy:
-	scp com.nablac0d3.SSLKillSwitchSettings.plist root@192.168.1.78:/private/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist 
+	plistutil -i com.nablac0d3.SSLKillSwitchSettings.plist -o com.nablac0d3.SSLKillSwitchSettings.plist
+	sshpass -p alpine scp com.nablac0d3.SSLKillSwitchSettings.plist root@192.168.1.69:/private/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist 

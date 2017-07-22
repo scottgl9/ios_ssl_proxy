@@ -77,12 +77,15 @@ rm -f /private/var/mobile/Library/IdentityServices/ids*
 rm -f /private/var/mobile/Library/Preferences/com.apple.identityservices*
 rm -f /private/var/mobile/Library/Preferences/com.apple.ids.*
 rm -f /private/var/mobile/Library/Preferences/com.apple.icloud.*
+rm -f /private/var/mobile/Library/Preferences/com.apple.cloud.quota.plist*
+rm -f /private/var/mobile/Library/Preferences/com.apple.carrier.plist
 killall -9 apsd
-rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist
+rm -f /private/var/mobile/Library/Preferences/com.apple.apsd.plist*
 rm -f /private/var/mobile/Library/ApplePushService/aps.*
 rm -rf /private/var/mobile/Library/Calendar/*
 killall -9 itunesstored
-rm -f /private/var/mobile/Library/Preferences/com.apple.itunesstored.plist
+rm -f /private/var/mobile/Library/Preferences/com.apple.itunesstored.plist*
+rm -f /private/var/mobile/Library/Preferences/com.apple.imdsmsrecordstore.plist*
 rm -rf /private/var/mobile/Library/Caches/com.apple.itunesstored/*
 rm -rf /private/var/mobile/Library/com.apple.itunesstored/*
 rm -rf /private/var/mobile/Library/Cookies/com.apple.itunesstore*
@@ -98,6 +101,10 @@ killall -9 homed
 rm -rf /private/var/mobile/Library/homed
 rm -rf /private/var/mobile/Library/Keyboard/*
 rm -f /private/var/mobile/Library/LASD/*
+killall -9 atc
+rm -f private/var/mobile/Library/Preferences/com.apple.atc.plist*
+killall -9 aggregated
+rm -f private/var/mobile/Library/Preferences/com.apple.aggregated.plist*
 killall -9 locationd
 rm -f /private/var/mobile/Library/locationd/*
 rm -f /private/var/mobile/Library/Logs/CrashReporter/*.ips*
@@ -136,11 +143,22 @@ rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeper.plist
 rm -f /private/var/mobile/Library/Preferences/com.apple.storebookkeeperd.plist
 rm -f /private/var/mobile/Library/Preferences/ProtectedCloudKeySyncing.plist
 rm -f /private/var/mobile/Library/Preferences/kbd.plist
+
+rm -f /private/var/mobile/Library/Preferences/com.apple.Accessibility.plist*
+rm -f /private/var/mobile/Library/Preferences/com.apple.SpringBoard.plist.*
+rm -f /private/var/mobile/Library/Preferences/com.apple.purplebuddy.plist.*
+rm -f /private/var/mobile/Library/Preferences/com.apple.keyboard.plist*
+rm -f /private/var/mobile/Library/Preferences/com.apple.WebUI.plist*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cloudrecents.*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.cmfsyncagent.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.sbd*
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.security.cloudkeychainproxy3.plist
 rm -f /private/var/mobile/Library/SyncedPreferences/com.apple.syncedpreferences.plist
+
+rm -f /private/var/wireless/Library/Preferences/com.apple.commcenter.plist*
+rm -f /private/var/wireless/Library/Preferences/com.apple.awdd.persistent.plist*
+rm -f /private/var/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist*
+rm -f /private/var/wireless/Library/Preferences/com.apple.AppleBasebandManager.Statistics.plist*
 
 rm -rf /private/var/mobile/Media/PhotoData/*
 rm -f /private/var/mobile/Media/Recordings/*

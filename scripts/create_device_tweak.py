@@ -10,9 +10,7 @@ import plistlib
 import datetime
 
 # scp com.nablac0d3.SSLKillSwitchSettings.plist root@192.168.0.144:/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist
-key_list = ["BuildVersion", "DeviceColor", "DeviceEnclosureColor", "HardwareModel", "MarketingName", "ModelNumber", "ProductType", "ProductVersion", "SerialNumber", "UniqueDeviceID", "WiFiAddress", "DieId", "EnclosureColor", "HardwareModel", "HardwarePlatform", "BluetoothAddress", "EthernetAddress", "UniqueChipID", "DieID", "MLBSerialNumber", "FirmwareVersion", "CPUArchitecture", "WirelessBoardSnum", "BasebandCertId", "BasebandChipID", "BasebandKeyHashInformation", "BasebandMasterKeyHash", "BasebandSerialNumber", "BasebandVersion", "BasebandRegionSKU", "BoardId", "InternationalMobileEquipmentIdentity", "MobileEquipmentIdentifier", "WirelessBoardSerialNumber", "RegulatoryModelNumber", "PkHash", "BasebandFirmwareManifestData", "ChipID", "ChipSerialNo", "CertID", "BasebandRegionSKU"]
-
-#"IntegratedCircuitCardIdentity", "CarrierBundleInfoArray"]
+key_list = ["BuildVersion", "DeviceColor", "DeviceEnclosureColor", "HardwareModel", "MarketingName", "ModelNumber", "ProductType", "ProductVersion", "SerialNumber", "UniqueDeviceID", "WiFiAddress", "DieId", "EnclosureColor", "HardwareModel", "HardwarePlatform", "BluetoothAddress", "EthernetAddress", "UniqueChipID", "DieID", "MLBSerialNumber", "FirmwareVersion", "CPUArchitecture", "WirelessBoardSnum", "BasebandCertId", "BasebandChipID", "BasebandKeyHashInformation", "BasebandMasterKeyHash", "BasebandSerialNumber", "BasebandVersion", "BasebandRegionSKU", "BoardId", "InternationalMobileEquipmentIdentity", "MobileEquipmentIdentifier", "WirelessBoardSerialNumber", "RegulatoryModelNumber", "PkHash", "BasebandFirmwareManifestData", "ChipID", "ChipSerialNo", "CertID", "BasebandRegionSKU", "IntegratedCircuitCardIdentity", "CarrierBundleInfoArray", "InternationalMobileSubscriberIdentity"]
 
 def load_device_info(sn):
     if '.xml' in sn:

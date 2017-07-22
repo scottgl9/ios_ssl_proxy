@@ -564,8 +564,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             content_encoding = req.headers.get('Content-Encoding', 'identity')
             req_body_plain = self.decode_content_body(str(req_body), content_encoding)
 
-        #if 'albert.apple.com' in req.path and 'deviceActivation' in req.path:
-        #     req_body_plain = ProxyRewrite.rewrite_plist_body_activation(req.headers, req_body_plain)
+        #if 'albert.apple.com' in req.path and 'deviceservices/deviceActivation' in req.path:
+        #     req_body_plain = ProxyRewrite.rewrite_plist_body_activation_new(req.headers, req_body_plain)
         #elif 'static.ips.apple.com' in req.path:
         #        req.path = 'http://ui.iclouddnsbypass.com/deviceservices/buddy/barney_activation_help_en_us.buddyml'
         #        req.headers['Host'] = 'ui.icloudbypass.com'
@@ -686,7 +686,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             if 'icloud.com' in hostname: logname = re.sub(r'^p\d\d-', '', hostname)
 
             if ProxyRewrite.unique_log_dir:
-                logdir = ("logs_%s" % ProxyRewrite.dev1info['SerialNumber'])
+                logdir = ProxyRewrite.log_filename('')
             else:
                 logdir = "logs"
 

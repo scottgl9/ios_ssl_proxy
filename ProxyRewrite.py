@@ -300,6 +300,28 @@ class ProxyRewrite:
         p['ActivationInfoXML'] = base64.b64encode(text_modified.replace('\\t','\t').replace('\\n', '\n'))
         text = ("--%s\nContent-Disposition: form-data; name=\"activation-info\"\n\n%s\n--%s--" % (boundary,plistlib.writePlistToString(p),boundary))
         print(text)
+        
+    @staticmethod
+    def rewrite_plist_body_activation_new(headers, text):
+        xml = ProxyRewrite.get_plist_body_activation(headers, text)
+        boundary = headers['Content-Type'].split('=')[1]
+        print("Boundary = %s" % boundary)
+        p = plistlib.readPlistFromString(xml)
+        p1 = plistlib.readPlistFromString(p['ActivationInfoXML'].data)
+        if 'ActivationInfoXML' not in p: return text
+        p['ActivationInfoXML'] = ProxyRewrite.dev2info['ActivationInfoXML'] #plistlib.Data(subxml)
+        p['FairPlayCertChain'] = ProxyRewrite.dev2info['FairPlayCertChain']
+        p['FairPlaySignature'] = ProxyRewrite.dev2info['FairPlaySignature']
+        p2 = plistlib.readPlistFromString(p['ActivationInfoXML'].data)
+        #p2['BasebandMasterKeyHash'] = ProxyRewrite.dev1info['BasebandMasterKeyHash']
+        #p2['BasebandSerialNumber'] = ProxyRewrite.dev2info['BasebandSerialNumber']
+        #p2['ActivationRandomness'] = p1['ActivationRandomness']
+        #p2['InternationalMobileEquipmentIdentity'] = ProxyRewrite.dev1info['InternationalMobileEquipmentIdentity']
+        #p2['UniqueDeviceID'] = ProxyRewrite.dev1info['UniqueDeviceID']
+        p['ActivationInfoXML'] = plistlib.Data(plistlib.writePlistToString(p2))
+        text = ("--%s\r\nContent-Disposition: form-data; name=\"activation-info\"\r\n\r\n%s\r\n--%s--\r\n" % (boundary,plistlib.writePlistToString(p),boundary))
+        return text
+
 
     @staticmethod
     def replace_header_field(headers, field, attrib):
@@ -649,6 +671,12 @@ class ProxyRewrite:
             else:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'HardwareModel,ProductType', hostname)
             return body
+        elif hostname == 'gsp36-ssl.ls.apple.com':
+            if ProxyRewrite.rewriteOSVersion == True:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
+            else:
+                body = ProxyRewrite.rewrite_body_attribs(body, 'ProductType', hostname)
+            return body
         elif hostname == 'gsp64-ssl.ls.apple.com':
             if ProxyRewrite.rewriteOSVersion == True:
                 body = ProxyRewrite.rewrite_body_attribs(body, 'BuildVersion,ProductType,ProductVersion', hostname)
@@ -692,6 +720,9 @@ class ProxyRewrite:
                 attribs = ("%s,%s" % (attribs, 'InternationalMobileEquipmentIdentity'))
             if 'MobileEquipmentIdentifier' in ProxyRewrite.dev1info:
                 attribs = ("%s,%s" % (attribs, 'MobileEquipmentIdentifier'))
+            if 'IntegratedCircuitCardIdentity' in ProxyRewrite.dev1info:
+                attribs = ("%s,%s" % (attribs, 'IntegratedCircuitCardIdentity'))
+
             if 'aps-token' in ProxyRewrite.dev1info and 'aps-token' in ProxyRewrite.dev2info:
                 attribs = ("%s,%s" % (attribs, 'aps-token'))
             body = ProxyRewrite.rewrite_body_attribs(body, attribs, hostname)

@@ -116,6 +116,8 @@
 	<string>013423005288880</string>
 	<key>InternationalMobileSubscriberIdentity</key>
 	<string>310410840498052</string>
+	<key>MarketingName</key>
+	<string>iPhone 5</string>
 	<key>MLBSerialNumber</key>
 	<string>C073037528CDWJGB</string>
 	<key>MobileSubscriberCountryCode</key>
@@ -468,7 +470,6 @@
 	SVlhOS91d3A5LzRnMGUvcW92aFFnWDA0SEhQMmRuZDNXK09OUDNyNW04TjRHQUg1Uzhh
 	YUhhanVBWEMNClE1YmR4WFdJT25wUzV6L3Z4NWVKcjVxaXFDN2Q5T2VLdUYzUmJUOVFa
 	RzFRaGh0clNNY1pBZ01CQUFFPQotLS0tLUVORCBSU0EgUFVCTElDIEtFWS0tLS0tCg==
-	
 	</data>
 	<key>ActivationPrivateKey</key>
 	<data>

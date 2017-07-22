@@ -1,6 +1,13 @@
 ## NOTE: I've made a huge breakthrough about how activation works. When we receive FairPlayKeyData from the server, I found that on an activated device,
 FairPlayKeyData is an EXACT match to the file IC-Info.sisv, so therefore FairKeyPlayData must ALWAYS be an exact match to IC-Info.sisv for successful activation!
 
+/private/var/containers/Data/System/12B247E2-BEB0-42FC-A61D-D0BEF704C81D/Documents/Library/FairPlay/iTunes_Control/iTunes/IC-Info.sisv
+/private/var/containers/Data/System/12B247E2-BEB0-42FC-A61D-D0BEF704C81D/Documents/Media/iTunes_Control/iTunes/IC-Info.sidv
+/private/var/mobile/Library/FairPlay/iTunes_Control/iTunes/IC-Info.sidt
+/private/var/mobile/Library/FairPlay/iTunes_Control/iTunes/IC-Info.sisv
+/private/var/mobile/Media/iTunes_Control/iTunes/IC-Info.sidf
+/private/var/mobile/Media/iTunes_Control/iTunes/IC-Info.sidv
+
 /System/Library/PrivateFrameworks/MobileActivation.framework/Support/Certificates
 /System/Library/Security/Certificates.bundle
 
